@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Property {
+  id                Int           @id @default(autoincrement())
+  name              String
+  slug              String        @unique
+  airbnbIcalUrl     String
+  baseNightlyRate   Int
+  cleaningFee       Int           @default(8500)
+  maxGuests         Int
+  timezone          String        @default("Europe/London")
+  serviceFee        Int           @default(2000)
+  weekdayRate       Int           @default(30000)
+  weekendRate       Int           @default(35000)
+  checkInGuideUrl   String?
+  guestBookUrl      String?
+  hostSupportEmail  String?
+  checkInTime       String?
+  checkOutTime      String?
+  wifiSsid          String?
+  wifiPassword      String?
+  garageCode        String?
+  lockboxCode       String?
+  skiLockerDoorCode String?
+  skiLockerNumber   String?
+  skiLockerCode     String?
+  quietHours        String?
+  parkingNotes      String?
+  houseRules        Json?
+  emergencyContacts Json?
+  addons            Addon[]
+  blockedDates      BlockedDate[]
+  bookings          Booking[]
+  specialRates      SpecialRate[]
+}
+
+model Booking {
+  id                          Int            @id @default(autoincrement())
+  propertyId                  Int
+  checkInDate                 DateTime
+  checkOutDate                DateTime
+  guestName                   String
+  guestEmail                  String
+  totalPriceCents             Int
+  stripePaymentIntentId       String         @unique
+  status                      BookingStatus  @default(PENDING)
+  createdAt                   DateTime       @default(now())
+  checkInInstructionsOverride String?
+  guestBookUrlOverride        String?
+  preStayReminderSentAt       DateTime?
+  reviewRequestSentAt         DateTime?
+  publicReference             String?        @unique @db.VarChar(32)
+  property                    Property       @relation(fields: [propertyId], references: [id])
+  addons                      BookingAddon[]
+  emailLogs                   EmailLog[]
+}
+
+model BlockedDate {
+  id         Int         @id @default(autoincrement())
+  propertyId Int
+  date       DateTime
+  source     BlockSource
+  property   Property    @relation(fields: [propertyId], references: [id])
+}
+
+model SpecialRate {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  date       DateTime
+  price      Int
+  note       String?
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([propertyId, date])
+}
+
+model EmailLog {
+  id        Int         @id @default(autoincrement())
+  bookingId Int?
+  to        String
+  type      EmailType
+  status    EmailStatus @default(SENT)
+  error     String?
+  sentAt    DateTime    @default(now())
+  createdAt DateTime    @default(now())
+  booking   Booking?    @relation(fields: [bookingId], references: [id])
+}
+
+model Addon {
+  id                Int            @id @default(autoincrement())
+  propertyId        Int
+  slug              String         @unique
+  title             String
+  description       String
+  category          String
+  provider          String
+  providerProductId String?
+  basePriceCents    Int
+  currency          String         @default("USD")
+  durationMinutes   Int?
+  imageUrl          String?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  property          Property       @relation(fields: [propertyId], references: [id])
+  bookings          BookingAddon[]
+}
+
+model BookingAddon {
+  id                       Int       @id @default(autoincrement())
+  bookingId                Int
+  addonId                  Int
+  finalPriceCents          Int
+  createdAt                DateTime  @default(now())
+  providerConfirmationCode String?
+  providerMetadata         Json?
+  providerStatus           String    @default("pending")
+  activityDate             DateTime?
+  activityTimeSlot         String?
+  addon                    Addon     @relation(fields: [addonId], references: [id])
+  booking                  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, addonId])
+}
+
+model OpsContactProfile {
+  id                  Int      @id @default(autoincrement())
+  supportEmail        String   @default("ali@bunks.com")
+  supportSmsNumber    String   @default("+1 (970) 555-0119")
+  opsEmail            String   @default("ops@bunks.com")
+  opsPhone            String   @default("+1 (970) 555-0124")
+  opsDeskPhone        String?  @default("+1 (970) 555-0101")
+  opsDeskHours        String?  @default("07:00–22:00 MT")
+  conciergeName       String?  @default("Priya")
+  conciergeContact    String?  @default("Slack #host-support")
+  conciergeNotes      String?  @default("Add-on escalations")
+  emergencyContact    String?  @default("911")
+  emergencyDetails    String?  @default("Share property code 8821")
+  doorCodesDocUrl     String?
+  arrivalNotesUrl     String?
+  liveInstructionsUrl String?
+  recommendationsUrl  String?
+  guestBookUrl        String?
+  checkInWindow       String?  @default("Check-in after 16:00")
+  checkOutTime        String?  @default("Checkout by 10:00")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model FeatureToggle {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum BlockSource {
+  AIRBNB
+  DIRECT
+}
+
+enum EmailType {
+  ADDON_CONFIRMATION
+  ADDON_NOTIFICATION
+  BOOKING_CONFIRMATION
+  BOOKING_MODIFICATION
+  BOOKING_WELCOME
+  CANCELLATION_CONFIRMATION
+  CHECKOUT_REMINDER
+  DAMAGE_REPORT
+  DEPOSIT_RELEASE
+  DOOR_CODE_DELIVERY
+  GUEST_REFUND_ISSUED
+  HOST_ADDON_SOLD
+  HOST_BOOKING_MODIFIED
+  HOST_CHARGEBACK
+  HOST_CHECKOUT_CONFIRMED
+  HOST_CLEANER_ASSIGNED
+  HOST_CLEANER_REPORT
+  HOST_DOOR_CODE_REMINDER
+  HOST_GUEST_CANCELLED
+  HOST_LISTING_READY
+  HOST_NOISE_ALERT
+  HOST_NO_SHOW
+  HOST_NOTIFICATION
+  HOST_ONBOARDING_WELCOME
+  HOST_PREP_SAME_DAY
+  HOST_PREP_THREE_DAY
+  HOST_REFUND_ADJUSTMENT
+  HOST_VERIFICATION_PROGRESS
+  ISSUE_REPORT_CONFIRMATION
+  MID_STAY_CONCIERGE
+  NOISE_WARNING
+  NO_SHOW_NOTIFICATION
+  PAYMENT_FAILURE
+  POST_STAY_THANK_YOU
+  PRE_STAY_REMINDER
+  PRE_STAY_REMINDER_24H
+  RECEIPT
+  REVIEW_REQUEST
+  SYSTEM
+  SYSTEM_BOOKING_CREATION_FAILED
+  SYSTEM_CALENDAR_SYNC_ERROR
+  SYSTEM_CRON_SUMMARY
+  SYSTEM_EMAIL_FAILED
+  SYSTEM_MAJOR_ISSUE
+  SYSTEM_PAYMENT_EXCEPTION
+  SYSTEM_STRIPE_WEBHOOK_FAILED
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
