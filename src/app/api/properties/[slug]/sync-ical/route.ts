@@ -29,6 +29,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (property.pricelabsListingId) {
+      return NextResponse.json(
+        { message: 'Property is managed by PriceLabs; iCal sync skipped.', slug },
+        { status: 200 }
+      );
+    }
+
     if (!property.airbnbIcalUrl) {
       return NextResponse.json(
         { error: 'Property has no iCal URL configured', slug },

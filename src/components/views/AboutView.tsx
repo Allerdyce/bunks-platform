@@ -16,7 +16,7 @@ export function AboutView({ onNavigate }: AboutViewProps) {
       <div className="grid lg:grid-cols-2 min-h-[80vh]">
         <div className="bg-stone-900 text-white flex items-center justify-center p-12 lg:p-24">
           <div className="max-w-xl">
-            <h1 className="font-serif text-5xl sm:text-7xl mb-8 leading-tight">
+            <h1 className="font-serif text-5xl sm:text-7xl mb-8 leading-tight text-white">
               Less platform.
               <br />
               <span className="text-stone-400">More hospitality.</span>

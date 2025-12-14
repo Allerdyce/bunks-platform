@@ -1,47 +1,64 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 interface AdminTopNavProps {
-  title: string;
-  subtitle: string;
-  active: "details" | "pricing" | "emails" | "resources";
-  actions?: ReactNode;
+  active: "details" | "pricing" | "emails" | "resources" | "messages" | "marketing";
+  actions?: React.ReactNode;
 }
 
 const NAV_ITEMS = [
   { id: "details" as const, label: "Details", href: "/admin/details" },
-  { id: "pricing" as const, label: "Pricing", href: "/admin" },
+  { id: "pricing" as const, label: "Pricing", href: "/admin/pricing" },
   { id: "emails" as const, label: "Emails", href: "/admin/emails" },
   { id: "resources" as const, label: "Resources", href: "/admin/resources" },
+  { id: "messages" as const, label: "Messages", href: "/admin/messages" },
+  { id: "marketing" as const, label: "Campaigns", href: "/admin/marketing" },
 ];
 
-export function AdminTopNav({ title, subtitle, active, actions }: AdminTopNavProps) {
+export function AdminTopNav({ active, actions }: AdminTopNavProps) {
+  const navContainerClass = "sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md";
+
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bunks Ops</p>
-          <h1 className="text-2xl font-serif text-slate-900 mt-1">{title}</h1>
-          <p className="text-sm text-slate-500">{subtitle}</p>
-          <nav className="mt-4 flex flex-wrap gap-4 text-sm font-medium text-slate-500">
-            {NAV_ITEMS.map((item) => {
-              const isActive = item.id === active;
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`pb-1 border-b-2 transition-colors ${
-                    isActive ? "border-violet-600 text-violet-700" : "border-transparent hover:text-slate-700"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+    <nav className={navContainerClass}>
+      <div className="w-full px-6 lg:px-12">
+        <div className="flex h-20 items-center justify-between gap-8">
+          <div className="flex items-center gap-8">
+            <Link href="/admin" className="flex-shrink-0">
+              <Image
+                src="/bunks-logo.svg"
+                alt="Bunks Ops"
+                width={120}
+                height={32}
+                priority
+                className="h-8 w-auto opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </Link>
+
+            <div className="hidden h-5 w-px bg-slate-200 lg:block" />
+
+            <div className="hidden lg:flex items-center gap-6">
+              {NAV_ITEMS.map((item) => {
+                const isActive = item.id === active;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:text-slate-800"
+                      }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {actions}
+          </div>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
       </div>
-    </header>
+    </nav>
   );
 }

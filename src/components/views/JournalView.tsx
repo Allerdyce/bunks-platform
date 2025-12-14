@@ -14,7 +14,7 @@ export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps)
   return (
     <div className="animate-fade-in">
       <div className="bg-gray-900 text-white py-24 px-4 sm:px-6 lg:px-8 text-center mb-16">
-        <h1 className="font-serif text-4xl sm:text-5xl mb-4">Travel Notes</h1>
+        <h1 className="font-serif text-4xl sm:text-5xl mb-4 text-white">Travel Notes</h1>
         <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light">
           Part inspiration, part storytelling, part host perspective.
         </p>

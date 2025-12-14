@@ -11,6 +11,7 @@ import {
   resolveGuestBookUrl,
   sendEmail,
 } from '@/lib/email';
+import { getWeatherForecast } from '@/lib/weather';
 import { PreStay24hEmail } from '@/emails/PreStay24hEmail';
 import { buildReferenceLinks, buildSupportDirectory, getOpsDetails } from '@/lib/opsDetails';
 import { toAbsoluteUrl } from '@/lib/url';
@@ -82,13 +83,24 @@ export async function sendPreStay24hReminder(
   const checkInWindowLabel = opsDetails.checkInWindow ?? 'Check-in after 16:00';
   const nightsLabel = formatNightsLabel(nights);
 
+  let weatherCallout = options.weatherCallout ?? 'Temps dip to the low 30s after sunset—pack layers and boots.';
+
+  // Attempt dynamic weather fetch
+  if (!options.weatherCallout && booking.property.latitude && booking.property.longitude) {
+    const forecast = await getWeatherForecast(booking.property.latitude, booking.property.longitude, checkIn);
+    if (forecast) {
+      weatherCallout = `${forecast.summary} Pack accordingly.`;
+    }
+  }
+
   const html = await renderEmail(
     <PreStay24hEmail
       guestName={booking.guestName}
       propertyName={booking.property.name}
       arrivalWindow={`${formatDateForEmail(checkIn)} · ${checkInWindowLabel} · ${nightsLabel}`}
-      weatherCallout={options.weatherCallout ?? 'Temps dip to the low 30s after sunset—pack layers and boots.'}
-      roadStatus={options.roadStatus ?? 'Highways are clear. Driveway can be slick; AWD recommended after fresh snow.'}
+      weatherCallout={weatherCallout}
+      // Road status removed per user request for accuracy
+      roadStatus={options.roadStatus ?? 'Check local traffic apps for live updates.'}
       checkInGuideUrl={checkInGuideUrl}
       checkInChecklist={buildChecklist(checkIn, checkInWindowLabel)}
       outstandingTasks={options.outstandingTasks ?? ['Share ETA via reply if delayed', 'Double-check you packed swim gear for the hot tub']}

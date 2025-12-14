@@ -38,6 +38,7 @@ export interface SteamboatGuide {
     breakfast: string;
     casualSpot: string;
     brewery: string;
+    otherRestaurants: { name: string; address: string; description?: string }[];
     coffeeShops: { name: string; address: string; description?: string }[];
     barsBreweries: { name: string; description: string; address: string }[];
   };
@@ -282,5 +283,15 @@ export const STEAMBOAT_GUIDE: SteamboatGuide = {
       phone: "(970) 879-1041",
     },
   },
+  qrLinks: [
+    {
+      label: "Download full brochure",
+      description: "QR in the entry console links to the PDF version of this guide for offline access.",
+    },
+    {
+      label: "Wi-Fi + smart home",
+      description: "Scan in the living room to pull up Wi-Fi info, Roku profiles, and Sonos pairing tips.",
+    },
+  ],
 };
 

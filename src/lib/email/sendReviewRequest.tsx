@@ -15,7 +15,12 @@ export async function sendReviewRequest(bookingId: number) {
   if (!booking) {
     throw new Error(`Booking ${bookingId} not found`);
   }
+  return null;
 
+  // FEATURE DISABLED: Review links not yet implemented
+  // return null; // This line was moved
+
+  /*
   const reviewUrl = `${APP_URL}/properties/${booking.property.slug}?review=1&booking=${booking.id}`;
 
   const html = await renderEmail(
@@ -54,4 +59,5 @@ export async function sendReviewRequest(bookingId: number) {
     });
     throw error;
   }
+  */
 }

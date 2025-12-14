@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
 type EmailTypeValue =
-  | 'ADDON_CONFIRMATION'
-  | 'ADDON_NOTIFICATION'
+
   | 'BOOKING_CONFIRMATION'
   | 'BOOKING_MODIFICATION'
   | 'BOOKING_WELCOME'
@@ -12,7 +11,7 @@ type EmailTypeValue =
   | 'DEPOSIT_RELEASE'
   | 'DOOR_CODE_DELIVERY'
   | 'GUEST_REFUND_ISSUED'
-  | 'HOST_ADDON_SOLD'
+
   | 'HOST_BOOKING_MODIFIED'
   | 'HOST_CHARGEBACK'
   | 'HOST_CHECKOUT_CONFIRMED'

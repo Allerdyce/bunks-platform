@@ -6,7 +6,7 @@ import { ReceiptEmail } from '@/emails/ReceiptEmail';
 import { PreStayReminderEmail } from '@/emails/PreStayReminderEmail';
 import { PreStay24hEmail } from '@/emails/PreStay24hEmail';
 import { DoorCodeEmail } from '@/emails/DoorCodeEmail';
-import { AddOnConfirmationEmail } from '@/emails/AddOnConfirmationEmail';
+
 import { MidStayCheckInEmail } from '@/emails/MidStayCheckInEmail';
 import { IssueReportConfirmationEmail } from '@/emails/IssueReportConfirmationEmail';
 import { NoiseWarningEmail } from '@/emails/NoiseWarningEmail';
@@ -20,7 +20,7 @@ import { NoShowNotificationEmail } from '@/emails/NoShowNotificationEmail';
 import { PaymentFailureEmail } from '@/emails/PaymentFailureEmail';
 import { DepositReleaseEmail } from '@/emails/DepositReleaseEmail';
 import { HostNotificationEmail } from '@/emails/HostNotificationEmail';
-import { HostAddOnSoldEmail } from '@/emails/HostAddOnSoldEmail';
+
 import { HostBookingModifiedEmail } from '@/emails/HostBookingModifiedEmail';
 import { HostPrepThreeDayEmail } from '@/emails/HostPrepThreeDayEmail';
 import { HostPrepSameDayEmail } from '@/emails/HostPrepSameDayEmail';
@@ -51,7 +51,7 @@ import {
 	samplePreStayReminderProps,
 	samplePreStay24hProps,
 	sampleDoorCodeProps,
-	sampleAddOnConfirmationProps,
+
 	sampleMidStayCheckInProps,
 	sampleIssueReportConfirmationProps,
 	sampleNoiseWarningProps,
@@ -65,7 +65,7 @@ import {
 	samplePaymentFailureProps,
 	sampleDepositReleaseProps,
 	sampleHostNotificationProps,
-	sampleHostAddOnSoldProps,
+
 	sampleHostBookingModifiedProps,
 	sampleHostPrepThreeDayProps,
 	sampleHostPrepSameDayProps,
@@ -121,10 +121,7 @@ export const TEMPLATE_RENDERERS: Record<string, TemplateRendererEntry> = {
 		render: () => renderEmail(<DoorCodeEmail {...sampleDoorCodeProps()} />),
 		getSampleProps: sampleDoorCodeProps,
 	},
-	'add-on-confirmation': {
-		render: () => renderEmail(<AddOnConfirmationEmail {...sampleAddOnConfirmationProps()} />),
-		getSampleProps: sampleAddOnConfirmationProps,
-	},
+
 	'mid-stay-check-in': {
 		render: () => renderEmail(<MidStayCheckInEmail {...sampleMidStayCheckInProps()} />),
 		getSampleProps: sampleMidStayCheckInProps,
@@ -177,10 +174,7 @@ export const TEMPLATE_RENDERERS: Record<string, TemplateRendererEntry> = {
 		render: () => renderEmail(<HostNotificationEmail {...sampleHostNotificationProps()} />),
 		getSampleProps: sampleHostNotificationProps,
 	},
-	'host-add-on-sold': {
-		render: () => renderEmail(<HostAddOnSoldEmail {...sampleHostAddOnSoldProps()} />),
-		getSampleProps: sampleHostAddOnSoldProps,
-	},
+
 	'host-booking-modified': {
 		render: () => renderEmail(<HostBookingModifiedEmail {...sampleHostBookingModifiedProps()} />),
 		getSampleProps: sampleHostBookingModifiedProps,

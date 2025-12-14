@@ -20,7 +20,7 @@ export function HomeHero({ onExplore }: HomeHeroProps) {
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
         <div className="relative z-10 text-center text-white px-4">
-          <h1 className="font-serif text-4xl sm:text-6xl mb-6">
+          <h1 className="font-serif text-4xl sm:text-6xl mb-6 text-white">
             Curated Stays.
             <br />
             Direct Booking.

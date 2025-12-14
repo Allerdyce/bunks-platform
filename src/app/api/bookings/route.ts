@@ -1,5 +1,5 @@
 // src/app/api/bookings/route.ts
-import type { Prisma, Property as PrismaProperty } from '@prisma/client';
+import { Prisma, Property as PrismaProperty } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -9,27 +9,7 @@ import { isFeatureEnabled } from '@/lib/featureFlags';
 
 export const runtime = 'nodejs';
 
-type IncomingAddonSelection = number | {
-  id?: number;
-  activityDate?: string | null;
-  activityTimeSlot?: string | null;
-};
 
-type CreateBookingBody = {
-  propertySlug: string;
-  checkIn: string;   // 'YYYY-MM-DD' or ISO
-  checkOut: string;  // 'YYYY-MM-DD' or ISO
-  guestName: string;
-  guestEmail: string;
-  guests?: number;
-  addons?: IncomingAddonSelection[];
-};
-
-type NormalizedAddonSelection = {
-  id: number;
-  activityDate?: Date;
-  activityTimeSlot?: string | null;
-};
 
 function normalizeToMidnight(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -41,6 +21,14 @@ function diffInNights(start: Date, end: Date) {
   return Math.max(1, Math.ceil(diffMs / msPerDay));
 }
 
+type CreateBookingBody = {
+  propertySlug: string;
+  checkIn: string;   // 'YYYY-MM-DD' or ISO
+  checkOut: string;  // 'YYYY-MM-DD' or ISO
+  guestName: string;
+  guestEmail: string;
+  guests?: number;
+};
 type PropertyWithRates = {
   weekdayRate?: number | null;
   weekendRate?: number | null;
@@ -174,84 +162,8 @@ function parseActivityDate(value?: string | null) {
   }
 
   const parsed = new Date(year, month - 1, day);
-  if (isNaN(parsed.getTime())) {
-    return null;
-  }
 
   return normalizeToMidnight(parsed);
-}
-
-function isValidTimeSlot(value?: string | null) {
-  if (!value) return false;
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-}
-
-function normalizeAddonSelections(addons: IncomingAddonSelection[] | undefined): NormalizedAddonSelection[] {
-  if (!Array.isArray(addons) || addons.length === 0) {
-    return [];
-  }
-
-  const byId = new Map<number, NormalizedAddonSelection>();
-
-  for (const entry of addons) {
-    let addonId: number | undefined;
-
-    if (typeof entry === 'number') {
-      addonId = entry;
-    } else if (entry && typeof entry === 'object' && typeof entry.id === 'number') {
-      addonId = entry.id;
-    }
-
-    if (!addonId || !Number.isInteger(addonId) || addonId <= 0) {
-      continue;
-    }
-
-    const normalized: NormalizedAddonSelection = { id: addonId };
-
-    if (typeof entry === 'object' && entry !== null) {
-      const activityDate = parseActivityDate(entry.activityDate ?? undefined);
-      if (activityDate) {
-        normalized.activityDate = activityDate;
-      }
-
-      if (typeof entry.activityTimeSlot === 'string' && entry.activityTimeSlot.trim()) {
-        normalized.activityTimeSlot = entry.activityTimeSlot.trim();
-      }
-    }
-
-    byId.set(addonId, normalized);
-  }
-
-  return Array.from(byId.values());
-}
-
-function resolveAddonSchedule(params: {
-  addonTitle: string;
-  selection?: NormalizedAddonSelection;
-  checkInDate: Date;
-  checkOutDate: Date;
-}) {
-  const { addonTitle, selection, checkInDate, checkOutDate } = params;
-
-  const activityDate = selection?.activityDate
-    ? new Date(selection.activityDate.getTime())
-    : new Date(checkInDate.getTime());
-
-  if (activityDate < checkInDate || activityDate >= checkOutDate) {
-    throw new Error(
-      `Activity date for "${addonTitle}" must fall within your stay (${toISODate(checkInDate)}–${toISODate(
-        new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000),
-      )}).`,
-    );
-  }
-
-  const rawTimeSlot = selection?.activityTimeSlot;
-  const candidateTime = typeof rawTimeSlot === 'string' ? rawTimeSlot.trim() : undefined;
-  const activityTimeSlot = candidateTime && isValidTimeSlot(candidateTime)
-    ? candidateTime.slice(0, 5)
-    : DEFAULT_ACTIVITY_TIME_SLOT;
-
-  return { activityDate, activityTimeSlot };
 }
 
 export async function POST(req: NextRequest) {
@@ -259,12 +171,6 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as CreateBookingBody;
 
     const { propertySlug, checkIn, checkOut, guestName, guestEmail } = body;
-    const addonsFeatureEnabled = await isFeatureEnabled('addons');
-    const normalizedAddonSelections = addonsFeatureEnabled ? normalizeAddonSelections(body.addons) : [];
-    const addonIds = normalizedAddonSelections.map((selection) => selection.id);
-    const addonSelectionMap = new Map<number, NormalizedAddonSelection>(
-      normalizedAddonSelections.map((selection) => [selection.id, selection]),
-    );
 
     if (!propertySlug || !checkIn || !checkOut || !guestName || !guestEmail) {
       return NextResponse.json(
@@ -284,12 +190,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (addonIds.length > 6) {
-      return NextResponse.json(
-        { error: 'Too many add-ons requested' },
-        { status: 400 }
-      );
-    }
+
 
     const checkInDate = normalizeToMidnight(new Date(checkIn));
     const checkOutDate = normalizeToMidnight(new Date(checkOut));
@@ -358,6 +259,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 2.5) Check PriceLabs Pricing & Min Stay
+    let priceLabsRates: any[] = [];
+    if ((prisma as any).propertyPricing) {
+      priceLabsRates = await (prisma as any).propertyPricing.findMany({
+        where: {
+          propertyId: property.id,
+          date: {
+            gte: checkInDate,
+            lt: checkOutDate,
+          },
+        },
+      });
+    } else {
+      console.warn('prisma.propertyPricing is undefined. Skipping PriceLabs checks.');
+    }
+
+    const priceLabsByDate = new Map(
+      priceLabsRates.map((rate: any) => [toISODate(rate.date), rate])
+    );
+
+    // Check min stay based on Check-in date rule (common PL pattern)
+    const checkInPricing = priceLabsByDate.get(toISODate(checkInDate));
+    if (checkInPricing?.minNights && nights < checkInPricing.minNights) {
+      return NextResponse.json(
+        {
+          error: 'MINIMUM_STAY',
+          message: `This property requires a minimum stay of ${checkInPricing.minNights} nights for this check-in date.`,
+          minimumNights: checkInPricing.minNights,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (overlappingBooking) {
+      return NextResponse.json(
+        { available: false, reason: 'EXISTING_BOOKING' },
+        { status: 409 }
+      );
+    }
+
     // 3) Assemble nightly pricing with weekday/weekend overrides + special rates
     const specialRates = (await specialRateClient.findMany({
       where: {
@@ -376,7 +317,7 @@ export async function POST(req: NextRequest) {
     const nightlyLineItems: {
       date: string;
       amountCents: number;
-      source: 'SPECIAL' | 'WEEKEND' | 'WEEKDAY';
+      source: 'SPECIAL' | 'WEEKEND' | 'WEEKDAY' | 'PRICELABS';
     }[] = [];
 
     const propertyWithRates = property as PrismaProperty & PropertyWithRates;
@@ -398,17 +339,30 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const source = special
-        ? 'SPECIAL'
-        : isWeekendNight(cursor)
-          ? 'WEEKEND'
-          : 'WEEKDAY';
+      const priceLabs = priceLabsByDate.get(isoDate);
 
-      const amountCents = special
-        ? special.price
-        : isWeekendNight(cursor)
-          ? weekendRate
-          : weekdayRate;
+      if (priceLabs?.isBlocked) {
+        return NextResponse.json(
+          { available: false, reason: 'DATES_BLOCKED' },
+          { status: 409 }
+        );
+      }
+
+      const source = priceLabs
+        ? 'PRICELABS'
+        : special
+          ? 'SPECIAL'
+          : isWeekendNight(cursor)
+            ? 'WEEKEND'
+            : 'WEEKDAY';
+
+      const amountCents = priceLabs
+        ? priceLabs.priceCents
+        : special
+          ? special.price
+          : isWeekendNight(cursor)
+            ? weekendRate
+            : weekdayRate;
 
       nightlyLineItems.push({ date: isoDate, amountCents, source });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
@@ -416,52 +370,11 @@ export async function POST(req: NextRequest) {
 
     const nightlySubtotalCents = nightlyLineItems.reduce((sum, item) => sum + item.amountCents, 0);
 
-    const selectedAddons = addonIds.length && addonsFeatureEnabled
-      ? await prisma.addon.findMany({
-          where: {
-            id: { in: addonIds },
-            propertyId: property.id,
-            isActive: true,
-          },
-        })
-      : [];
 
-    if (selectedAddons.length !== addonIds.length) {
-      return NextResponse.json(
-        { error: 'One or more add-ons are invalid for this property' },
-        { status: 400 }
-      );
-    }
-
-    const resolvedAddonSchedules = new Map<number, { activityDate: Date; activityTimeSlot: string }>();
-
-    for (const addon of selectedAddons) {
-      try {
-        const resolved = resolveAddonSchedule({
-          addonTitle: addon.title,
-          selection: addonSelectionMap.get(addon.id),
-          checkInDate,
-          checkOutDate,
-        });
-        resolvedAddonSchedules.set(addon.id, resolved);
-      } catch (scheduleError: any) {
-        return NextResponse.json(
-          {
-            error:
-              scheduleError instanceof Error
-                ? scheduleError.message
-                : 'Invalid activity scheduling details provided for an add-on',
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    const addonsTotalCents = selectedAddons.reduce((sum, addon) => sum + addon.basePriceCents, 0);
 
     const partySize = Math.max(1, Math.min(body.guests ?? property.maxGuests ?? 1, property.maxGuests ?? 16));
 
-    const totalPriceCents = nightlySubtotalCents + cleaningFeeCents + serviceFeeCents + addonsTotalCents;
+    const totalPriceCents = nightlySubtotalCents + cleaningFeeCents + serviceFeeCents;
 
     // 4) Create booking in DB with PENDING status
     await ensureBookingReferenceColumn();
@@ -488,19 +401,7 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          if (addonsFeatureEnabled && selectedAddons.length) {
-            await tx.bookingAddon.createMany({
-              data: selectedAddons.map((addon) => ({
-                bookingId: createdBooking.id,
-                addonId: addon.id,
-                finalPriceCents: addon.basePriceCents,
-                providerStatus: 'pending-provider',
-                activityDate: resolvedAddonSchedules.get(addon.id)?.activityDate ?? checkInDate,
-                activityTimeSlot:
-                  resolvedAddonSchedules.get(addon.id)?.activityTimeSlot ?? DEFAULT_ACTIVITY_TIME_SLOT,
-              })),
-            });
-          }
+
 
           return createdBooking;
         });
@@ -533,11 +434,7 @@ export async function POST(req: NextRequest) {
       checkOut: checkOutDate.toISOString(),
     };
 
-    if (addonsFeatureEnabled && selectedAddons.length) {
-      paymentMetadata.addon_ids = selectedAddons.map((addon) => addon.id).join(',');
-      paymentMetadata.addon_titles = selectedAddons.map((addon) => addon.title).join('|').slice(0, 400);
-      paymentMetadata.addons_total_cents = addonsTotalCents.toString();
-    }
+
     paymentMetadata.guests = partySize.toString();
 
     paymentMetadata.booking_reference = bookingReference;
@@ -570,19 +467,7 @@ export async function POST(req: NextRequest) {
         cleaningFeeCents,
         serviceFeeCents,
         nightlyLineItems,
-        addonsTotalCents,
-        addonLineItems: selectedAddons.map((addon) => ({
-          id: addon.id,
-          title: addon.title,
-          priceCents: addon.basePriceCents,
-          provider: addon.provider,
-          status: 'pending-provider',
-          confirmationCode: null,
-          activityDate:
-            resolvedAddonSchedules.get(addon.id)?.activityDate?.toISOString() ?? checkInDate.toISOString(),
-          activityTimeSlot:
-            resolvedAddonSchedules.get(addon.id)?.activityTimeSlot ?? DEFAULT_ACTIVITY_TIME_SLOT,
-        })),
+
       },
     });
   } catch (error: any) {

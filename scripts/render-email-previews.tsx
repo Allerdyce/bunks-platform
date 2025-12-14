@@ -4,10 +4,10 @@ import path from 'node:path';
 
 import { renderEmail } from '../src/lib/email/renderEmail';
 import { BookingConfirmationEmail } from '../src/emails/BookingConfirmationEmail';
-import { AddOnConfirmationEmail } from '../src/emails/AddOnConfirmationEmail';
+
 import { BookingWelcomeEmail } from '../src/emails/BookingWelcomeEmail';
 import { BookingModificationEmail } from '../src/emails/BookingModificationEmail';
-import { HostAddOnSoldEmail } from '../src/emails/HostAddOnSoldEmail';
+
 import { HostBookingModifiedEmail } from '../src/emails/HostBookingModifiedEmail';
 import { HostChargebackEmail } from '../src/emails/HostChargebackEmail';
 import { HostCheckoutConfirmedEmail } from '../src/emails/HostCheckoutConfirmedEmail';
@@ -50,11 +50,11 @@ import { ReceiptEmail } from '../src/emails/ReceiptEmail';
 import {
   sampleBookingConfirmationProps,
   sampleBookingWelcomeProps,
-  sampleAddOnConfirmationProps,
+
   sampleHostNotificationProps,
   sampleHostDoorCodeReminderProps,
   sampleHostDamageReportProps,
-  sampleHostAddOnSoldProps,
+
   sampleHostBookingModifiedProps,
   sampleHostCleanerReportProps,
   sampleHostNoiseAlertProps,
@@ -127,11 +127,7 @@ const templates = [
     description: 'Host damage / incident report',
     render: () => renderEmail(<HostDamageReportEmail {...sampleHostDamageReportProps()} />),
   },
-  {
-    filename: 'host-add-on-sold.html',
-    description: 'Host alert · add-on sold',
-    render: () => renderEmail(<HostAddOnSoldEmail {...sampleHostAddOnSoldProps()} />),
-  },
+
   {
     filename: 'host-booking-modified.html',
     description: 'Host booking modification alert',
@@ -302,11 +298,7 @@ const templates = [
     description: 'System alert · payment exception detected',
     render: () => renderEmail(<SystemPaymentExceptionEmail {...sampleSystemPaymentExceptionProps()} />),
   },
-  {
-    filename: 'add-on-confirmation.html',
-    description: 'Guest add-on confirmation',
-    render: () => renderEmail(<AddOnConfirmationEmail {...sampleAddOnConfirmationProps()} />),
-  },
+
   {
     filename: 'review-request.html',
     description: 'Post-stay review request',

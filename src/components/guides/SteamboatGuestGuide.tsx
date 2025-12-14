@@ -55,8 +55,7 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
     },
   ];
   const containerClass = [
-    "max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 py-16 space-y-16",
-    "bg-white rounded-[40px] border border-slate-100 shadow-[0_40px_90px_rgba(15,23,42,0.08)]",
+    "max-w-7xl mx-auto space-y-16",
     className,
   ]
     .filter(Boolean)
@@ -69,8 +68,8 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
   return (
     <div className={containerClass}>
       <header className="bg-slate-900 text-white rounded-3xl p-8 shadow-[0_30px_80px_rgba(15,23,42,0.35)]">
-        <p className={`${subtleLabelClass} text-slate-400`}>Guest Guide</p>
-        <h1 className="font-serif text-3xl sm:text-4xl mt-4">Welcome to {guide.propertyBasics.name}</h1>
+        <p className={`${subtleLabelClass} text-slate-300`}>Guest Guide</p>
+        <h1 className="font-serif text-3xl sm:text-4xl mt-4 text-white">Welcome to {guide.propertyBasics.name}</h1>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-200">
           Steps from the Yampa River and downtown Steamboat, this three-level townhome pairs boutique design with
           lock-and-leave convenience. Bookmark this guide for arrival notes, local favorites, and emergency contacts.
@@ -78,7 +77,7 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
         <div className="mt-6 flex flex-wrap gap-3">
           <a
             href={pdfHref}
-            className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10"
           >
             <FileDown className="w-4 h-4" /> Download full PDF
           </a>
@@ -267,7 +266,10 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
             where to book next.
           </p>
         </div>
-        <div className="rounded-[40px] border border-rose-100/70 bg-gradient-to-r from-rose-50 via-amber-50/70 to-orange-50/60 p-1">
+        <div
+          className="rounded-[40px] border border-rose-100/70 bg-gradient-to-r from-rose-50 via-amber-50/70 to-orange-50/60 p-1"
+          suppressHydrationWarning
+        >
           <div className="rounded-[36px] bg-white/90 p-6 sm:p-8">
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {bestOfSteamboat.map((item) => (
@@ -421,17 +423,17 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
 
       <section id="emergency" className="rounded-3xl border border-slate-900 bg-slate-900 text-white p-6 space-y-4">
         <div>
-          <p className={`${subtleLabelClass} text-slate-400`}>In case of emergency</p>
-          <h2 className="font-serif text-2xl">Important contacts</h2>
+          <p className={`${subtleLabelClass} text-slate-300`}>In case of emergency</p>
+          <h2 className="font-serif text-2xl text-white">Important contacts</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl bg-white/10 p-4">
             <p className="text-sm uppercase tracking-[0.3em] text-slate-300">Medical</p>
-            <p className="mt-2 font-semibold">{guide.emergency.hospital.name}</p>
+            <p className="mt-2 font-semibold text-white">{guide.emergency.hospital.name}</p>
             <p className="text-sm text-slate-200">{guide.emergency.hospital.address}</p>
             <p className="text-sm text-slate-200 mt-1">{guide.emergency.hospital.phone}</p>
             <hr className="border-white/10 my-3" />
-            <p className="font-semibold">{guide.emergency.urgentCare.name}</p>
+            <p className="font-semibold text-white">{guide.emergency.urgentCare.name}</p>
             <p className="text-sm text-slate-200">{guide.emergency.urgentCare.address}</p>
             <p className="text-sm text-slate-200 mt-1">{guide.emergency.urgentCare.phone}</p>
           </div>
@@ -447,7 +449,7 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
         </div>
         <a
           href={pdfHref}
-          className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold hover:bg-white/10"
+          className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10"
         >
           <FileDown className="w-4 h-4" /> Download the full brochure
         </a>

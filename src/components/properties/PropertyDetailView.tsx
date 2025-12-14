@@ -10,6 +10,7 @@ import {
   Bed,
   Car,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   DoorOpen,
   Image as ImageIcon,
@@ -81,7 +82,7 @@ const formatRangeSummary = (range: DateRange) => {
 const formatDateField = (date: Date | null) =>
   date ? date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Add date";
 
-const noopSelectDates: (range: DateRange) => void = () => {};
+const noopSelectDates: (range: DateRange) => void = () => { };
 
 export function PropertyDetailView({
   property,
@@ -153,8 +154,7 @@ export function PropertyDetailView({
   const confirmedTotal = confirmedNights * property.price;
   const pendingTotal = pendingNights * property.price;
   const confirmedRangeSummary = formatRangeSummary(bookingDates);
-  const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${
-      confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
+  const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
     }` : "";
 
   const openCalendarOverlay = () => {
@@ -328,7 +328,7 @@ export function PropertyDetailView({
                 <MapPin className="w-4 h-4" /> {property.location}
               </p>
             </div>
-            <div className="text-right hidden sm:block">
+            <div className="text-right hidden sm:block shrink-0">
               <div className="flex items-center gap-1 justify-end mb-1">
                 <Star className="w-4 h-4 fill-current text-gray-900" />
                 <span className="font-medium text-lg">{property.rating}</span>
@@ -336,7 +336,7 @@ export function PropertyDetailView({
               <button
                 type="button"
                 onClick={openReviewsModal}
-                className="text-sm text-gray-500 underline underline-offset-4 decoration-dotted hover:text-gray-900"
+                className="text-sm text-gray-500 underline underline-offset-4 decoration-dotted hover:text-gray-900 whitespace-nowrap"
               >
                 {reviewCountLabel}
               </button>
@@ -599,17 +599,20 @@ export function PropertyDetailView({
                 <label className="block text-xs font-bold text-gray-800 uppercase mb-1">
                   Guests
                 </label>
-                <select
-                  className="w-full text-sm text-gray-900 bg-transparent border-none outline-none p-0 cursor-pointer"
-                  value={guestCount}
-                  onChange={(event) => onGuestCountChange(Number(event.target.value))}
-                >
-                  {[...Array(property.guests)].map((_, idx) => (
-                    <option key={idx} value={idx + 1}>
-                      {idx + 1} guest{idx > 0 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    className="w-full appearance-none text-sm text-gray-900 bg-transparent border-none outline-none p-0 pr-6 cursor-pointer"
+                    value={guestCount}
+                    onChange={(event) => onGuestCountChange(Number(event.target.value))}
+                  >
+                    {[...Array(property.guests)].map((_, idx) => (
+                      <option key={idx} value={idx + 1}>
+                        {idx + 1} guest{idx > 0 ? "s" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                </div>
               </div>
             </div>
 
@@ -628,9 +631,8 @@ export function PropertyDetailView({
       {calendarOpen && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-gray-900/70 px-0 sm:px-4">
           <div
-            className={`bg-white w-full shadow-2xl flex flex-col ${
-              isMobile ? "rounded-t-3xl max-h-[90vh] overflow-hidden" : "max-w-3xl rounded-3xl overflow-hidden"
-            }`}
+            className={`bg-white w-full shadow-2xl flex flex-col ${isMobile ? "rounded-t-3xl max-h-[90vh] overflow-hidden" : "max-w-3xl rounded-3xl overflow-hidden"
+              }`}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div>

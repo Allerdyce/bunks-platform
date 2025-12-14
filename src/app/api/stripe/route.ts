@@ -1,14 +1,11 @@
 // src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
 import { getStripeClient } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { sendReceiptEmail } from '@/lib/email/sendReceiptEmail';
 import { sendBookingWelcomeEmail } from '@/lib/email/sendBookingWelcomeEmail';
 import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
-import { reserveAddonWithProvider } from '@/lib/providers';
-import type { SupportedProvider } from '@/lib/providers/providerTypes';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 
@@ -141,75 +138,6 @@ export async function POST(req: NextRequest) {
       );
 
       const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails');
-
-      const bookingAddons = await prisma.bookingAddon.findMany({
-        where: { bookingId: booking.id },
-        include: { addon: true },
-      });
-
-      const viatorAddons = bookingAddons.filter(
-        (bookingAddon) => bookingAddon.addon.provider === 'viator'
-      );
-
-      const addonsFeatureEnabled = await isFeatureEnabled('addons');
-
-      if (addonsFeatureEnabled && viatorAddons.length) {
-        const metadataGuests = Number(paymentIntent.metadata?.guests);
-        const partySize = Number.isFinite(metadataGuests) && metadataGuests > 0 ? metadataGuests : 1;
-
-        for (const bookingAddon of viatorAddons) {
-          if (bookingAddon.providerStatus === 'confirmed') {
-            continue;
-          }
-
-          try {
-            const providerResult = await reserveAddonWithProvider({
-              addonId: bookingAddon.addonId,
-              addonSlug: bookingAddon.addon.slug,
-              provider: bookingAddon.addon.provider as SupportedProvider,
-              providerProductId: bookingAddon.addon.providerProductId,
-              checkInDate: booking.checkInDate,
-              checkOutDate: booking.checkOutDate,
-               activityDate: bookingAddon.activityDate ?? booking.checkInDate,
-               activityTimeSlot: bookingAddon.activityTimeSlot ?? null,
-              guestName: booking.guestName,
-              guestEmail: booking.guestEmail,
-              partySize,
-            });
-
-            if (!providerResult) {
-              continue;
-            }
-
-            await prisma.bookingAddon.update({
-              where: { id: bookingAddon.id },
-              data: {
-                providerStatus: providerResult.status ?? 'confirmed',
-                providerConfirmationCode: providerResult.confirmationCode,
-                providerMetadata: (providerResult.rawResponse ?? null) as Prisma.InputJsonValue,
-              },
-            });
-          } catch (providerError) {
-            console.error('Viator reservation failed after payment', {
-              bookingId: booking.id,
-              bookingAddonId: bookingAddon.id,
-              providerError,
-            });
-
-            await prisma.bookingAddon.update({
-              where: { id: bookingAddon.id },
-              data: {
-                providerStatus: 'failed',
-                providerMetadata: {
-                  error: providerError instanceof Error ? providerError.message : String(providerError),
-                } as Prisma.InputJsonValue,
-              },
-            });
-          }
-        }
-      } else if (!addonsFeatureEnabled && viatorAddons.length) {
-        console.info('Add-ons feature disabled; skipping provider reservations.');
-      }
 
       try {
         await sendReceiptEmail(booking.id, {

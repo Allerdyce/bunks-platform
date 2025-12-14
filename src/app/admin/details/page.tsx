@@ -1,11 +1,17 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Lock, LogOut, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Lock, LogOut, RefreshCw } from "lucide-react";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import type { OpsDetails, OpsDetailsInput } from "@/lib/opsDetails/config";
 import { DEFAULT_OPS_DETAILS } from "@/lib/opsDetails/config";
-import { OPS_PRESETS } from "@/data/opsPresets";
+
+type AdminProperty = {
+  id: number;
+  name: string;
+  slug: string;
+};
 
 const FIELD_GROUPS: {
   title: string;
@@ -19,61 +25,91 @@ const FIELD_GROUPS: {
     helper?: string;
   }>;
 }[] = [
-  {
-    title: "Guest support",
-    description: "Primary contact details that surface in guest-facing templates.",
-    fields: [
-      { name: "supportEmail", label: "Primary support email", type: "email", placeholder: "ali@bunks.com" },
-      { name: "supportSmsNumber", label: "SMS / WhatsApp line", type: "tel", placeholder: "+1 (970) 555-0119" },
-    ],
-  },
-  {
-    title: "Ops desk & concierge",
-    description: "Contacts that appear in ops escalations and admin references.",
-    fields: [
-      { name: "opsEmail", label: "Ops desk email", type: "email", placeholder: "ops@bunks.com" },
-      { name: "opsPhone", label: "Ops desk phone", type: "tel", placeholder: "+1 (970) 555-0124" },
-      { name: "opsDeskPhone", label: "Dispatch line", type: "tel", placeholder: "+1 (970) 555-0101" },
-      { name: "opsDeskHours", label: "Ops desk hours", type: "text", placeholder: "07:00–22:00 MT" },
-      { name: "conciergeName", label: "Concierge contact", type: "text", placeholder: "Priya" },
-      { name: "conciergeContact", label: "Concierge channel", type: "text", placeholder: "Slack #host-support" },
-      {
-        name: "conciergeNotes",
-        label: "Concierge notes",
-        type: "text",
-        placeholder: "VIP guest escalations",
-        rows: 2,
-      },
-    ],
-  },
-  {
-    title: "Emergency",
-    description: "Displayed in every guest journey email footer.",
-    fields: [
-      { name: "emergencyContact", label: "Emergency contact", type: "text", placeholder: "911" },
-      { name: "emergencyDetails", label: "Emergency instructions", type: "text", placeholder: "Share property code 8821" },
-    ],
-  },
-  {
-    title: "Standard timing",
-    description: "Defaults for check-in/out copy everywhere.",
-    fields: [
-      { name: "checkInWindow", label: "Check-in window", type: "text", placeholder: "Check-in after 16:00" },
-      { name: "checkOutTime", label: "Checkout timing", type: "text", placeholder: "Checkout by 10:00" },
-    ],
-  },
-  {
-    title: "Reference links",
-    description: "Surface these across welcome + reminder emails.",
-    fields: [
-      { name: "doorCodesDocUrl", label: "Door codes & arrival notes", type: "url", placeholder: "https://" },
-      { name: "arrivalNotesUrl", label: "Arrival overview doc", type: "url", placeholder: "https://" },
-      { name: "liveInstructionsUrl", label: "Live instructions", type: "url", placeholder: "https://" },
-      { name: "recommendationsUrl", label: "Recommendations guide", type: "url", placeholder: "https://" },
-      { name: "guestBookUrl", label: "Global guest book", type: "url", placeholder: "https://" },
-    ],
-  },
-];
+    {
+      title: "Guest support",
+      description: "Primary contact details that surface in guest-facing templates.",
+      fields: [
+        { name: "supportEmail", label: "Primary support email", type: "email", placeholder: "ali@bunks.com" },
+        { name: "supportSmsNumber", label: "SMS / WhatsApp line", type: "tel", placeholder: "+1 (970) 555-0119" },
+      ],
+    },
+    {
+      title: "Ops desk & concierge",
+      description: "Contacts that appear in ops escalations and admin references.",
+      fields: [
+        { name: "opsEmail", label: "Ops desk email", type: "email", placeholder: "ops@bunks.com" },
+        { name: "opsPhone", label: "Ops desk phone", type: "tel", placeholder: "+1 (970) 555-0124" },
+        { name: "opsDeskPhone", label: "Dispatch line", type: "tel", placeholder: "+1 (970) 555-0101" },
+        { name: "opsDeskHours", label: "Ops desk hours", type: "text", placeholder: "07:00–22:00 MT" },
+        { name: "conciergeName", label: "Concierge contact", type: "text", placeholder: "Priya" },
+        { name: "conciergeContact", label: "Concierge channel", type: "text", placeholder: "Slack #host-support" },
+        {
+          name: "conciergeNotes",
+          label: "Concierge notes",
+          type: "text",
+          placeholder: "VIP guest escalations",
+          rows: 2,
+        },
+      ],
+    },
+    {
+      title: "Emergency",
+      description: "Displayed in every guest journey email footer.",
+      fields: [
+        { name: "emergencyContact", label: "Emergency contact", type: "text", placeholder: "911" },
+        { name: "emergencyDetails", label: "Emergency instructions", type: "text", placeholder: "Share property code 8821" },
+      ],
+    },
+    {
+      title: "Standard timing",
+      description: "Defaults for check-in/out copy everywhere.",
+      fields: [
+        { name: "checkInWindow", label: "Check-in window", type: "text", placeholder: "Check-in after 16:00" },
+        { name: "checkOutTime", label: "Checkout timing", type: "text", placeholder: "Checkout by 10:00" },
+      ],
+    },
+    {
+      title: "Reference links",
+      description: "Surface these across welcome + reminder emails.",
+      fields: [
+        {
+          name: "doorCodesDocUrl",
+          label: "Door codes & arrival notes",
+          type: "url",
+          placeholder: "https://",
+          helper: "Feeds the 'Door codes & arrival notes' link in guest welcome + reminder emails.",
+        },
+        {
+          name: "arrivalNotesUrl",
+          label: "Arrival overview doc",
+          type: "url",
+          placeholder: "https://",
+          helper: "Used for the 'Arrival overview' CTA (route tips, parking, contingencies).",
+        },
+        {
+          name: "liveInstructionsUrl",
+          label: "Live instructions",
+          type: "url",
+          placeholder: "https://",
+          helper: "Primary 'Open live instructions' link with smart lock, parking, and Wi-Fi steps.",
+        },
+        {
+          name: "recommendationsUrl",
+          label: "Recommendations guide",
+          type: "url",
+          placeholder: "https://",
+          helper: "Appears as 'Browse recommendations' in guest communications.",
+        },
+        {
+          name: "guestBookUrl",
+          label: "Global guest book",
+          type: "url",
+          placeholder: "https://",
+          helper: "Supplies the 'Open the guest book' link (FAQs, itineraries, and local intel).",
+        },
+      ],
+    },
+  ];
 
 const toFormState = (details?: OpsDetails | null): OpsDetailsInput => ({
   ...DEFAULT_OPS_DETAILS,
@@ -93,11 +129,9 @@ export default function AdminOpsDetailsPage() {
   const [initialForm, setInitialForm] = useState<OpsDetailsInput>(DEFAULT_OPS_DETAILS);
   const [metadata, setMetadata] = useState<{ updatedAt?: string | null }>({});
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPresetSlug, setSelectedPresetSlug] = useState(() => OPS_PRESETS[0]?.slug ?? "");
-  const selectedPreset = useMemo(
-    () => OPS_PRESETS.find((preset) => preset.slug === selectedPresetSlug) ?? OPS_PRESETS[0],
-    [selectedPresetSlug],
-  );
+
+  const [properties, setProperties] = useState<AdminProperty[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | "global">("global");
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -108,7 +142,10 @@ export default function AdminOpsDetailsPage() {
           return;
         }
         setAuthState("authenticated");
-        await loadDetails();
+
+        // Load properties in parallel
+        void fetchProperties();
+        await loadDetails("global");
       } catch (err) {
         console.error("Failed to bootstrap admin session", err);
         setAuthState("unauthenticated");
@@ -118,11 +155,25 @@ export default function AdminOpsDetailsPage() {
     bootstrap();
   }, []);
 
-  const loadDetails = async () => {
+  const fetchProperties = async () => {
+    try {
+      const res = await fetch("/api/admin/properties", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setProperties(data.properties ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load properties", err);
+    }
+  };
+
+  const loadDetails = async (propertyId: number | "global") => {
     setFetching(true);
     setError(null);
+    setStatus(null);
     try {
-      const res = await fetch("/api/admin/ops-details", { credentials: "include" });
+      const queryString = propertyId === "global" ? "" : `?propertyId=${propertyId}`;
+      const res = await fetch(`/api/admin/ops-details${queryString}`, { credentials: "include" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         throw new Error((payload as { error?: string }).error ?? "Failed to load ops details");
@@ -138,6 +189,13 @@ export default function AdminOpsDetailsPage() {
     } finally {
       setFetching(false);
     }
+  };
+
+  const handlePropertyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    const nextId = value === "global" ? "global" : parseInt(value, 10);
+    setSelectedPropertyId(nextId);
+    void loadDetails(nextId);
   };
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -156,7 +214,8 @@ export default function AdminOpsDetailsPage() {
         throw new Error((payload as { error?: string }).error ?? "Invalid credentials");
       }
       setAuthState("authenticated");
-      await loadDetails();
+      void fetchProperties();
+      await loadDetails(selectedPropertyId);
     } catch (err) {
       setAuthState("unauthenticated");
       setError((err as Error)?.message ?? "Login failed");
@@ -172,39 +231,8 @@ export default function AdminOpsDetailsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadDetails();
+    await loadDetails(selectedPropertyId);
     setRefreshing(false);
-  };
-
-  const handlePresetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedPresetSlug(event.target.value);
-  };
-
-  const applyPreset = (mode: "missing" | "all") => {
-    if (!selectedPreset) {
-      return;
-    }
-
-    setForm((current) => {
-      const next = { ...current } as OpsDetailsInput;
-      (Object.entries(selectedPreset.defaults) as Array<[
-        keyof OpsDetailsInput,
-        OpsDetailsInput[keyof OpsDetailsInput] | null | undefined,
-      ]>).forEach(([field, value]) => {
-        if (typeof value === "undefined" || value === null) {
-          return;
-        }
-
-        const existing = next[field];
-        if (mode === "missing" && typeof existing === "string" && existing.trim().length > 0) {
-          return;
-        }
-
-        next[field] = value as OpsDetailsInput[keyof OpsDetailsInput];
-      });
-      return next;
-    });
-    setStatus(null);
   };
 
   const handleFieldChange = (name: keyof OpsDetailsInput, value: string) => {
@@ -223,11 +251,16 @@ export default function AdminOpsDetailsPage() {
     setStatus(null);
     setError(null);
     try {
+      const payload = {
+        ...form,
+        propertyId: selectedPropertyId === "global" ? undefined : selectedPropertyId,
+      };
+
       const res = await fetch("/api/admin/ops-details", {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -299,223 +332,164 @@ export default function AdminOpsDetailsPage() {
     );
   }
 
+  const DetailsPageActions = () => (
+    <>
+      <button
+        onClick={handleRefresh}
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:border-slate-400"
+        disabled={fetching || refreshing}
+      >
+        {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+        Refresh
+      </button>
+      <button
+        onClick={handleLogout}
+        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+      >
+        <LogOut className="w-4 h-4" /> Logout
+      </button>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
-      <AdminTopNav
-        active="details"
-        title="Ops reference data"
-        subtitle="Centralize guest support contacts, concierge info, and reference links once."
-        actions={
-          <>
-            <button
-              onClick={handleRefresh}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:border-slate-400"
-              disabled={fetching || refreshing}
-            >
-              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Refresh
-            </button>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-              <LogOut className="w-4 h-4" /> Logout
-            </button>
-          </>
-        }
-      />
+      <AdminTopNav active="details" actions={<DetailsPageActions />} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+      <main className="w-full px-6 lg:px-12 mt-8">
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <div className="mb-8 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
             <AlertCircle className="w-4 h-4" /> {error}
           </div>
         )}
 
-        {OPS_PRESETS.length > 0 && (
-          <section className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Property presets</p>
-                <h2 className="mt-2 text-2xl font-serif text-slate-900">Apply property-specific links & codes</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Select a property to surface the operational data we already store (guest guide URLs, host contacts,
-                  Wi-Fi, and door codes). You can drop these directly into the global ops fields below.
-                </p>
-              </div>
-              <div className="flex w-full flex-col gap-2 md:w-72">
-                <label className="text-sm font-medium text-slate-700">Property</label>
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+          {/* LEFT COL: Header & Context */}
+          <div className="space-y-6 lg:col-span-4 lg:sticky lg:top-24">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bunks Ops</p>
+              <h1 className="text-2xl font-serif text-slate-900 mt-1">Ops reference data</h1>
+              <p className="text-sm text-slate-500">Centralize guest support contacts, concierge info, and reference links once.</p>
+            </div>
+
+            {/* Property Selector */}
+            <div className="pt-2">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Scope</label>
+              <div className="mt-2 relative">
                 <select
-                  value={selectedPresetSlug ?? ""}
-                  onChange={handlePresetChange}
-                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none"
+                  value={selectedPropertyId}
+                  onChange={handlePropertyChange}
+                  className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-3 pl-4 pr-10 text-sm font-medium text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                 >
-                  {OPS_PRESETS.map((preset) => (
-                    <option key={preset.slug} value={preset.slug}>
-                      {preset.label}
+                  <option value="global">Global (Default)</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.slug})
                     </option>
                   ))}
                 </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <ChevronDown className="h-4 w-4" />
+                </div>
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {selectedPropertyId === "global"
+                  ? "Editing default values for all properties."
+                  : "Editing overrides for this specific property."}
+              </p>
             </div>
 
-            {selectedPreset && (
-              <div className="space-y-5">
-                {selectedPreset.description && (
-                  <p className="text-sm text-slate-500">{selectedPreset.description}</p>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => applyPreset("missing")}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400"
-                  >
-                    Fill empty fields with this preset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyPreset("all")}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 hover:border-violet-400"
-                  >
-                    Overwrite with preset values
-                  </button>
-                </div>
-
-                {selectedPreset.essentials.length > 0 && (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {selectedPreset.essentials.map((item) => (
-                      <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{item.label}</p>
-                        <p className="mt-2 font-serif text-xl text-slate-900">{item.value}</p>
-                        {item.helper && <p className="mt-1 text-sm text-slate-500">{item.helper}</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {selectedPreset.quickLinks.length > 0 && (
-                  <div className="flex flex-wrap gap-3">
-                    {selectedPreset.quickLinks.map((link) => (
-                      <a
-                        key={link.href}
-                        href={link.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:border-slate-400"
-                      >
-                        <div className="flex flex-col text-left">
-                          <span className="font-semibold text-slate-900">{link.label}</span>
-                          {link.description && <span className="text-xs text-slate-500">{link.description}</span>}
-                        </div>
-                        <span className="text-slate-400">↗</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+              <div>
+                <h3 className="font-serif text-lg text-slate-900">Keep every email in sync</h3>
+                <p className="mt-1 text-sm text-slate-500 leading-relaxed">
+                  Update once and these values flow into booking confirmations, reminders, and host notifications.
+                </p>
               </div>
-            )}
-          </section>
-        )}
-
-        <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Global system data</p>
-            <h2 className="mt-2 text-2xl font-serif text-slate-900">Keep every email in sync</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Update once and these values flow into booking confirmations, reminders, and host notifications.
-            </p>
-            {metadata.updatedAt && (
-              <p className="mt-2 text-xs text-slate-400">Last updated {new Date(metadata.updatedAt).toLocaleString()}</p>
-            )}
-          </div>
-
-          <form className="p-6 space-y-8" onSubmit={handleSubmit}>
-            {FIELD_GROUPS.map((group) => (
-              <div key={group.title} className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{group.title}</h3>
-                  {group.description && <p className="text-sm text-slate-500">{group.description}</p>}
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {group.fields.map((field) => {
-                    const value = form[field.name] ?? "";
-                    const isTextArea = (field.rows ?? 0) > 1;
-                    const presetValue = (selectedPreset?.defaults?.[field.name] ?? null) as string | null;
-                    return (
-                      <label key={field.name as string} className="flex flex-col gap-1 text-sm text-slate-600">
-                        <span className="font-medium text-slate-800">{field.label}</span>
-                        {isTextArea ? (
-                          <textarea
-                            rows={field.rows}
-                            value={value}
-                            placeholder={field.placeholder}
-                            onChange={(event) => handleFieldChange(field.name, event.target.value)}
-                            className="rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none"
-                          />
-                        ) : (
-                          <input
-                            type={field.type ?? "text"}
-                            value={value}
-                            placeholder={field.placeholder}
-                            onChange={(event) => handleFieldChange(field.name, event.target.value)}
-                            className="rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none"
-                          />
-                        )}
-                        {field.helper && <span className="text-xs text-slate-400">{field.helper}</span>}
-                        {presetValue && presetValue !== value && (
-                          <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                            <span className="truncate">Preset: {presetValue}</span>
-                            <button
-                              type="button"
-                              className="shrink-0 text-violet-600 hover:text-violet-500"
-                              onClick={() => handleFieldChange(field.name, presetValue)}
-                            >
-                              Use preset
-                            </button>
-                          </div>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={saving || !hasChanges}
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  Save changes
-                </button>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400 disabled:opacity-60"
-                  disabled={!hasChanges || saving}
-                >
-                  Reset
-                </button>
-              </div>
-              {status && (
-                <div
-                  className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium ${
-                    status.type === "success"
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {status.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  {status.text}
+              {metadata.updatedAt && (
+                <div className="pt-4 border-t border-slate-100">
+                  <p className="text-xs text-slate-400">Last updated {new Date(metadata.updatedAt).toLocaleString()}</p>
                 </div>
               )}
             </div>
-          </form>
-        </section>
+          </div>
+
+          {/* RIGHT COL: Form */}
+          <div className="lg:col-span-8">
+            <form className="space-y-8 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8" onSubmit={handleSubmit}>
+              {FIELD_GROUPS.map((group) => (
+                <div key={group.title} className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">{group.title}</h3>
+                    {group.description && <p className="text-sm text-slate-500">{group.description}</p>}
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {group.fields.map((field) => {
+                      const value = form[field.name] ?? "";
+                      const isTextArea = (field.rows ?? 0) > 1;
+                      return (
+                        <label key={field.name as string} className="flex flex-col gap-1 text-sm text-slate-600">
+                          <span className="font-medium text-slate-800">{field.label}</span>
+                          {isTextArea ? (
+                            <textarea
+                              rows={field.rows}
+                              value={value}
+                              placeholder={field.placeholder}
+                              onChange={(event) => handleFieldChange(field.name, event.target.value)}
+                              className="rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none"
+                            />
+                          ) : (
+                            <input
+                              type={field.type ?? "text"}
+                              value={value}
+                              placeholder={field.placeholder}
+                              onChange={(event) => handleFieldChange(field.name, event.target.value)}
+                              className="rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none"
+                            />
+                          )}
+                          {field.helper && <span className="text-xs text-slate-400">{field.helper}</span>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={saving || !hasChanges}
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Save changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400 disabled:opacity-60"
+                    disabled={!hasChanges || saving}
+                  >
+                    Reset
+                  </button>
+                </div>
+                {status && (
+                  <div
+                    className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium ${status.type === "success"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-red-50 text-red-600"
+                      }`}
+                  >
+                    {status.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    {status.text}
+                  </div>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
       </main>
     </div>
   );
 }
+

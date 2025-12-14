@@ -1,0 +1,57 @@
+{
+  "name": "Airbnb-Inspired System",
+  "version": "1.0.0",
+  "tokens": {
+    "colors": {
+      "brand": {
+        "primary": { "value": "#03363d", "type": "color" },
+        "hover": { "value": "#022a30", "type": "color" },
+        "light": { "value": "#0a4e57", "type": "color" }
+      },
+      "text": {
+        "primary": { "value": "#222222", "type": "color" },
+        "secondary": { "value": "#717171", "type": "color" },
+        "inverted": { "value": "#FFFFFF", "type": "color" }
+      },
+      "ui": {
+        "border": { "value": "#DDDDDD", "type": "color" },
+        "borderHover": { "value": "#222222", "type": "color" },
+        "background": { "value": "#FFFFFF", "type": "color" },
+        "backgroundAlt": { "value": "#F7F7F7", "type": "color" },
+        "overlay": { "value": "rgba(255, 255, 255, 0.8)", "type": "color" }
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "base": { "value": "Poppins, sans-serif", "type": "fontFamily" }
+      },
+      "weights": {
+        "light": { "value": 300, "type": "fontWeight" },
+        "regular": { "value": 400, "type": "fontWeight" },
+        "medium": { "value": 500, "type": "fontWeight" },
+        "semibold": { "value": 600, "type": "fontWeight" },
+        "bold": { "value": 700, "type": "fontWeight" }
+      },
+      "sizes": {
+        "xs": { "value": "12px", "type": "fontSize" },
+        "sm": { "value": "14px", "type": "fontSize" },
+        "base": { "value": "16px", "type": "fontSize" },
+        "lg": { "value": "18px", "type": "fontSize" },
+        "xl": { "value": "20px", "type": "fontSize" },
+        "2xl": { "value": "24px", "type": "fontSize" },
+        "3xl": { "value": "32px", "type": "fontSize" }
+      }
+    },
+    "borderRadius": {
+      "sm": { "value": "4px", "type": "borderRadius" },
+      "md": { "value": "8px", "type": "borderRadius" },
+      "lg": { "value": "12px", "type": "borderRadius" },
+      "full": { "value": "9999px", "type": "borderRadius" }
+    },
+    "shadows": {
+      "brand": { "value": "0 6px 16px rgba(3, 54, 61, 0.15)", "type": "boxShadow" },
+      "floating": { "value": "0 4px 10px rgba(3, 54, 61, 0.2)", "type": "boxShadow" },
+      "card": { "value": "0 2px 4px rgba(0,0,0,0.08)", "type": "boxShadow" }
+    }
+  }
+}

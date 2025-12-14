@@ -3,7 +3,7 @@ import { TEMPLATE_RENDERERS } from '@/lib/email/templateRenderers';
 import { renderSubjectWithSample, buildSampleSubject } from '@/lib/email/subjectHelpers';
 import { getEmailSubject } from '@/lib/email/subjects';
 import { TemplateControls } from './TemplateControls';
-import { STATUS_STYLES } from './statusStyles';
+
 import type { TemplatePreview } from './types';
 import { AdminTopNav } from '@/components/admin/AdminTopNav';
 import { EmailPageActions } from './EmailPageActions';
@@ -13,18 +13,18 @@ const STATUS_ORDER: EmailTemplateSpec['status'][] = ['shipped', 'in-progress', '
 async function buildPreviews(): Promise<TemplatePreview[]> {
   return Promise.all(
     EMAIL_TEMPLATES.map(async (spec) => {
-    const renderer = TEMPLATE_RENDERERS[spec.slug];
-    const sampleProps = renderer?.getSampleProps();
-    const subject = sampleProps
-      ? renderSubjectWithSample(spec.slug, sampleProps)
-      : getEmailSubject(spec.slug) ?? null;
-    const sampleSubject = sampleProps ? buildSampleSubject(spec.slug, sampleProps) : null;
-    return {
-      spec,
+      const renderer = TEMPLATE_RENDERERS[spec.slug];
+      const sampleProps = renderer?.getSampleProps();
+      const subject = sampleProps
+        ? renderSubjectWithSample(spec.slug, sampleProps)
+        : getEmailSubject(spec.slug) ?? null;
+      const sampleSubject = sampleProps ? buildSampleSubject(spec.slug, sampleProps) : null;
+      return {
+        spec,
         html: renderer ? await renderer.render() : null,
-      subject,
-      sampleSubject,
-    };
+        subject,
+        sampleSubject,
+      };
     }),
   );
 }
@@ -55,56 +55,19 @@ export default async function EmailPreviewGallery() {
     return acc;
   }, {});
   const totalTemplates = previews.length;
-  const statusCounts = previews.reduce<Record<EmailTemplateSpec['status'], number>>(
-    (acc, preview) => {
-      acc[preview.spec.status] += 1;
-      return acc;
-    },
-    STATUS_ORDER.reduce(
-      (acc, status) => {
-        acc[status] = 0;
-        return acc;
-      },
-      {} as Record<EmailTemplateSpec['status'], number>,
-    ),
-  );
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
-      <AdminTopNav
-        active="emails"
-        title="React Email previews"
-        subtitle={`${totalTemplates}-email catalog for Guest, host and system.`}
-        actions={<EmailPageActions />}
-      />
+      <AdminTopNav active="emails" actions={<EmailPageActions />} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600">Email System</p>
-          <h1 className="mt-3 text-2xl font-serif text-slate-900">React Email previews</h1>
-          <p className="mt-2 text-sm text-slate-600 max-w-3xl">
-            {totalTemplates}-email catalog. Implemented templates render below.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {STATUS_ORDER.map((status) => (
-              <div
-                key={status}
-                className="inline-flex items-center rounded-full border px-4 py-1 text-sm font-semibold"
-                style={{
-                  borderColor: STATUS_STYLES[status].border,
-                  background: STATUS_STYLES[status].background,
-                  color: STATUS_STYLES[status].color,
-                }}
-              >
-                {STATUS_STYLES[status].label}: {statusCounts[status]}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div id="template-controls">
-          <TemplateControls templates={templateControls} previewMap={previewMap} />
+      <main className="w-full px-6 lg:px-12 mt-8 space-y-8">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bunks Ops</p>
+          <h1 className="text-2xl font-serif text-slate-900 mt-1">Email System</h1>
+          <p className="text-sm text-slate-500">Manage automated guest and host communications.</p>
         </div>
+
+        <TemplateControls templates={templateControls} previewMap={previewMap} />
       </main>
     </div>
   );

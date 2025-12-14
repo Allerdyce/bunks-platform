@@ -10,6 +10,7 @@ export interface HostNotificationEmailProps {
   checkOutDate: string;
   nights: number;
   totalPayout: string;
+  addOns?: { name: string; notes?: string }[];
   checklistItems?: string[];
   calendarUrl?: string;
   specialRequests?: string;
@@ -24,6 +25,7 @@ export function HostNotificationEmail(props: HostNotificationEmailProps) {
     checkOutDate,
     nights,
     totalPayout,
+    addOns,
     checklistItems,
     calendarUrl,
     specialRequests,
@@ -75,6 +77,22 @@ export function HostNotificationEmail(props: HostNotificationEmailProps) {
             Special requests
           </Heading>
           <Text className="text-sm text-[#475467]">{specialRequests}</Text>
+        </Section>
+      )}
+
+      {addOns && addOns.length > 0 && (
+        <Section className="mt-6">
+          <Heading as="h3" className="text-lg font-semibold text-[#111827]">
+            Add-ons & services
+          </Heading>
+          <ul className="mt-2 list-disc pl-5 text-sm text-[#475467]">
+            {addOns.map((addOn) => (
+              <li key={addOn.name}>
+                <span className="font-semibold text-[#1D2939]">{addOn.name}</span>
+                {addOn.notes ? <span className="text-[#475467]"> — {addOn.notes}</span> : null}
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 

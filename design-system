@@ -1,0 +1,501 @@
+import React, { useState } from 'react';
+import { 
+  Search, 
+  Globe, 
+  Menu, 
+  User, 
+  Heart, 
+  Star, 
+  Share, 
+  MapPin, 
+  Calendar, 
+  Minus, 
+  Plus, 
+  ChevronRight,
+  Filter,
+  Check
+} from 'lucide-react';
+
+const AirbnbStyleSystem = () => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [hoveredSearchItem, setHoveredSearchItem] = useState(null); // Added for Hero Search interaction
+
+  // --- Theme Configuration (Simulating Tokens) ---
+  // In a real token output, these would be exported as JSON/CSS Variables
+  const colors = {
+    brand: 'bg-[#03363d]', // UPDATED to Dark Teal
+    brandHover: 'hover:bg-[#022a30]', // UPDATED hover state
+    textMain: 'text-[#222222]',
+    textSecondary: 'text-[#717171]',
+    border: 'border-[#DDDDDD]',
+    borderHover: 'hover:border-[#222222]',
+    bgLight: 'bg-[#F7F7F7]',
+  };
+
+  const Section = ({ title, children, className = "" }) => (
+    <div className={`mb-16 border-b border-gray-100 pb-12 last:border-0 ${className}`}>
+      <h2 className="text-2xl font-semibold mb-8 text-gray-900 flex items-center gap-2">
+        <span className="w-2 h-8 bg-[#03363d] rounded-full inline-block"></span> {/* UPDATED color */}
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+
+  const ComponentCard = ({ title, children, code, className = "" }) => (
+    <div className={`flex flex-col gap-4 ${className}`}>
+      <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</div>
+      <div className="p-8 border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow duration-300 flex items-center justify-center min-h-[160px] relative overflow-hidden group">
+        <div className="absolute inset-0 bg-grid-slate-50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none"></div>
+        <div className="relative z-10 w-full flex justify-center">{children}</div>
+      </div>
+      {code && (
+        <code className="text-xs bg-gray-50 p-3 rounded-lg text-gray-600 font-mono overflow-x-auto border border-gray-100">
+          {code}
+        </code>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white font-['Poppins'] text-[#222222] pb-24">
+      {/* Font Loader */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+      `}</style>
+
+      {/* Header */}
+      <header className="border-b border-gray-200 sticky top-0 z-50 bg-white/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[#03363d]"> {/* UPDATED color */}
+            <svg viewBox="0 0 32 32" fill="currentColor" className="w-8 h-8 block">
+              <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533 1.025c1.954 3.83 6.114 12.54 7.1 14.836l.145.353c.667 1.591.91 3.162.723 4.691-.263 2.156-1.265 3.99-3.033 5.435-1.748 1.428-4.008 2.191-6.22 2.191-2.21 0-4.47-.763-6.219-2.191-1.768-1.445-2.77-3.279-3.033-5.435-.187-1.529.056-3.1.723-4.691l.145-.353c.986-2.296 5.146-11.006 7.1-14.836l.533-1.025C12.537 1.963 13.992 1 16 1zm0 2c-1.239 0-2.053.539-2.987 2.211-.065.122-4.145 8.169-7.056 14.872-.51 1.175-.685 2.253-.556 3.308.196 1.603.951 3.012 2.304 4.118 1.341 1.096 3.123 1.691 4.995 1.691 1.87 0 3.653-.595 4.995-1.691 1.353-1.106 2.108-2.515 2.304-4.118.129-1.055-.046-2.133-.556-3.308-2.911-6.703-6.991-14.75-7.056-14.872C18.053 3.539 17.239 3 16 3zm0 13a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"></path>
+            </svg>
+            <span className="text-xl font-bold tracking-tight text-[#03363d]">airbnb<span className="text-gray-400 font-normal text-sm ml-2">system</span></span> {/* UPDATED color */}
+          </div>
+          <div className="flex gap-4">
+             <button className="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium hover:bg-gray-200 transition">Download Tokens</button>
+             <button className="px-4 py-2 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition">Export Code</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        
+        <div className="mb-12">
+           <h1 className="text-4xl font-bold mb-4">Design System Discovery</h1>
+           <p className="text-xl text-gray-500 max-w-2xl">
+             A collection of atoms, molecules, and organisms extracted from the visual style of Airbnb, using Poppins and Tailwind CSS.
+           </p>
+        </div>
+
+        {/* 1. Color & Typography */}
+        <Section title="Colors & Typography">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            
+            {/* Colors */}
+            <div>
+              <h3 className="text-lg font-semibold mb-6">Base Palette</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-[#03363d] shadow-sm"></div> {/* UPDATED color */}
+                  <div>
+                    <div className="font-semibold">Brand Primary</div>
+                    <code className="text-xs text-gray-500">bg-[#03363d]</code> {/* UPDATED text */}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-[#222222] shadow-sm"></div>
+                  <div>
+                    <div className="font-semibold">Text Main</div>
+                    <code className="text-xs text-gray-500">text-[#222222]</code>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-[#717171] shadow-sm"></div>
+                  <div>
+                    <div className="font-semibold">Text Secondary</div>
+                    <code className="text-xs text-gray-500">text-[#717171]</code>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-[#DDDDDD] border border-gray-200 shadow-sm"></div>
+                  <div>
+                    <div className="font-semibold">Border / Line</div>
+                    <code className="text-xs text-gray-500">border-[#DDDDDD]</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Typography */}
+            <div>
+              <h3 className="text-lg font-semibold mb-6">Typography Scale</h3>
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-4xl font-bold">Heading XL</h1>
+                  <div className="text-xs text-gray-400 mt-1">Poppins Bold / 36px</div>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold">Heading L</h2>
+                  <div className="text-xs text-gray-400 mt-1">Poppins Semibold / 24px</div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium">Heading M</h3>
+                  <div className="text-xs text-gray-400 mt-1">Poppins Medium / 20px</div>
+                </div>
+                <div>
+                  <p className="text-base text-[#222222]">Body Regular - The quick brown fox jumps over the lazy dog. Used for main content descriptions.</p>
+                  <div className="text-xs text-gray-400 mt-1">Poppins Regular / 16px</div>
+                </div>
+                 <div>
+                  <p className="text-sm text-[#717171]">Caption - Used for secondary text, metadata, and hints.</p>
+                  <div className="text-xs text-gray-400 mt-1">Poppins Regular / 14px</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* 2. Buttons & Interactives */}
+        <Section title="Buttons & Interactives">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ComponentCard title="Primary Button" code="bg-[#03363d] hover:bg-[#022a30] text-white rounded-lg"> {/* UPDATED text */}
+              <button className="bg-[#03363d] hover:bg-[#022a30] text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 w-full sm:w-auto text-center shadow-[0_6px_16px_rgba(3,54,61,0.15)]"> {/* UPDATED color */}
+                Reserve
+              </button>
+            </ComponentCard>
+
+            <ComponentCard title="Outline Button" code="border border-[#222222] hover:bg-gray-50 rounded-lg">
+              <button className="border border-[#222222] text-[#222222] hover:bg-gray-50 px-6 py-3 rounded-lg font-semibold transition-all duration-200">
+                Show all photos
+              </button>
+            </ComponentCard>
+
+            <ComponentCard title="Filter Chip" code="border hover:border-black rounded-full">
+              <div className="flex gap-2">
+                 <button className="border border-[#DDDDDD] px-4 py-2 rounded-full text-sm font-medium hover:border-black transition-colors">
+                  Wifi
+                 </button>
+                 <button className="border border-black bg-gray-50 px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                  Kitchen
+                 </button>
+              </div>
+            </ComponentCard>
+
+            <ComponentCard title="Like Toggle" code="stroke-white fill-black/50 vs fill-[#03363d]">
+               <div className="flex gap-4">
+                 <button className="relative hover:scale-110 transition-transform">
+                    <Heart className="w-7 h-7 stroke-white fill-black/50 stroke-[2]" />
+                 </button>
+                 <button className="relative hover:scale-110 transition-transform">
+                    <Heart className="w-7 h-7 text-[#03363d] fill-[#03363d]" /> {/* UPDATED color */}
+                 </button>
+               </div>
+            </ComponentCard>
+
+            <ComponentCard title="Round Icon Button" code="rounded-full border hover:shadow-md">
+              <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:shadow-md transition-shadow">
+                <Share className="w-4 h-4 text-[#222222]" />
+              </button>
+            </ComponentCard>
+
+             <ComponentCard title="Quantity Stepper" code="rounded-full border w-8 h-8">
+              <div className="flex items-center gap-3">
+                 <button className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-400 hover:border-black hover:text-black disabled:opacity-50">
+                   <Minus className="w-4 h-4" />
+                 </button>
+                 <span className="w-4 text-center font-medium">4</span>
+                 <button className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-black hover:text-black">
+                   <Plus className="w-4 h-4" />
+                 </button>
+              </div>
+            </ComponentCard>
+          </div>
+        </Section>
+
+        {/* 3. Inputs & Forms */}
+        <Section title="Inputs & Form Elements">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             
+             <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-500 mb-2">Standard Input (Floating Label)</div>
+                <div className="relative group">
+                  <input 
+                    type="text" 
+                    id="loc" 
+                    className="peer w-full p-4 pt-6 font-light bg-white border border-[#B0B0B0] rounded-xl outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+                    placeholder=" "
+                  />
+                  <label 
+                    htmlFor="loc" 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base duration-150 origin-[0] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-[-50%] peer-focus:scale-75 peer-focus:-translate-y-3 peer-focus:top-4 peer-[:not(:placeholder-shown)]:scale-75 peer-[:not(:placeholder-shown)]:-translate-y-3 peer-[:not(:placeholder-shown)]:top-4 pointer-events-none"
+                  >
+                    Location
+                  </label>
+                  {/* UPDATED: Changed top/translate logic to perfectly center the label when inactive (placeholder-shown) */}
+                </div>
+             </div>
+
+             <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-500 mb-2">Search Bar (Small)</div>
+                <div className="flex items-center border border-[#DDDDDD] rounded-full p-2 pl-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex-1 font-medium text-sm text-[#222222] truncate">Start your search</div>
+                  <div className="bg-[#03363d] p-2 rounded-full text-white"> {/* UPDATED color */}
+                    <Search className="w-4 h-4 stroke-[3]" />
+                  </div>
+                </div>
+             </div>
+
+             <div className="space-y-2 md:col-span-2">
+                <div className="text-sm font-medium text-gray-500 mb-2">Big Search Bar (Hero)</div>
+                <div 
+                  className="flex flex-col md:flex-row border border-[#DDDDDD] rounded-full bg-white shadow-lg max-w-3xl"
+                  onMouseLeave={() => setHoveredSearchItem(null)}
+                >
+                   {/* Item 1: Where */}
+                   <div 
+                     className="flex-1 px-8 py-3.5 hover:bg-gray-100 rounded-full cursor-pointer relative group"
+                     onMouseEnter={() => setHoveredSearchItem(0)}
+                   >
+                      <div className="text-xs font-bold text-[#222222]">Where</div>
+                      <div className="text-sm text-[#717171] truncate">Search destinations</div>
+                      <div className={`absolute right-0 top-3 h-8 w-[1px] bg-[#DDDDDD] transition-opacity duration-200 ${hoveredSearchItem === 0 || hoveredSearchItem === 1 ? 'opacity-0' : 'opacity-100'}`}></div>
+                   </div>
+
+                   {/* Item 2: Check in */}
+                   <div 
+                     className="flex-1 px-8 py-3.5 hover:bg-gray-100 rounded-full cursor-pointer relative group"
+                     onMouseEnter={() => setHoveredSearchItem(1)}
+                   >
+                      <div className="text-xs font-bold text-[#222222]">Check in</div>
+                      <div className="text-sm text-[#717171] truncate">Add dates</div>
+                      <div className={`absolute right-0 top-3 h-8 w-[1px] bg-[#DDDDDD] transition-opacity duration-200 ${hoveredSearchItem === 1 || hoveredSearchItem === 2 ? 'opacity-0' : 'opacity-100'}`}></div>
+                   </div>
+
+                   {/* Item 3: Check out */}
+                    <div 
+                      className="flex-1 px-8 py-3.5 hover:bg-gray-100 rounded-full cursor-pointer relative group"
+                      onMouseEnter={() => setHoveredSearchItem(2)}
+                    >
+                      <div className="text-xs font-bold text-[#222222]">Check out</div>
+                      <div className="text-sm text-[#717171] truncate">Add dates</div>
+                      <div className={`absolute right-0 top-3 h-8 w-[1px] bg-[#DDDDDD] transition-opacity duration-200 ${hoveredSearchItem === 2 || hoveredSearchItem === 3 ? 'opacity-0' : 'opacity-100'}`}></div>
+                   </div>
+
+                   {/* Item 4: Who */}
+                   <div 
+                     className="flex-[1.3] pl-8 pr-2 py-2 hover:bg-gray-100 rounded-full cursor-pointer flex items-center justify-between"
+                     onMouseEnter={() => setHoveredSearchItem(3)}
+                   >
+                      <div className="flex flex-col">
+                         <div className="text-xs font-bold text-[#222222]">Who</div>
+                         <div className="text-sm text-[#717171] truncate">Add guests</div>
+                      </div>
+                      <button className="bg-[#03363d] hover:bg-[#022a30] text-white p-4 rounded-full transition-colors flex items-center justify-center shadow-[0_4px_10px_rgba(3,54,61,0.2)]">
+                         <Search className="w-4 h-4 stroke-[3]" />
+                      </button>
+                   </div>
+                   {/* UPDATED: Added React state 'hoveredSearchItem' to control opacity of separators based on adjacent hovers */}
+                </div>
+             </div>
+
+           </div>
+        </Section>
+
+        {/* 4. Navigation Organisms */}
+        <Section title="Navigation Molecules">
+           <div className="space-y-8">
+              
+              <div className="border rounded-xl p-4 bg-white">
+                 <div className="text-sm text-gray-500 mb-4">Global Navbar User Menu</div>
+                 <div className="flex justify-end">
+                    <div className="flex items-center gap-2 border border-[#DDDDDD] rounded-full p-1 pl-3 hover:shadow-md transition-shadow cursor-pointer bg-white">
+                       <Menu className="w-4 h-4 text-[#222222]" />
+                       <div className="bg-[#717171] text-white rounded-full p-1 overflow-hidden">
+                          <User className="w-6 h-6 fill-current relative top-1" />
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="border rounded-xl p-4 bg-white">
+                 <div className="text-sm text-gray-500 mb-4">Category Filter Bar</div>
+                 <div className="flex items-center gap-8 overflow-x-auto pb-4 no-scrollbar">
+                    {['Islands', 'National parks', 'Cabins', 'OMG!', 'Camping', 'Tiny homes', 'Lakefront', 'Arctic'].map((item, idx) => (
+                       <div key={idx} className={`flex flex-col items-center gap-2 min-w-[64px] cursor-pointer group ${idx === 0 ? 'border-b-2 border-black pb-2' : 'pb-2 border-b-2 border-transparent hover:border-gray-200'}`}>
+                          <div className={`w-6 h-6 ${idx === 0 ? 'opacity-100' : 'opacity-50 group-hover:opacity-100'} transition-opacity`}>
+                             {/* Placeholder icons using simple shapes as stand-ins */}
+                             <div className="w-full h-full bg-gray-300 rounded-sm"></div>
+                          </div>
+                          <span className={`text-xs font-medium whitespace-nowrap ${idx === 0 ? 'text-black' : 'text-[#717171] group-hover:text-black'}`}>{item}</span>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+
+           </div>
+        </Section>
+
+        {/* 5. Cards & Listings */}
+        <Section title="Cards & Listings">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              {/* Listing Card 1 */}
+              <div className="group cursor-pointer">
+                 <div className="relative aspect-square overflow-hidden rounded-xl bg-gray-200 mb-3">
+                    <img 
+                      src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80" 
+                      alt="House" 
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3">
+                       <Heart className="w-6 h-6 fill-black/50 text-white stroke-[2]" />
+                    </div>
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold shadow-sm">
+                       Guest favorite
+                    </div>
+                 </div>
+                 <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-[#222222]">Joshua Tree, California</h3>
+                    <div className="flex items-center gap-1">
+                       <Star className="w-3 h-3 fill-black" />
+                       <span className="text-sm font-light">4.98</span>
+                    </div>
+                 </div>
+                 <p className="text-[#717171] text-sm">Desert views</p>
+                 <p className="text-[#717171] text-sm">Oct 22 - 27</p>
+                 <div className="mt-1 flex items-baseline gap-1">
+                    <span className="font-semibold text-[#222222]">$245</span>
+                    <span className="text-[#222222]">night</span>
+                 </div>
+              </div>
+
+              {/* Listing Card 2 */}
+              <div className="group cursor-pointer">
+                 <div className="relative aspect-square overflow-hidden rounded-xl bg-gray-200 mb-3">
+                    <img 
+                      src="https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=80" 
+                      alt="Cabin" 
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3">
+                       <Heart className="w-6 h-6 fill-black/50 text-white stroke-[2]" />
+                    </div>
+                 </div>
+                 <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-[#222222]">Abiansemal, Indonesia</h3>
+                    <div className="flex items-center gap-1">
+                       <Star className="w-3 h-3 fill-black" />
+                       <span className="text-sm font-light">4.85</span>
+                    </div>
+                 </div>
+                 <p className="text-[#717171] text-sm">2,876 kilometers away</p>
+                 <p className="text-[#717171] text-sm">Nov 5 - 12</p>
+                 <div className="mt-1 flex items-baseline gap-1">
+                    <span className="font-semibold text-[#222222]">$154</span>
+                    <span className="text-[#222222]">night</span>
+                 </div>
+              </div>
+
+              {/* Horizontal Wide Card (Checkout/Trips style) */}
+              <div className="col-span-1 md:col-span-2 border rounded-xl overflow-hidden flex flex-row">
+                 <div className="w-1/3 bg-gray-200 relative">
+                     <img 
+                      src="https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=800&q=80" 
+                      alt="Interior" 
+                      className="object-cover w-full h-full absolute inset-0"
+                    />
+                 </div>
+                 <div className="w-2/3 p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Entire apartment</div>
+                      <h3 className="font-semibold text-lg text-[#222222] leading-tight mb-2">Modern Loft in Downtown</h3>
+                      <div className="flex gap-1 text-sm text-[#222222] mb-4">
+                        <span>2 guests</span> · <span>1 bedroom</span> · <span>1 bath</span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                         <div className="bg-gray-100 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1">
+                           <Star className="w-3 h-3 fill-black" /> 5.0
+                         </div>
+                         <span className="text-xs text-[#717171] underline">128 reviews</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-end mt-4">
+                       <div className="text-sm text-[#222222]"><span className="font-bold">$120</span> / night</div>
+                    </div>
+                 </div>
+              </div>
+
+           </div>
+        </Section>
+        
+        {/* 6. Utility Components */}
+        <Section title="Utility Components">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* Review Block */}
+              <div className="border rounded-xl p-6 shadow-sm">
+                 <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                       <img src="https://i.pravatar.cc/150?img=32" alt="User" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                       <h4 className="font-semibold text-[#222222]">Sarah</h4>
+                       <div className="text-sm text-[#717171]">October 2023</div>
+                    </div>
+                 </div>
+                 <p className="text-[#222222] leading-relaxed">
+                    "Absolutely stunning property! The views were breathtaking and the host was incredibly responsive. Would definitely stay here again."
+                 </p>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="border rounded-xl p-6 shadow-sm">
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-semibold"><span className="font-bold">$125</span> <span className="text-base font-normal text-[#717171]">night</span></h3>
+                    <div className="flex items-center gap-1 text-xs font-semibold">
+                       <Star className="w-3 h-3 fill-black" /> 4.98 · <span className="text-[#717171] underline">124 reviews</span>
+                    </div>
+                 </div>
+                 <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-[#222222] underline decoration-gray-300">
+                       <span>$125 x 5 nights</span>
+                       <span>$625</span>
+                    </div>
+                    <div className="flex justify-between text-[#222222] underline decoration-gray-300">
+                       <span>Cleaning fee</span>
+                       <span>$50</span>
+                    </div>
+                    <div className="flex justify-between text-[#222222] underline decoration-gray-300">
+                       <span>Service fee</span>
+                       <span>$90</span>
+                    </div>
+                 </div>
+                 <div className="pt-4 border-t border-gray-200 flex justify-between font-semibold text-lg">
+                    <span>Total before taxes</span>
+                    <span>$765</span>
+                 </div>
+              </div>
+
+           </div>
+        </Section>
+
+      </main>
+
+      <footer className="bg-gray-50 border-t border-gray-200 py-12 px-6">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-[#222222]">
+            <div className="mb-4 md:mb-0">© 2023 Airbnb Clone System, Inc.</div>
+            <div className="flex gap-6">
+               <a href="#" className="hover:underline">Privacy</a>
+               <a href="#" className="hover:underline">Terms</a>
+               <a href="#" className="hover:underline">Sitemap</a>
+            </div>
+         </div>
+      </footer>
+    </div>
+  );
+};
+
+export default AirbnbStyleSystem;

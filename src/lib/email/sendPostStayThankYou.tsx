@@ -120,10 +120,10 @@ export async function sendPostStayThankYou(bookingId: number, options: PostStayT
       propertyName={booking.property.name}
       stayDates={stayDates}
       heroCopy={options.heroCopy}
-      memoryHighlights={options.memoryHighlights ?? defaultHighlights(booking.property.name)}
-      futureStayOffer={options.futureStayOffer ?? defaultOffer()}
-      referral={options.referral ?? defaultReferral()}
-      upcomingReasons={options.upcomingReasons ?? defaultUpcomingReasons(booking.property.name)}
+      memoryHighlights={[]} // Removed hardcoded fake highlights
+      futureStayOffer={undefined} // Removed invalid coupon code
+      referral={undefined} // Removed broken referral link
+      upcomingReasons={[]} // Removed generic reasons
       housekeepingFollowUp={options.housekeepingFollowUp}
       photoGalleryUrl={options.photoGalleryUrl}
       reviewUrl={options.reviewUrl}

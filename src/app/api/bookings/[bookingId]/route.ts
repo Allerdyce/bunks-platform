@@ -34,10 +34,6 @@ export async function GET(
       where: { publicReference: bookingReference },
       include: {
         property: true,
-        addons: {
-          include: { addon: true },
-          orderBy: { createdAt: "asc" },
-        },
       },
     });
 
@@ -64,17 +60,6 @@ export async function GET(
           guestBookUrl: booking.property.guestBookUrl ?? null,
           hostSupportEmail: booking.property.hostSupportEmail ?? null,
         },
-        addons: booking.addons.map((bookingAddon) => ({
-          id: bookingAddon.id,
-          title: bookingAddon.addon.title,
-          provider: bookingAddon.addon.provider,
-          providerStatus: bookingAddon.providerStatus,
-          providerConfirmationCode: bookingAddon.providerConfirmationCode,
-          providerMetadata: bookingAddon.providerMetadata ?? null,
-          finalPriceCents: bookingAddon.finalPriceCents,
-          activityDate: bookingAddon.activityDate?.toISOString() ?? null,
-          activityTimeSlot: bookingAddon.activityTimeSlot ?? null,
-        })),
       },
     });
   } catch (error) {

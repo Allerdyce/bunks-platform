@@ -31,7 +31,7 @@ export function BlogPostView({ post, relatedPosts, onBack, onOpenPost }: BlogPos
               <span>•</span>
               <span>{post.date}</span>
             </div>
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4">{post.title}</h1>
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4 text-white">{post.title}</h1>
           </div>
         </div>
       </div>

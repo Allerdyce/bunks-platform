@@ -13,6 +13,8 @@ model Property {
   name              String
   slug              String        @unique
   airbnbIcalUrl     String
+  latitude          Float?
+  longitude         Float?
   baseNightlyRate   Int
   cleaningFee       Int           @default(8500)
   maxGuests         Int
@@ -36,10 +38,26 @@ model Property {
   parkingNotes      String?
   houseRules        Json?
   emergencyContacts Json?
-  addons            Addon[]
   blockedDates      BlockedDate[]
   bookings          Booking[]
   specialRates      SpecialRate[]
+  opsProfiles       OpsContactProfile[]
+  pricelabsListingId String? @unique
+  pricing           PropertyPricing[]
+}
+
+model PropertyPricing {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int
+  property    Property @relation(fields: [propertyId], references: [id])
+  date        DateTime
+  priceCents  Int
+  minNights   Int?
+  isBlocked   Boolean  @default(false)
+  source      String   @default("pricelabs")
+  updatedAt   DateTime @default(now())
+
+  @@unique([propertyId, date])
 }
 
 model Booking {
@@ -59,8 +77,40 @@ model Booking {
   reviewRequestSentAt         DateTime?
   publicReference             String?        @unique @db.VarChar(32)
   property                    Property       @relation(fields: [propertyId], references: [id])
-  addons                      BookingAddon[]
   emailLogs                   EmailLog[]
+  conversation                Conversation?
+}
+
+model Conversation {
+  id         Int        @id @default(autoincrement())
+  bookingId  Int        @unique
+  booking    Booking    @relation(fields: [bookingId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  messages   Message[]
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       Int
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  sentAt         DateTime     @default(now())
+  readAt         DateTime?
+
+  @@index([conversationId, sentAt])
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  role      UserRole  @default(GUEST)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
 }
 
 model BlockedDate {
@@ -97,41 +147,7 @@ model EmailLog {
   booking   Booking?    @relation(fields: [bookingId], references: [id])
 }
 
-model Addon {
-  id                Int            @id @default(autoincrement())
-  propertyId        Int
-  slug              String         @unique
-  title             String
-  description       String
-  category          String
-  provider          String
-  providerProductId String?
-  basePriceCents    Int
-  currency          String         @default("USD")
-  durationMinutes   Int?
-  imageUrl          String?
-  isActive          Boolean        @default(true)
-  createdAt         DateTime       @default(now())
-  property          Property       @relation(fields: [propertyId], references: [id])
-  bookings          BookingAddon[]
-}
 
-model BookingAddon {
-  id                       Int       @id @default(autoincrement())
-  bookingId                Int
-  addonId                  Int
-  finalPriceCents          Int
-  createdAt                DateTime  @default(now())
-  providerConfirmationCode String?
-  providerMetadata         Json?
-  providerStatus           String    @default("pending")
-  activityDate             DateTime?
-  activityTimeSlot         String?
-  addon                    Addon     @relation(fields: [addonId], references: [id])
-  booking                  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  @@unique([bookingId, addonId])
-}
 
 model OpsContactProfile {
   id                  Int      @id @default(autoincrement())
@@ -155,6 +171,8 @@ model OpsContactProfile {
   checkOutTime        String?  @default("Checkout by 10:00")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  propertyId          Int?
+  property            Property? @relation(fields: [propertyId], references: [id])
 }
 
 model FeatureToggle {
@@ -177,8 +195,7 @@ enum BlockSource {
 }
 
 enum EmailType {
-  ADDON_CONFIRMATION
-  ADDON_NOTIFICATION
+
   BOOKING_CONFIRMATION
   BOOKING_MODIFICATION
   BOOKING_WELCOME
@@ -188,7 +205,7 @@ enum EmailType {
   DEPOSIT_RELEASE
   DOOR_CODE_DELIVERY
   GUEST_REFUND_ISSUED
-  HOST_ADDON_SOLD
+
   HOST_BOOKING_MODIFIED
   HOST_CHARGEBACK
   HOST_CHECKOUT_CONFIRMED
@@ -228,4 +245,10 @@ enum EmailType {
 enum EmailStatus {
   SENT
   FAILED
+}
+
+enum UserRole {
+  GUEST
+  HOST
+  ADMIN
 }

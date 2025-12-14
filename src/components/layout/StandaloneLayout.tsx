@@ -39,5 +39,9 @@ export function StandaloneLayout({ children }: PropsWithChildren) {
     }
   };
 
-  return <Layout onNavigate={handleNavigate}>{children}</Layout>;
+  return (
+    <Layout onNavigate={handleNavigate} currentView="home">
+      {children}
+    </Layout>
+  );
 }

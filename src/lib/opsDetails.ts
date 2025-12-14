@@ -64,9 +64,12 @@ export function parseOpsDetailsPayload(payload: unknown): OpsDetailsInput {
   return result;
 }
 
-export async function getOpsDetails(): Promise<OpsDetails> {
+export async function getOpsDetails(propertyId?: number): Promise<OpsDetails> {
   try {
-    const record = await prisma.opsContactProfile.findFirst({ orderBy: { id: 'asc' } });
+    const record = await prisma.opsContactProfile.findFirst({
+      where: { propertyId: propertyId ?? null },
+      orderBy: { id: 'asc' },
+    });
     return normalizeRecord(record);
   } catch (error) {
     console.error('[opsDetails] Failed to load ops contact profile', error);
@@ -74,14 +77,23 @@ export async function getOpsDetails(): Promise<OpsDetails> {
   }
 }
 
-export async function upsertOpsDetails(input: OpsDetailsInput): Promise<OpsDetails> {
+export async function upsertOpsDetails(input: OpsDetailsInput, propertyId?: number): Promise<OpsDetails> {
   try {
-    const existing = await prisma.opsContactProfile.findFirst({ orderBy: { id: 'asc' } });
+    const existing = await prisma.opsContactProfile.findFirst({
+      where: { propertyId: propertyId ?? null },
+      orderBy: { id: 'asc' },
+    });
+
     if (existing) {
-      const updated = await prisma.opsContactProfile.update({ where: { id: existing.id }, data: input });
+      const updated = await prisma.opsContactProfile.update({
+        where: { id: existing.id },
+        data: input,
+      });
       return normalizeRecord(updated);
     }
-    const created = await prisma.opsContactProfile.create({ data: input });
+    const created = await prisma.opsContactProfile.create({
+      data: { ...input, propertyId: propertyId ?? null },
+    });
     return normalizeRecord(created);
   } catch (error) {
     console.error('[opsDetails] Failed to persist ops contact profile', error);

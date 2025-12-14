@@ -1,9 +1,9 @@
-import { AddOnConfirmationEmailProps } from '@/emails/AddOnConfirmationEmail';
+
 import { BookingConfirmationEmailProps } from '@/emails/BookingConfirmationEmail';
 import { BookingWelcomeEmailProps } from '@/emails/BookingWelcomeEmail';
 import { BookingModificationEmailProps } from '@/emails/BookingModificationEmail';
 import { DoorCodeEmailProps } from '@/emails/DoorCodeEmail';
-import { HostAddOnSoldEmailProps } from '@/emails/HostAddOnSoldEmail';
+
 import { HostBookingModifiedEmailProps } from '@/emails/HostBookingModifiedEmail';
 import { HostChargebackEmailProps } from '@/emails/HostChargebackEmail';
 import { HostCheckoutConfirmedEmailProps } from '@/emails/HostCheckoutConfirmedEmail';
@@ -471,54 +471,7 @@ export function sampleHostDamageReportProps(): HostDamageReportEmailProps {
   };
 }
 
-// NOTE: Host add-on alerts are currently parked while the add-on marketplace feature flag is disabled.
-// Sample data remains available so previews continue working for future relaunch prep.
-export function sampleHostAddOnSoldProps(): HostAddOnSoldEmailProps {
-  return {
-    hostName: 'Ali',
-    propertyName: 'Summit Ridge Cabin',
-    guestName: 'Maya Bennett',
-    stayDates: 'Feb 14 – Feb 18 · 4 nights',
-    addOnName: 'Private chef dinner',
-    addOnWindow: 'Fri · 19:00 – 21:30 MT',
-    providerName: 'Chef Alonzo Collective',
-    providerContact: 'Chef Alonzo · +1 (970) 555-0440',
-    guestPrice: '$620.00',
-    hostShare: '$420.00',
-    bunksFee: '$200.00',
-    payoutDate: 'Feb 16',
-    tasks: [
-      {
-        label: 'Stage dining room table',
-        owner: 'Priya / Ops',
-        due: 'Fri · 16:00',
-        status: 'pending',
-        note: 'Set six place settings + chill sparkling water.',
-      },
-      {
-        label: 'Confirm chef arrival access',
-        owner: 'Chef Alonzo',
-        status: 'ready',
-        note: 'Use garage keypad 7711 · Sprinter arrives 18:30.',
-      },
-    ],
-    supplies: [
-      { label: 'Butane canisters', status: 'stocked', note: '3 full canisters in pantry.' },
-      { label: 'Charcuterie board', status: 'in-transit', note: 'Delivering with grocery run at 15:00.' },
-    ],
-    notes: [
-      'Guest flagged nut allergy – chef adjusted dessert course.',
-      'Driveway needs quick shovel at 18:00 so Sprinter can park.',
-    ],
-    contacts: [
-      { label: 'Concierge', value: 'Priya · +1 (970) 555-0101', note: 'Night-of add-on escalations' },
-      { label: 'Chef contact', value: 'Chef Alonzo · +1 (970) 555-0440' },
-    ],
-    attachments: [
-      { label: 'Add-on order detail', href: 'https://bunks.com/admin/bookings/12432/add-ons', description: 'Internal notes + pricing' },
-    ],
-  };
-}
+
 
 export function sampleHostBookingModifiedProps(): HostBookingModifiedEmailProps {
   return {
@@ -1052,61 +1005,7 @@ export function sampleDoorCodeProps(): DoorCodeEmailProps {
       email: 'ops@bunks.com',
       phone: '+1 (970) 555-0124',
       concierge: '+1 (970) 555-0901',
-      note: 'On-site ops is 12 minutes away if you need hands-on help.',
-    },
-  };
-}
 
-// NOTE: Guest add-on confirmations are parked while the add-on marketplace feature flag is disabled.
-// Keep sample props for design review + eventual relaunch.
-export function sampleAddOnConfirmationProps(): AddOnConfirmationEmailProps {
-  return {
-    guestName: 'Maya',
-    propertyName: 'Summit Ridge Cabin',
-    arrivalDate: 'Fri, Feb 14 · After 16:00',
-    addOns: [
-      {
-        name: 'Private chef dinner',
-        summary: 'Chef Alonzo prepares a five-course alpine menu in your kitchen for four guests.',
-        status: 'confirmed',
-        scheduledFor: 'Friday · Chef arrives 18:00 · Dinner served 19:00',
-        meetingPoint: 'Kitchen · have the island cleared before arrival',
-        provider: 'Bunks Culinary Collective',
-        price: '$620.00',
-        note: 'Text allergies by 10:00 day-of so the team can adjust the menu.',
-      },
-      {
-        name: 'Slope shuttle',
-        summary: 'Round-trip Sprinter shuttle from the driveway to Steamboat Square.',
-        status: 'scheduled',
-        scheduledFor: 'Daily · Pick-up 08:00 · Return 16:30',
-        meetingPoint: 'Driveway · watch for black Sprinter with Bunks magnet',
-        provider: 'Summit Transit Partners',
-        price: '$320.00',
-      },
-      {
-        name: 'Grocery stock-up',
-        summary: 'Local provisioning with beverages chilled and pantry labeled before arrival.',
-        status: 'in progress',
-        scheduledFor: 'Delivery by 15:00 on check-in day',
-        meetingPoint: 'Groceries staged in kitchen + beverage fridge',
-        provider: 'Forage & Fire Provisioning',
-        price: '$185.00',
-        note: 'Reply with any swaps at least 24h prior so sourcing can adjust.',
-      },
-    ],
-    manageAddOnsUrl: 'https://bunks.com/bookings/ABC123/addons',
-    guestBookUrl: 'https://bunks.com/guestbook/summit-ridge',
-    total: '$1,125.00',
-    paymentMethod: 'Visa •• 4242',
-    chargedAt: 'Nov 20, 2025 · 10:12 MT',
-    cancellationWindow: '48 hours before each service window',
-    checklist: ['Share final dietary notes for chef dinner', 'Confirm daily shuttle passenger count', 'Text grocery substitutions if needed'],
-    support: {
-      email: 'concierge@bunks.com',
-      phone: '+1 (970) 555-0119',
-      concierge: '+1 (970) 555-0458',
-      note: 'On-site concierge averages 5-minute replies between 07:00–22:00 MT.',
     },
   };
 }
@@ -1287,65 +1186,65 @@ export function sampleBookingModificationProps(): BookingModificationEmailProps 
   };
 }
 
-  export function sampleCancellationConfirmationProps(): CancellationConfirmationEmailProps {
-    return {
-      guestName: 'Maya Bennett',
-      propertyName: 'Summit Ridge Cabin',
-      stayDates: 'Feb 15 – Feb 19, 2025',
-      bookingId: 48291,
-      cancelledAt: 'Wed · Jan 29 · 09:42 MT',
-      cancellationInitiator: 'Guest via self-serve portal',
-      cancellationReason: 'Flight cancellations ahead of the incoming storm system',
-      refundTotal: '$1,820.00',
-      refundMethod: 'Visa •• 4242',
-      refundTimeline: '3–5 business days',
-      statementDescriptor: 'Bunks*SummitRidge',
-      refundLineItems: [
-        { label: 'Nightly charges (3 nights)', amount: '$1,560.00', note: '$520/night refunded in full' },
-        { label: 'Cleaning fee', amount: '$180.00' },
-        {
-          label: 'Service fee retained',
-          amount: '$80.00',
-          note: 'Retained per flexible policy inside 14 days',
-          retained: true,
-        },
-        {
-          label: 'Private chef deposit',
-          amount: '$40.00',
-          note: 'Kitchen already sourced ingredients',
-          retained: true,
-        },
-      ],
-      policyHighlights: [
-        {
-          title: 'Flexible policy window',
-          detail: 'Full refund up to 14 days prior; afterwards service fees + vendor deposits may be retained.',
-        },
-        {
-          title: 'Weather credit',
-          detail: '50% credit toward a future stay when cancellations are due to confirmed travel disruptions.',
-        },
-      ],
-      rebookingOffer: {
-        headline: 'Ready to reschedule when you are',
-        description: 'Apply a $350 credit toward any Bunks stay when you rebook within 60 days.',
-        ctaLabel: 'Browse new dates',
-        ctaUrl: 'https://bunks.com/properties',
-        note: 'Credit auto-applies once you sign in with this booking email.',
+export function sampleCancellationConfirmationProps(): CancellationConfirmationEmailProps {
+  return {
+    guestName: 'Maya Bennett',
+    propertyName: 'Summit Ridge Cabin',
+    stayDates: 'Feb 15 – Feb 19, 2025',
+    bookingId: 48291,
+    cancelledAt: 'Wed · Jan 29 · 09:42 MT',
+    cancellationInitiator: 'Guest via self-serve portal',
+    cancellationReason: 'Flight cancellations ahead of the incoming storm system',
+    refundTotal: '$1,820.00',
+    refundMethod: 'Visa •• 4242',
+    refundTimeline: '3–5 business days',
+    statementDescriptor: 'Bunks*SummitRidge',
+    refundLineItems: [
+      { label: 'Nightly charges (3 nights)', amount: '$1,560.00', note: '$520/night refunded in full' },
+      { label: 'Cleaning fee', amount: '$180.00' },
+      {
+        label: 'Service fee retained',
+        amount: '$80.00',
+        note: 'Retained per flexible policy inside 14 days',
+        retained: true,
       },
-      extraNotes: [
-        'We triggered refunds at 09:42 MT; your bank controls final posting speed.',
-        'Reply if you would like us to hold the same home for alternative February dates.',
-        'Travel insurance providers often request this email as proof of cancellation—feel free to forward it.',
-      ],
-      support: {
-        email: 'hello@bunks.com',
-        phone: '+1 (970) 555-0119',
-        concierge: '+1 (970) 555-0458',
-        note: 'Concierge replies in under 10 minutes during 07:00–22:00 MT.',
+      {
+        label: 'Private chef deposit',
+        amount: '$40.00',
+        note: 'Kitchen already sourced ingredients',
+        retained: true,
       },
-    };
-  }
+    ],
+    policyHighlights: [
+      {
+        title: 'Flexible policy window',
+        detail: 'Full refund up to 14 days prior; afterwards service fees + vendor deposits may be retained.',
+      },
+      {
+        title: 'Weather credit',
+        detail: '50% credit toward a future stay when cancellations are due to confirmed travel disruptions.',
+      },
+    ],
+    rebookingOffer: {
+      headline: 'Ready to reschedule when you are',
+      description: 'Apply a $350 credit toward any Bunks stay when you rebook within 60 days.',
+      ctaLabel: 'Browse new dates',
+      ctaUrl: 'https://bunks.com/properties',
+      note: 'Credit auto-applies once you sign in with this booking email.',
+    },
+    extraNotes: [
+      'We triggered refunds at 09:42 MT; your bank controls final posting speed.',
+      'Reply if you would like us to hold the same home for alternative February dates.',
+      'Travel insurance providers often request this email as proof of cancellation—feel free to forward it.',
+    ],
+    support: {
+      email: 'hello@bunks.com',
+      phone: '+1 (970) 555-0119',
+      concierge: '+1 (970) 555-0458',
+      note: 'Concierge replies in under 10 minutes during 07:00–22:00 MT.',
+    },
+  };
+}
 
 export function sampleNoShowNotificationProps(): NoShowNotificationEmailProps {
   return {
@@ -1507,31 +1406,31 @@ export function samplePostStayThankYouProps(): PostStayThankYouEmailProps {
 export function sampleCheckoutReminderProps(): CheckoutReminderEmailProps {
   const checkoutSlice = getSteamboatCheckoutSlice();
   return {
-      guestName: 'Maya',
-      propertyName: STEAMBOAT_GUIDE.propertyBasics.name,
-      checkoutDate: 'Tue, Feb 18',
-      checkoutTime: STEAMBOAT_GUIDE.propertyBasics.checkOutTime,
-      cleanerArrivalWindow: 'Cleaners arrive 10:30–11:00',
-      lateCheckoutNote: 'Need a late checkout? Reply here and we’ll confirm availability.',
-      weatherCallout: 'Snow showers expected tomorrow evening—allow extra time if you’re driving over Rabbit Ears Pass.',
-      propertyAddress: STEAMBOAT_GUIDE.propertyBasics.address,
-      directionsUrl: 'https://maps.apple.com/?address=45%206th%20Street,%20Steamboat%20Springs',
-      parkingNote: STEAMBOAT_GUIDE.checkinCheckout.parking,
-      keySteps: checkoutSlice.checkoutSteps,
-      lockupSteps: checkoutSlice.lockupSteps,
-      trashNote: checkoutSlice.trashNote,
-      kitchenReminders: ['Clean coffee carafe + grinders', 'Wipe fridge shelves if spills'],
-      laundryReminders: ['Start one load of towels if you have time', 'Leave duvets folded on beds'],
-      addOnReturns: [
-        { title: 'Baby gear rental', detail: 'Leave crib + high-chair in the downstairs bedroom.', status: 'Pickup 12:30' },
-      ],
-      support: {
-        email: 'stay@bunks.com',
-        phone: STEAMBOAT_GUIDE.propertyBasics.hosts[0].phone,
-        concierge: STEAMBOAT_GUIDE.propertyBasics.hosts[1].phone,
-        note: 'Text for last-minute questions—we reply in under 5 minutes.',
-      },
-    };
+    guestName: 'Maya',
+    propertyName: STEAMBOAT_GUIDE.propertyBasics.name,
+    checkoutDate: 'Tue, Feb 18',
+    checkoutTime: STEAMBOAT_GUIDE.propertyBasics.checkOutTime,
+    cleanerArrivalWindow: 'Cleaners arrive 10:30–11:00',
+    lateCheckoutNote: 'Need a late checkout? Reply here and we’ll confirm availability.',
+    weatherCallout: 'Snow showers expected tomorrow evening—allow extra time if you’re driving over Rabbit Ears Pass.',
+    propertyAddress: STEAMBOAT_GUIDE.propertyBasics.address,
+    directionsUrl: 'https://maps.apple.com/?address=45%206th%20Street,%20Steamboat%20Springs',
+    parkingNote: STEAMBOAT_GUIDE.checkinCheckout.parking,
+    keySteps: checkoutSlice.checkoutSteps,
+    lockupSteps: checkoutSlice.lockupSteps,
+    trashNote: checkoutSlice.trashNote,
+    kitchenReminders: ['Clean coffee carafe + grinders', 'Wipe fridge shelves if spills'],
+    laundryReminders: ['Start one load of towels if you have time', 'Leave duvets folded on beds'],
+    addOnReturns: [
+      { title: 'Baby gear rental', detail: 'Leave crib + high-chair in the downstairs bedroom.', status: 'Pickup 12:30' },
+    ],
+    support: {
+      email: 'stay@bunks.com',
+      phone: STEAMBOAT_GUIDE.propertyBasics.hosts[0].phone,
+      concierge: STEAMBOAT_GUIDE.propertyBasics.hosts[1].phone,
+      note: 'Text for last-minute questions—we reply in under 5 minutes.',
+    },
+  };
 }
 
 export function sampleSystemEmailFailedProps(): SystemEmailFailedEmailProps {

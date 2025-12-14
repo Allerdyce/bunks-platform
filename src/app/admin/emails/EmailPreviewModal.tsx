@@ -64,9 +64,9 @@ export function EmailPreviewModal({ preview, onClose }: EmailPreviewModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-12">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex w-full max-w-6xl flex-col gap-4 rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="relative z-10 flex w-full max-w-6xl max-h-full overflow-y-auto flex-col gap-4 rounded-3xl bg-white p-6 shadow-2xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Preview</p>

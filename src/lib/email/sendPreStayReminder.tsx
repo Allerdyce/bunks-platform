@@ -10,6 +10,7 @@ import {
   resolveHostSupportEmail,
   sendEmail,
 } from '@/lib/email';
+import { getWeatherForecast } from '@/lib/weather';
 import { PreStayReminderEmail } from '@/emails/PreStayReminderEmail';
 
 const EMAIL_TYPE = 'PRE_STAY_REMINDER' as const;
@@ -30,12 +31,22 @@ export async function sendPreStayReminder(bookingId: number) {
   const checkOut = new Date(booking.checkOutDate);
   const nights = calculateNights(checkIn, checkOut);
 
+  let weatherSummary = `Expect crisp mornings and sunny afternoons around ${booking.property.timezone.includes('London') ? '62°F / 17°C' : '70°F / 21°C'}. Pack layers!`;
+
+  // Attempt dynamic weather fetch
+  if (booking.property.latitude && booking.property.longitude) {
+    const forecast = await getWeatherForecast(booking.property.latitude, booking.property.longitude, checkIn);
+    if (forecast) {
+      weatherSummary = `${forecast.summary} Pack accordingly.`;
+    }
+  }
+
   const html = await renderEmail(
     <PreStayReminderEmail
       guestName={booking.guestName}
       propertyName={booking.property.name}
       checkInDate={`${formatDateForEmail(checkIn)} · ${nights} nights`}
-      weatherSummary={`Expect crisp mornings and sunny afternoons around ${booking.property.timezone.includes('London') ? '62°F / 17°C' : '70°F / 21°C'}. Pack layers!`}
+      weatherSummary={weatherSummary}
       packingList={['Layered outfits', 'Charging cables', 'Comfortable walking shoes', 'Camera']}
       checkInGuideUrl={resolveCheckInGuideUrl(booking)}
       guestBookUrl={resolveGuestBookUrl(booking)}

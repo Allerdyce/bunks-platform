@@ -32,6 +32,7 @@ export interface Property {
   slug: string;
   name: string;
   location: string;
+  address?: string;
   price: number;
   guests: number;
   bedrooms: number;
@@ -94,30 +95,9 @@ export interface AvailabilityResponse {
   message?: string;
 }
 
-export interface PropertyAddon {
-  id: number;
-  slug: string;
-  title: string;
-  description: string;
-  category: string;
-  provider: string;
-  providerProductId?: string | null;
-  basePriceCents: number;
-  currency: string;
-  durationMinutes?: number | null;
-  imageUrl?: string | null;
-}
 
-export interface AddonSelectionInput {
-  id: number;
-  activityDate?: string | null;
-  activityTimeSlot?: string | null;
-}
 
-export interface AddonScheduleValue {
-  activityDate: string;
-  activityTimeSlot: string;
-}
+
 
 export interface BookingRequest {
   propertySlug: string;
@@ -126,7 +106,7 @@ export interface BookingRequest {
   guestName: string;
   guestEmail: string;
   guests: number;
-  addons?: AddonSelectionInput[];
+
 }
 
 export interface BookingResponse {
@@ -140,17 +120,7 @@ export interface BookingResponse {
   breakdown: BookingBreakdown;
 }
 
-export interface BookingAddonDetails {
-  id: number;
-  title: string;
-  provider: string;
-  providerStatus: string;
-  providerConfirmationCode?: string | null;
-  finalPriceCents: number;
-  activityDate?: string | null;
-  activityTimeSlot?: string | null;
-  providerMetadata?: Record<string, unknown> | null;
-}
+
 
 export type BookingStatus = "PENDING" | "PAID" | "CANCELLED";
 
@@ -171,12 +141,31 @@ export interface BookingDetailsData {
     checkInGuideUrl?: string | null;
     guestBookUrl?: string | null;
     hostSupportEmail?: string | null;
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
+    address?: string | null;
   };
-  addons: BookingAddonDetails[];
+
 }
 
 export interface BookingDetailsResponse {
   booking: BookingDetailsData;
+}
+
+export interface ConversationMessage {
+  id: number;
+  body: string;
+  senderId: number;
+  senderName?: string | null;
+  senderRole: 'GUEST' | 'HOST' | 'ADMIN';
+  sentAt: string;
+  readAt?: string | null;
+  isMine: boolean;
+}
+
+export interface BookingConversationResponse {
+  conversationId: number | null;
+  messages: ConversationMessage[];
 }
 
 export interface BookingLookupPayload {
@@ -184,24 +173,11 @@ export interface BookingLookupPayload {
   guestEmail: string;
 }
 
-export interface AddonLineItem {
-  id: number;
-  title: string;
-  priceCents: number;
-  provider: string;
-  status?: string | null;
-  confirmationCode?: string | null;
-  activityDate?: string | null;
-  activityTimeSlot?: string | null;
-}
-
 export interface BookingBreakdown {
   nightlySubtotalCents: number;
   cleaningFeeCents: number;
   serviceFeeCents: number;
   nightlyLineItems: NightlyLineItem[];
-  addonsTotalCents: number;
-  addonLineItems: AddonLineItem[];
 }
 
 export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY";
@@ -230,9 +206,42 @@ export type ViewState =
   | "booking"
   | "success"
   | "booking-details"
+  | "booking-essential"
+  | "booking-guide"
+  | "booking-messages"
   | "about"
   | "journal"
   | "blog-post"
   | "listings";
 
+export type BookingPortalSection = "essential" | "guide" | "messages";
+
 export type NavigateHandler = (view: ViewState, payload?: unknown) => void;
+
+export interface AdminSpecialRate {
+  id: number;
+  date: string; // YYYY-MM-DD
+  price: number;
+  note?: string | null;
+  isBlocked: boolean;
+}
+
+export interface AdminProperty {
+  id: number;
+  name: string;
+  slug: string;
+  weekdayRate: number;
+  weekendRate: number;
+  cleaningFee: number;
+  serviceFee: number;
+  currency: string;
+  specialRates: AdminSpecialRate[];
+  pricelabsListingId?: string | null;
+}
+
+export interface AdminFeatureToggle {
+  key: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+}

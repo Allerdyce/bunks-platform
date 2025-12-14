@@ -75,7 +75,7 @@ interface TemplateControlsProps {
 
 export function TemplateControls({ templates, previewMap }: TemplateControlsProps) {
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => readStoredToggles());
-  const [activeTab, setActiveTab] = useState<ToggleTab>('all');
+  const [activeTab, setActiveTab] = useState<ToggleTab>('guest');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   const enabledCount = useMemo(() => {
@@ -84,6 +84,19 @@ export function TemplateControls({ templates, previewMap }: TemplateControlsProp
   }, [templates, toggles]);
 
   const disabledCount = templates.length - enabledCount;
+
+  const statusCounts = useMemo(() => {
+    const counts = {
+      shipped: 0,
+      'in-progress': 0,
+      planned: 0,
+      parked: 0,
+    };
+    templates.forEach((t) => {
+      if (counts[t.status] !== undefined) counts[t.status]++;
+    });
+    return counts;
+  }, [templates]);
 
   const tabMap = useMemo(() => {
     const base: Record<ToggleTab, TemplateControl[]> = {
@@ -97,27 +110,16 @@ export function TemplateControls({ templates, previewMap }: TemplateControlsProp
       base.all.push(template);
       base[template.audience].push(template);
     });
-
-    (Object.keys(base) as ToggleTab[]).forEach((key) => {
-      base[key] = base[key].slice().sort((a, b) => a.name.localeCompare(b.name));
-    });
-
+    // Removed sorting to respect catalog lifecycle order
     return base;
   }, [templates]);
 
   const tabs = useMemo(() => {
-    return [
-      {
-        id: 'all' as const,
-        label: 'All templates',
-        count: tabMap.all.length,
-      },
-      ...AUDIENCE_ORDER.map((audience) => ({
-        id: audience,
-        label: AUDIENCE_META[audience].label,
-        count: tabMap[audience].length,
-      })),
-    ];
+    return AUDIENCE_ORDER.map((audience) => ({
+      id: audience,
+      label: AUDIENCE_META[audience].label,
+      count: tabMap[audience].length,
+    }));
   }, [tabMap]);
 
   const visibleTemplates = tabMap[activeTab];
@@ -138,184 +140,134 @@ export function TemplateControls({ templates, previewMap }: TemplateControlsProp
   const selectedPreview = selectedSlug ? previewMap[selectedSlug] : undefined;
 
   return (
-    <section
-      style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: 24,
-        padding: 32,
-        marginBottom: 40,
-        boxShadow: '0 24px 40px rgba(15, 23, 42, 0.04)',
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-        <span style={{ letterSpacing: 1, fontSize: 12, color: '#0F172A', fontWeight: 600, textTransform: 'uppercase' }}>
-          Template controls
-        </span>
-        <h2 style={{ margin: 0, fontSize: 26, color: '#0F172A', fontWeight: 600 }}>Enable or pause individual templates</h2>
-        <p style={{ margin: 0, color: '#475467', fontSize: 15 }}>
-          Toggles persist locally for now — wire these up to your config service when ready.
-        </p>
-        <div
-          style={{
-            display: 'flex',
-            gap: 16,
-            flexWrap: 'wrap',
-            fontSize: 14,
-            color: '#0F172A',
-            padding: '10px 16px',
-            background: '#F8FAFC',
-            borderRadius: 999,
-            border: '1px solid #E2E8F0',
-          }}
-        >
-          <strong style={{ color: '#0F172A' }}>{enabledCount}</strong> enabled ·{' '}
-          <strong style={{ color: '#0F172A' }}>{disabledCount}</strong> paused
-        </div>
-      </div>
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+      {/* Left Column: Fixed Info & Filters */}
+      <div className="flex flex-col gap-6 lg:col-span-4 lg:sticky lg:top-8">
+        {/* Header & Status Card */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600">Email System</p>
+          <h1 className="mt-3 text-2xl font-serif text-slate-900">React Email previews</h1>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            {templates.length}-email catalog. Implemented templates render in the preview table.
+          </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 8,
-            background: '#E2E8F0',
-            borderRadius: 999,
-            padding: 6,
-          }}
-        >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
+          <div className="mt-6 flex flex-wrap gap-2">
+            {(Object.keys(STATUS_BADGES) as EmailTemplateSpec['status'][]).map((status) => (
+              <div
+                key={status}
+                className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider"
                 style={{
-                  border: 'none',
-                  background: isActive ? '#FFFFFF' : 'transparent',
-                  color: isActive ? '#0F172A' : '#475467',
-                  padding: '10px 18px',
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  borderRadius: 999,
-                  boxShadow: isActive ? '0 6px 16px rgba(15, 23, 42, 0.08)' : 'none',
+                  borderColor: STATUS_BADGES[status].border,
+                  backgroundColor: STATUS_BADGES[status].background,
+                  color: STATUS_BADGES[status].color,
                 }}
               >
-                {tab.label}
-                <span style={{ marginLeft: 6, fontSize: 12, color: isActive ? '#64748B' : '#94A3B8', fontWeight: 500 }}>
-                  ({tab.count})
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                {status}: {statusCounts[status]}
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        {/* Filters & Toggles Card */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-slate-900">Filter & Controls</h2>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-2 w-2 rounded-full bg-slate-900"></span>
+                <span className="font-medium text-slate-900">{enabledCount}</span>
+                <span className="text-slate-500">enabled</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-2 w-2 rounded-full bg-slate-200"></span>
+                <span className="font-medium text-slate-900">{disabledCount}</span>
+                <span className="text-slate-500">paused</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`group flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all ${isActive
+                      ? 'bg-slate-900 text-white shadow-md'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
+                      }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      {/* Right Column: Template Table */}
+      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden lg:col-span-8">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ textAlign: 'left', fontSize: 13, textTransform: 'none', letterSpacing: 0.2, color: '#7A6F63' }}>
-                <th style={{ padding: '0 0 14px 0' }}>Template</th>
-                <th style={{ padding: '0 0 14px 0' }}>Subject</th>
-                {activeTab === 'all' && <th style={{ padding: '0 0 14px 0' }}>Audience</th>}
-                <th style={{ padding: '0 0 14px 0' }}>Category</th>
-                <th style={{ padding: '0 0 14px 0' }}>Trigger</th>
-                <th style={{ padding: '0 0 14px 0' }}>Status</th>
-                <th style={{ padding: '0 0 14px 0', textAlign: 'right' }}>Enabled</th>
+              <tr className="border-b border-slate-100 bg-slate-50/50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-4">Template</th>
+                {activeTab === 'all' && <th className="px-6 py-4">Audience</th>}
+                <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4">Trigger</th>
+                <th className="px-6 py-4 text-right">Enabled</th>
               </tr>
             </thead>
-            <tbody>
-              {visibleTemplates.map((template, index) => {
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {visibleTemplates.map((template) => {
                 const preview = previewMap[template.slug];
-                const subject = preview?.subject ?? getEmailSubject(template.slug);
                 const isEnabled = toggles[template.slug] !== false;
-                const rowShade = index % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-                const statusBadge = STATUS_BADGES[template.status];
                 const canPreview = Boolean(preview?.html);
+
                 return (
-                  <tr key={template.slug} style={{ borderTop: '1px solid #E2E8F0', background: rowShade }}>
-                    <td style={{ padding: '14px 12px 14px 0' }}>
+                  <tr key={template.slug} className="group hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
                       <button
                         type="button"
                         onClick={() => canPreview && handlePreview(template.slug)}
                         disabled={!canPreview}
-                        style={{
-                          padding: 0,
-                          margin: 0,
-                          border: 'none',
-                          background: 'none',
-                          fontWeight: 600,
-                          fontSize: 15,
-                          color: canPreview ? '#0F172A' : '#94A3B8',
-                          cursor: canPreview ? 'pointer' : 'not-allowed',
-                          textAlign: 'left',
-                        }}
+                        className={`text-left text-sm font-semibold transition ${canPreview
+                            ? 'text-slate-900 hover:text-violet-600'
+                            : 'cursor-not-allowed text-slate-400'
+                          }`}
                       >
                         {template.name}
-                        {canPreview ? (
-                          <span style={{ marginLeft: 8, fontSize: 12, color: '#64748B', fontWeight: 500 }}>
-                            · View preview
-                          </span>
-                        ) : null}
                       </button>
-                      <div style={{ fontSize: 12, color: '#94A3B8' }}>{template.slug}</div>
+                      <div className="mt-0.5 text-xs font-mono text-slate-400">{template.slug}</div>
                     </td>
-                    <td style={{ padding: '14px 12px', fontSize: 14, color: '#475467' }}>{subject ?? 'Subject TBD'}</td>
                     {activeTab === 'all' && (
-                      <td style={{ padding: '14px 12px', fontSize: 14, color: '#475467', textTransform: 'capitalize' }}>
+                      <td className="px-6 py-4 text-sm text-slate-600 capitalize">
                         {template.audience}
                       </td>
                     )}
-                    <td style={{ padding: '14px 12px', fontSize: 13, color: '#475467' }}>{template.category}</td>
-                    <td style={{ padding: '14px 12px', fontSize: 13, color: '#475467' }}>{template.trigger}</td>
-                    <td style={{ padding: '14px 12px' }}>
-                      <span
-                        style={{
-                          borderRadius: 999,
-                          border: `1px solid ${statusBadge.border}`,
-                          padding: '4px 12px',
-                          fontSize: 11,
-                          letterSpacing: 0.3,
-                          textTransform: 'uppercase',
-                          color: statusBadge.color,
-                          background: statusBadge.background,
-                        }}
-                      >
-                        {template.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '14px 0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <td className="px-6 py-4 text-sm text-slate-600">{template.category}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{template.trigger}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end">
                         <button
                           type="button"
-                          aria-pressed={isEnabled}
-                          aria-label={`Toggle ${template.name}`}
+                          role="switch"
+                          aria-checked={isEnabled}
                           onClick={() => handleToggle(template.slug)}
-                          style={{
-                            border: '1px solid rgba(15, 23, 42, 0.08)',
-                            width: 44,
-                            height: 24,
-                            borderRadius: 999,
-                            background: isEnabled ? '#0F172A' : '#E2E8F0',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'background 150ms ease',
-                          }}
+                          className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 ${isEnabled ? 'bg-slate-900' : 'bg-slate-200'
+                            }`}
                         >
                           <span
-                            style={{
-                              position: 'absolute',
-                              top: 2,
-                              left: isEnabled ? 22 : 2,
-                              width: 20,
-                              height: 20,
-                              borderRadius: '50%',
-                              background: '#FFFFFF',
-                              boxShadow: '0 4px 10px rgba(15, 23, 42, 0.2)',
-                              transition: 'left 150ms ease',
-                            }}
+                            className={`pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
                           />
                         </button>
                       </div>
@@ -327,7 +279,8 @@ export function TemplateControls({ templates, previewMap }: TemplateControlsProp
           </table>
         </div>
       </div>
+
       {selectedPreview ? <EmailPreviewModal preview={selectedPreview} onClose={closePreview} /> : null}
-    </section>
+    </div>
   );
 }

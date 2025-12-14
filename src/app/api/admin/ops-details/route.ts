@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const details = await getOpsDetails();
+  const searchParams = request.nextUrl.searchParams;
+  const propertyIdParam = searchParams.get("propertyId");
+  const propertyId = propertyIdParam ? parseInt(propertyIdParam, 10) : undefined;
+
+  const details = await getOpsDetails(propertyId);
   return NextResponse.json({ details });
 }
 
@@ -29,7 +33,8 @@ export async function PUT(request: NextRequest) {
 
   try {
     const parsed = parseOpsDetailsPayload(payload);
-    const details = await upsertOpsDetails(parsed);
+    const { propertyId } = payload as { propertyId?: number };
+    const details = await upsertOpsDetails(parsed, propertyId);
     return NextResponse.json({ details });
   } catch (error) {
     return NextResponse.json({ error: (error as Error)?.message ?? "Failed to update ops details" }, { status: 400 });

@@ -7,6 +7,8 @@ export interface MidStayCheckInEmailProps {
   propertyName: string;
   stayProgress: string;
   vibeLine?: string;
+  weatherCallout?: string;
+  todaysFocus?: { label: string; detail: string }[];
   housekeepingReminders?: string[];
   guestBookUrl?: string;
   issueReportingUrl?: string;
@@ -31,6 +33,8 @@ export function MidStayCheckInEmail(props: MidStayCheckInEmailProps) {
     propertyName,
     stayProgress,
     vibeLine = 'Hope you slept well! Let us know what would make today even better.',
+    weatherCallout,
+    todaysFocus,
     housekeepingReminders,
     guestBookUrl,
     issueReportingUrl,
@@ -46,6 +50,29 @@ export function MidStayCheckInEmail(props: MidStayCheckInEmailProps) {
         </Heading>
         <Text className="mt-3 text-sm text-[#475467]">{vibeLine}</Text>
       </Section>
+
+      {weatherCallout && (
+        <Section className="mb-6" style={{ ...cardStyle, background: '#EEF4FF' }}>
+          <Text className="text-xs uppercase tracking-[0.35em] text-[#7F56D9] mb-2">Weather snapshot</Text>
+          <Text className="text-sm text-[#1D2939]">{weatherCallout}</Text>
+        </Section>
+      )}
+
+      {todaysFocus?.length ? (
+        <Section className="mb-6" style={cardStyle}>
+          <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-2">
+            Today&apos;s focus
+          </Heading>
+          <ul className="list-disc pl-5 text-sm text-[#475467]">
+            {todaysFocus.map((item) => (
+              <li key={item.label} className="mb-1">
+                <span className="font-semibold text-[#1D2939]">{item.label}</span>
+                {item.detail ? <> — {item.detail}</> : null}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       {housekeepingReminders?.length ? (
         <Section className="mb-6" style={{ ...cardStyle, background: '#F8FAFC' }}>

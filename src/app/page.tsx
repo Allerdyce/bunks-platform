@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { BunksApp } from "@/components/BunksApp";
+import { fetchMarketingProperties } from "@/lib/marketingProperties";
 
-export default function Page() {
+export default async function Page() {
+  const properties = await fetchMarketingProperties();
+
   return (
     <Suspense fallback={null}>
-      <BunksApp />
+      <BunksApp properties={properties} />
     </Suspense>
   );
 }

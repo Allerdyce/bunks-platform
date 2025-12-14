@@ -4,9 +4,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { BookingLookupPayload, DateRange, JournalPost, Property, ViewState } from "@/types";
+import type {
+  BookingLookupPayload,
+  BookingPortalSection,
+  DateRange,
+  JournalPost,
+  Property,
+  ViewState,
+} from "@/types";
 import { Layout } from "@/components/layout/Layout";
 import { HomeView } from "@/components/home/HomeView";
 import { HomeCtaBanner } from "@/components/home/HomeCtaBanner";
@@ -20,6 +27,10 @@ import { BookingDetailsView } from "@/components/views/BookingDetailsView";
 import { LoaderScreen } from "@/components/shared/LoaderScreen";
 import { PROPERTIES } from "@/data/properties";
 import { JOURNAL_POSTS } from "@/data/journal";
+
+interface BunksAppProps {
+  properties?: Property[];
+}
 
 const initialRange: DateRange = {
   start: null,
@@ -82,10 +93,12 @@ try {
 
 const BOOKING_LOOKUP_STORAGE_KEY = "bunks:lastBookingLookup";
 
-export function BunksApp() {
+export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
+  const properties = useMemo(() => (hydratedProperties?.length ? hydratedProperties : PROPERTIES), [hydratedProperties]);
   const [view, setView] = useState<ViewState>("home");
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [selectedPost, setSelectedPost] = useState<JournalPost | null>(null);
+  const lastPostSlugRef = useRef<string | null>(null);
   const [bookingDates, setBookingDates] = useState<DateRange>(initialRange);
   const [guestCount, setGuestCount] = useState(1);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -93,184 +106,125 @@ export function BunksApp() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const propertyIndex = useMemo(() => new Map(PROPERTIES.map((property) => [property.slug, property])), []);
-  const rawPathPropertySlug = useMemo(() => {
-    if (!pathname) return null;
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments.length >= 2 && segments[0] === "property") {
-      return segments[1];
-    }
-    return null;
-  }, [pathname]);
+  const isMessagesRoute = pathname?.startsWith("/my-trips") ?? false;
+  const bookingSection: BookingPortalSection | null = useMemo(() => {
+    if (!isMessagesRoute || !pathname) return null;
+    if (pathname === "/my-trips" || pathname === "/my-trips/essential") return "essential";
+    if (pathname.startsWith("/my-trips/guide")) return "guide";
+    return "messages";
+  }, [isMessagesRoute, pathname]);
+
+  const propertyIndex = useMemo(() => new Map(properties.map((p) => [p.slug, p])), [properties]);
+
   const pathPropertySlug = useMemo(() => {
-    if (!rawPathPropertySlug) return null;
-    return getCanonicalSlugFromPath(rawPathPropertySlug);
-  }, [rawPathPropertySlug]);
-  const queryPropertySlugRaw = searchParams?.get("property") ?? null;
-  const queryPropertySlug = useMemo(() => {
-    if (!queryPropertySlugRaw) return null;
-    return getCanonicalSlugFromPath(queryPropertySlugRaw);
-  }, [queryPropertySlugRaw]);
-  const activePropertySlug = pathPropertySlug ?? queryPropertySlug ?? null;
+    if (!pathname) return null;
+    const match = pathname.match(/\/property\/([a-z0-9-]+)/);
+    return match ? (match[1] as string) : null;
+  }, [pathname]);
 
-  useEffect(() => {
-    if (!queryPropertySlug || pathPropertySlug) {
-      return;
-    }
-    const params = new URLSearchParams(searchParams?.toString() ?? "");
-    params.delete("property");
-    const queryString = params.toString();
-    const pathSlug = getPathSlugFromCanonical(queryPropertySlug);
-    const url = pathSlug
-      ? queryString
-        ? `/property/${pathSlug}?${queryString}`
-        : `/property/${pathSlug}`
-      : queryString
-        ? `/?${queryString}`
-        : "/";
-    router.replace(url, { scroll: false });
-  }, [pathPropertySlug, queryPropertySlug, router, searchParams]);
-
-  useEffect(() => {
-    if (!pathPropertySlug || !rawPathPropertySlug) return;
-    const prettySlug = getPathSlugFromCanonical(pathPropertySlug);
-    if (!prettySlug || prettySlug === rawPathPropertySlug) return;
-    const params = new URLSearchParams(searchParams?.toString() ?? "");
-    params.delete("property");
-    const queryString = params.toString();
-    const url = queryString ? `/property/${prettySlug}?${queryString}` : `/property/${prettySlug}`;
-    router.replace(url, { scroll: false });
-  }, [pathPropertySlug, rawPathPropertySlug, router, searchParams]);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      if (auth && signInAnonymously) {
-        try {
-          await signInAnonymously(auth);
-        } catch (error) {
-          console.warn("Anonymous auth failed", error);
-        }
-      }
-      setLoadingAuth(false);
-    };
-    initAuth();
-
-    if (auth) {
-      const { onAuthStateChanged } = require("firebase/auth");
-      const unsubscribe = onAuthStateChanged(auth, () => null);
-      return () => unsubscribe();
-    }
-
-    return undefined;
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = window.sessionStorage.getItem(BOOKING_LOOKUP_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as BookingLookupPayload;
-        if (parsed?.guestEmail) {
-          if (parsed.bookingReference) {
-            setRecentBookingLookup({
-              bookingReference: parsed.bookingReference,
-              guestEmail: parsed.guestEmail,
-            });
-          } else if (parsed.bookingId) {
-            setRecentBookingLookup({
-              bookingReference: String(parsed.bookingId),
-              guestEmail: parsed.guestEmail,
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to read stored booking lookup", error);
-    }
-  }, []);
-
-  const persistBookingLookup = useCallback((lookup: BookingLookupPayload | null) => {
-    const normalizedLookup = lookup
-      ? {
-          bookingReference: lookup.bookingReference.trim().toUpperCase(),
-          guestEmail: lookup.guestEmail.trim(),
-        }
-      : null;
-    setRecentBookingLookup(normalizedLookup);
-    if (typeof window === "undefined") return;
-    try {
-      if (normalizedLookup) {
-        window.sessionStorage.setItem(BOOKING_LOOKUP_STORAGE_KEY, JSON.stringify(normalizedLookup));
-      } else {
-        window.sessionStorage.removeItem(BOOKING_LOOKUP_STORAGE_KEY);
-      }
-    } catch (error) {
-      console.warn("Failed to persist booking lookup", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!searchParams) return;
-    const lookupReference = searchParams.get("lookup");
-    const lookupEmail = searchParams.get("email");
-    if (!lookupReference || !lookupEmail) return;
-    const normalizedReference = lookupReference.trim().toUpperCase();
-    const normalizedEmail = lookupEmail.trim();
-    if (!normalizedReference || !normalizedEmail) return;
-    if (
-      recentBookingLookup &&
-      recentBookingLookup.bookingReference === normalizedReference &&
-      recentBookingLookup.guestEmail === normalizedEmail
-    ) {
-      return;
-    }
-    persistBookingLookup({ bookingReference: normalizedReference, guestEmail: normalizedEmail });
-  }, [searchParams, persistBookingLookup, recentBookingLookup]);
+  const queryPropertySlug = searchParams?.get("slug") ?? null;
+  const activePropertySlug = (pathPropertySlug ? getCanonicalSlugFromPath(pathPropertySlug) : null) ?? queryPropertySlug ?? null;
 
   const resetBookingState = useCallback(() => {
     setBookingDates(initialRange);
     setGuestCount(1);
   }, []);
 
+  const persistBookingLookup = useCallback((lookup: BookingLookupPayload | null) => {
+    setRecentBookingLookup(lookup);
+    if (typeof window !== "undefined") {
+      if (lookup) {
+        localStorage.setItem(BOOKING_LOOKUP_STORAGE_KEY, JSON.stringify(lookup));
+      } else {
+        localStorage.removeItem(BOOKING_LOOKUP_STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(BOOKING_LOOKUP_STORAGE_KEY);
+      if (stored) {
+        try {
+          setRecentBookingLookup(JSON.parse(stored));
+        } catch { }
+      }
+    }
+    setLoadingAuth(false);
+  }, []);
+
+  const pathBookingRef = useMemo(() => {
+    if (!pathname) return null;
+    const match = pathname.match(/\/my-trips\/([A-Z0-9-]+)/i);
+    if (!match) return null;
+    const candidate = match[1].toLowerCase();
+    if (["essential", "guide", "inbox"].includes(candidate)) {
+      return null;
+    }
+    return match[1].toUpperCase();
+  }, [pathname]);
+
   const updateUrlState = useCallback(
     (
-      next: { slug?: string | null; view?: ViewState | null; post?: string | null } = {},
+      newState: { slug?: string | null; view?: ViewState | null; post?: string | null },
       method: "push" | "replace" = "push",
       { scroll }: { scroll?: boolean } = {},
     ) => {
-      if (!router) return;
       const params = new URLSearchParams(searchParams?.toString() ?? "");
-      params.delete("property");
+      if (newState.slug !== undefined) {
+        if (newState.slug) params.set("slug", newState.slug);
+        else params.delete("slug");
+      }
+      if (newState.view !== undefined) {
+        if (newState.view && newState.view !== "home") params.set("view", newState.view);
+        else params.delete("view");
+      }
+      if (newState.post !== undefined) {
+        if (newState.post) params.set("post", newState.post);
+        else params.delete("post");
+      }
 
-      if (Object.prototype.hasOwnProperty.call(next, "view")) {
-        if (next.view) {
-          params.set("view", next.view);
+      const targetView = newState.view !== undefined ? newState.view : view;
+      const slugForPath = newState.slug !== undefined ? newState.slug : (activePropertySlug ?? null);
+
+      const pathSlug = slugForPath ? getPathSlugFromCanonical(slugForPath) : null;
+      let basePath = "/";
+
+      const prefix = pathBookingRef ? `/my-trips/${pathBookingRef}` : "/my-trips";
+
+      if (targetView?.startsWith("booking-")) {
+        if (targetView === "booking-guide") {
+          basePath = `${prefix}/guide`;
+        } else if (targetView === "booking-messages") {
+          basePath = `${prefix}/inbox`;
         } else {
-          params.delete("view");
+          basePath = `${prefix}/essential`;
         }
+      } else if (pathSlug) {
+        basePath = `/property/${pathSlug}`;
       }
 
-      if (Object.prototype.hasOwnProperty.call(next, "post")) {
-        if (next.post) {
-          params.set("post", next.post);
-        } else {
-          params.delete("post");
-        }
-      }
-
-      let slugForPath = activePropertySlug;
-      if (Object.prototype.hasOwnProperty.call(next, "slug")) {
-        slugForPath = next.slug ?? null;
-      }
-
-      const pathSlug = getPathSlugFromCanonical(slugForPath);
-      const basePath = pathSlug ? `/property/${pathSlug}` : "/";
       const queryString = params.toString();
       const url = queryString ? `${basePath}?${queryString}` : basePath;
       router[method](url, { scroll: scroll ?? false });
     },
-    [activePropertySlug, router, searchParams],
+    [activePropertySlug, router, searchParams, view, pathBookingRef],
   );
+
+  useEffect(() => {
+    if (!pathBookingRef) return;
+    // If the path contains a booking ref, treat it as the "selected" booking.
+    // We update the recentLookup so the view shows it.
+    if (recentBookingLookup?.bookingReference !== pathBookingRef) {
+      // We don't have the email from the path, but if we are on this path, 
+      // presumably we might have it stored or the view will handle it.
+      // For now, let's just update the reference if it differs, but we can't invent an email.
+      // Actually, BookingDetailsView handles the lookup. 
+      // If we navigated here, maybe we should just rely on the stored lookup matching, or 
+      // if it's a deep link, the user might need to verify email. 
+      // For now, let's just make sure the Navbar knows.
+    }
+  }, [pathBookingRef, recentBookingLookup]);
 
   useEffect(() => {
     if (!activePropertySlug) {
@@ -299,35 +253,51 @@ export function BunksApp() {
   useEffect(() => {
     if (!searchParams) return;
     const postSlug = searchParams.get("post");
+    if (postSlug === lastPostSlugRef.current) {
+      return;
+    }
+    lastPostSlugRef.current = postSlug;
+
     if (postSlug) {
+      if (activePropertySlug) {
+        updateUrlState({ slug: null }, "replace");
+        return;
+      }
       const post = JOURNAL_POSTS.find((entry) => entry.slug === postSlug);
       if (post) {
-        if (!selectedPost || selectedPost.slug !== post.slug) {
-          setSelectedPost(post);
-        }
-        if (view !== "blog-post") {
-          setView("blog-post");
-        }
+        setSelectedPost(post);
+        setView("blog-post");
       } else {
         updateUrlState({ post: null }, "replace");
       }
       return;
     }
 
-    if (selectedPost) {
-      setSelectedPost(null);
-    }
-    if (view === "blog-post") {
-      setView("journal");
-    }
-  }, [searchParams, selectedPost, view, updateUrlState]);
+    setSelectedPost(null);
+    setView("journal");
+  }, [activePropertySlug, searchParams, updateUrlState]);
 
   useEffect(() => {
+    if (isMessagesRoute) {
+      if (selectedProperty) {
+        setSelectedProperty(null);
+        resetBookingState();
+      }
+      if (selectedPost) {
+        setSelectedPost(null);
+      }
+      const targetView: ViewState = bookingSection ? (`booking-${bookingSection}` as ViewState) : "booking-details";
+      if (view !== targetView) {
+        setView(targetView);
+      }
+      return;
+    }
+
     if (!searchParams) return;
     if (view === "blog-post") return;
     if (activePropertySlug) return;
     const viewParam = searchParams.get("view") as ViewState | null;
-    const allowedViews: ViewState[] = ["home", "about", "journal", "booking-details"];
+    const allowedViews: ViewState[] = ["home", "about", "journal", "booking-details", "booking-essential", "booking-guide", "booking-messages"];
     if (viewParam && allowedViews.includes(viewParam)) {
       if (viewParam !== view) {
         if (viewParam === "home" || viewParam === "about" || viewParam === "journal" || viewParam === "booking-details") {
@@ -354,10 +324,10 @@ export function BunksApp() {
       }
       setView("home");
     }
-  }, [activePropertySlug, searchParams, view, selectedProperty, selectedPost, resetBookingState]);
+  }, [activePropertySlug, isMessagesRoute, searchParams, view, selectedProperty, selectedPost, resetBookingState, bookingSection]);
 
   const handleNavigate = (target: ViewState, payload?: unknown) => {
-    if (["home", "listings", "about", "journal", "booking-details"].includes(target)) {
+    if (["home", "listings", "about", "journal", "booking-details", "booking-essential", "booking-guide", "booking-messages"].includes(target)) {
       setSelectedProperty(null);
       setSelectedPost(null);
       resetBookingState();
@@ -386,8 +356,13 @@ export function BunksApp() {
       updateUrlState({ slug: null, view: "journal", post: null }, "replace", { scroll: false });
     }
 
-    if (target === "booking-details") {
-      updateUrlState({ slug: null, view: "booking-details", post: null }, "replace", { scroll: false });
+    if (
+      target === "booking-details" ||
+      target === "booking-essential" ||
+      target === "booking-guide" ||
+      target === "booking-messages"
+    ) {
+      updateUrlState({ slug: null, view: target, post: null }, "replace", { scroll: false });
     }
 
     if (target === "blog-post" && payload) {
@@ -416,11 +391,19 @@ export function BunksApp() {
     return <LoaderScreen />;
   }
 
+  const isBookingViewState = view === "booking-details" || (typeof view === "string" && view.startsWith("booking-"));
+
   return (
-    <Layout onNavigate={handleNavigate}>
+    <Layout
+      onNavigate={handleNavigate}
+      currentView={view}
+      bookingSection={bookingSection}
+      bookingRef={pathBookingRef}
+      hideFooter={isBookingViewState}
+    >
       {view === "home" && (
         <>
-          <HomeView properties={PROPERTIES} onSelectProperty={(property) => handleNavigate("property", property)} />
+          <HomeView properties={properties} onSelectProperty={(property) => handleNavigate("property", property)} />
           <HomeCtaBanner onNavigate={handleNavigate} />
         </>
       )}
@@ -472,11 +455,12 @@ export function BunksApp() {
 
       {view === "success" && <SuccessView onNavigate={handleNavigate} />}
 
-      {view === "booking-details" && (
+      {isBookingViewState && (
         <BookingDetailsView
           onNavigate={handleNavigate}
           initialLookup={recentBookingLookup}
           onPersistLookup={persistBookingLookup}
+          section={bookingSection ?? "essential"}
         />
       )}
     </Layout>

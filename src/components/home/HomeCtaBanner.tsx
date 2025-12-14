@@ -25,7 +25,7 @@ export function HomeCtaBanner({ onNavigate }: HomeCtaBannerProps) {
           <div className="relative z-10 p-8 sm:p-12 flex flex-col lg:flex-row items-start lg:items-center gap-8 text-white">
             <div className="flex-1 space-y-4">
               <p className="text-xs uppercase tracking-[0.3em] text-white/70">Partner with bunks</p>
-              <h3 className="text-3xl sm:text-4xl font-serif leading-tight">
+              <h3 className="text-3xl sm:text-4xl font-serif leading-tight text-white">
                 Make your home
                 <span className="block mt-2 text-4xl sm:text-5xl">
                   <span className="inline-flex items-center gap-4 bg-white/10 px-4 py-2 rounded-full">

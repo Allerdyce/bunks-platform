@@ -27,7 +27,7 @@ const sections: SectionConfig[] = [
       "Santa Barbara, CA 93101",
       "United States",
       "Email: legal@bunks.com",
-      "Bunks operates a direct-booking platform that connects guests with hosts, facilitates secure payments, syncs booking availability from Airbnb calendars, and enables optional third-party add-on activities through Viator and similar providers.",
+      "Bunks operates a direct-booking platform that connects guests with hosts, facilitates secure payments, and syncs booking availability from Airbnb calendars.",
       "This Privacy Policy applies to all guests, hosts, site visitors, and users interacting with the Bunks Service.",
     ],
   },
@@ -44,7 +44,7 @@ const sections: SectionConfig[] = [
           "Phone number (optional)",
           "Booking details",
           "Property information (for hosts)",
-          "Add-on selections (e.g., concierge activities via Viator)",
+
           "Communication sent through Bunks messaging",
           "Support inquiries",
           "Guest preferences voluntarily shared (arrival time, accessibility needs, etc.)",
@@ -62,11 +62,6 @@ const sections: SectionConfig[] = [
         title: "2.3 Airbnb Calendar Data (iCal Ingestion)",
         description:
           "For availability syncing, hosts may connect their Airbnb iCal URL. When provided, we ingest calendar data such as reserved dates, blocked dates, and basic reservation metadata contained in the iCal feed. We do not access Airbnb account information, messages, payout details, guest names, or host internal data.",
-      },
-      {
-        title: "2.4 Information From Third-Party Activity Providers (Viator)",
-        description:
-          "If you purchase or request optional add-on activities offered through third parties (e.g., Viator), we may receive confirmation status, reservation identifiers, scheduled dates and times, activity details, pricing, and cancellation status. We do not receive sensitive payment methods or personal details beyond what is necessary to coordinate the activity.",
       },
       {
         title: "2.5 Automatically Collected Information",
@@ -114,7 +109,7 @@ const sections: SectionConfig[] = [
       {
         title: "4.1 Service Providers",
         description:
-          "Trusted vendors who assist with payment processing (Stripe), email delivery (Postmark), database hosting, analytics, customer support tools, and concierge activity providers (e.g., Viator). They are contractually required to protect your data.",
+          "Trusted vendors who assist with payment processing (Stripe), email delivery (Postmark), database hosting, analytics, and customer support tools. They are contractually required to protect your data.",
       },
       {
         title: "4.2 Hosts and Guests",
@@ -179,16 +174,16 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <StandaloneLayout>
-      <div className="bg-[#FFFCF7] py-16 px-4">
+      <div className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-        <p className="text-xs uppercase tracking-[0.4em] text-stone-400 mb-4">Bunks — Privacy Policy</p>
-        <h1 className="font-serif text-4xl text-stone-900 mb-4">Privacy Policy</h1>
-        <p className="text-sm text-stone-500 mb-10">Last Updated: November 2025</p>
-        <p className="text-lg text-stone-700 leading-relaxed mb-12">
-          This Privacy Policy explains how Bunks LLC (“Bunks”, “we”, “our”, or “us”) collects, uses, discloses, and protects
-          information about you when you use our website, services, or direct-booking platform (collectively, the “Service”). By using
-          the Service, you agree to the terms of this Privacy Policy.
-        </p>
+          <p className="text-xs uppercase tracking-[0.4em] text-stone-400 mb-4">Bunks — Privacy Policy</p>
+          <h1 className="font-serif text-4xl text-stone-900 mb-4">Privacy Policy</h1>
+          <p className="text-sm text-stone-500 mb-10">Last Updated: November 2025</p>
+          <p className="text-lg text-stone-700 leading-relaxed mb-12">
+            This Privacy Policy explains how Bunks LLC (“Bunks”, “we”, “our”, or “us”) collects, uses, discloses, and protects
+            information about you when you use our website, services, or direct-booking platform (collectively, the “Service”). By using
+            the Service, you agree to the terms of this Privacy Policy.
+          </p>
 
           <div className="space-y-10">
             {sections.map((section) => (

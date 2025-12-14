@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import { Star } from "lucide-react";
-import type { AddonScheduleValue, BookingBreakdown, Property, PropertyAddon } from "@/types";
+import type { BookingBreakdown, Property } from "@/types";
 import { Button } from "@/components/shared/Button";
-import { AddonSummary } from "./AddonSummary";
 
 interface BookingSummaryProps {
   property: Property;
@@ -16,8 +15,6 @@ interface BookingSummaryProps {
     serviceFee: number;
   };
   currency?: string;
-  selectedAddons?: PropertyAddon[];
-  addonSchedules?: Record<number, AddonScheduleValue>;
   onContinue?: () => void;
   continueLabel?: string;
   isContinueLoading?: boolean;
@@ -39,8 +36,6 @@ export function BookingSummary({
   breakdown,
   fallbackPricing,
   currency = "USD",
-  selectedAddons = [],
-  addonSchedules = {},
   onContinue,
   continueLabel = "Continue to Payment",
   isContinueLoading,
@@ -56,27 +51,12 @@ export function BookingSummary({
   const serviceFee = hasBreakdown
     ? centsToMajor(breakdown!.serviceFeeCents)
     : fallbackPricing.serviceFee;
-  const addonLineItems = hasBreakdown
-    ? breakdown!.addonLineItems
-    : selectedAddons.map((addon) => {
-        const schedule = addonSchedules[addon.id];
-        return {
-          id: addon.id,
-          title: addon.title,
-          priceCents: addon.basePriceCents,
-          provider: addon.provider,
-          activityDate: schedule?.activityDate ?? null,
-          activityTimeSlot: schedule?.activityTimeSlot ?? null,
-        };
-      });
-  const addonsTotal = hasBreakdown
-    ? centsToMajor(breakdown!.addonsTotalCents)
-    : addonLineItems.reduce((sum, item) => sum + item.priceCents, 0) / 100;
+
   const total = nightlySubtotal + cleaningFee + serviceFee;
   const perNightLabel = hasBreakdown
     ? "Nightly subtotal"
     : `${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} nights`;
-  const grandTotal = total + addonsTotal;
+  const grandTotal = total;
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-gray-100 h-fit shadow-sm sticky top-24">
@@ -109,17 +89,12 @@ export function BookingSummary({
           <span>Service fee</span>
           <span>{formatCurrency(serviceFee, currency)}</span>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Add-ons</span>
-          <span>{formatCurrency(addonsTotal, currency)}</span>
-        </div>
       </div>
       <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
         <div className="flex justify-between font-medium text-lg text-gray-900">
           <span>Total</span>
           <span>{formatCurrency(grandTotal, currency)}</span>
         </div>
-        <AddonSummary items={addonLineItems} currency={currency} />
         {onContinue && (
           <Button
             type="button"

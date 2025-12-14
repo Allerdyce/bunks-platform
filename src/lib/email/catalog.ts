@@ -83,17 +83,7 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     templatePath: 'src/emails/DoorCodeEmail.tsx',
     serviceFunction: 'sendDoorCodeEmail',
   },
-  {
-    slug: 'add-on-confirmation',
-    name: 'Add-On Confirmation',
-    audience: 'guest',
-    category: 'Stay Preparation',
-    trigger: 'Guest purchases add-ons',
-    description: 'Parked while the add-on marketplace feature flag is disabled; relaunch with Viator add-ons.',
-    status: 'parked',
-    templatePath: 'src/emails/AddOnConfirmationEmail.tsx',
-    serviceFunction: 'sendAddOnConfirmation',
-  },
+
 
   // Guest — During Stay
   {
@@ -245,17 +235,7 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     templatePath: 'src/emails/HostNotificationEmail.tsx',
     serviceFunction: 'sendHostNotification',
   },
-  {
-    slug: 'host-add-on-sold',
-    name: 'Add-On Sold to Guest',
-    audience: 'host',
-    category: 'Booking Notifications',
-    trigger: 'Guest purchases add-on',
-    description: 'Parked until the add-on marketplace returns; no add-on alerts while feature flag is off.',
-    status: 'parked',
-    templatePath: 'src/emails/HostAddOnSoldEmail.tsx',
-    serviceFunction: 'sendHostAddOnSold',
-  },
+
   {
     slug: 'host-booking-modified',
     name: 'Booking Modification Alert',

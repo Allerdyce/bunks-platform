@@ -14,12 +14,14 @@ export interface CheckoutReminderEmailProps {
   checkoutTime: string;
   cleanerArrivalWindow?: string;
   lateCheckoutNote?: string;
+  weatherCallout?: string;
   propertyAddress?: string;
   directionsUrl?: string;
   parkingNote?: string;
   keySteps: CheckoutStep[];
   kitchenReminders?: string[];
   laundryReminders?: string[];
+  addOnReturns?: { title: string; detail: string; status?: string }[];
   lockupSteps?: string[];
   trashNote?: string;
   support: {
@@ -57,12 +59,14 @@ export function CheckoutReminderEmail(props: CheckoutReminderEmailProps) {
     checkoutTime,
     cleanerArrivalWindow,
     lateCheckoutNote,
+    weatherCallout,
     propertyAddress,
     directionsUrl,
     parkingNote,
     keySteps,
     kitchenReminders,
     laundryReminders,
+    addOnReturns,
     lockupSteps,
     trashNote,
     support,
@@ -94,6 +98,11 @@ export function CheckoutReminderEmail(props: CheckoutReminderEmailProps) {
         {lateCheckoutNote && (
           <Text className="mt-3 text-sm text-[#B54708] bg-[#FEF0C7] border border-[#FEDF89] rounded-2xl px-4 py-3">
             {lateCheckoutNote}
+          </Text>
+        )}
+        {weatherCallout && (
+          <Text className="mt-3 text-sm text-[#1D2939] bg-[#EEF4FF] border border-[#D6BBFB] rounded-2xl px-4 py-3">
+            {weatherCallout}
           </Text>
         )}
       </Section>
@@ -165,6 +174,23 @@ export function CheckoutReminderEmail(props: CheckoutReminderEmailProps) {
           </Row>
         </Section>
       )}
+
+      {addOnReturns?.length ? (
+        <Section className="mb-6" style={{ ...cardStyle, background: '#FDF9EE' }}>
+          <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-2">
+            Add-on pickups & returns
+          </Heading>
+          <ul className="list-disc pl-5 text-sm text-[#475467]">
+            {addOnReturns.map((item) => (
+              <li key={item.title} className="mb-1">
+                <span className="font-semibold text-[#1D2939]">{item.title}</span>
+                {item.status ? <span className="text-[#B54708]"> · {item.status}</span> : null}
+                {item.detail ? <> — {item.detail}</> : null}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       {(lockupSteps?.length || trashNote) && (
         <Section className="mb-6" style={cardStyle}>

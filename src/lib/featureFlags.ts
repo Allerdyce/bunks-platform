@@ -1,10 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export const FEATURE_FLAG_DEFINITIONS = {
-  addons: {
-    label: "Add-on marketplace",
-    description: "Offer curated Viator experiences during checkout and auto-reserve them after payment.",
-  },
+
   automatedEmails: {
     label: "Automated guest + host emails",
     description: "Send scheduled reminders, checkout nudges, and host prep digests when enabled.",
@@ -16,7 +13,7 @@ export type FeatureFlagKey = keyof typeof FEATURE_FLAG_DEFINITIONS;
 export type FeatureFlagMap = Record<FeatureFlagKey, boolean>;
 
 const FEATURE_FLAG_DEFAULTS: FeatureFlagMap = {
-  addons: true,
+
   automatedEmails: true,
 };
 
@@ -62,6 +59,13 @@ export async function getFeatureFlags(): Promise<FeatureFlagMap> {
 export async function isFeatureEnabled(key: FeatureFlagKey): Promise<boolean> {
   const flags = await getFeatureFlags();
   return flags[key];
+}
+
+export async function ensureFeatureEnabled(key: FeatureFlagKey): Promise<void> {
+  const enabled = await isFeatureEnabled(key);
+  if (!enabled) {
+    throw new Error(`Feature flag "${key}" is disabled`);
+  }
 }
 
 export async function setFeatureFlag(key: FeatureFlagKey, enabled: boolean): Promise<FeatureFlagMap> {

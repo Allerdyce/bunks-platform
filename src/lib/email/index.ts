@@ -12,8 +12,9 @@ export * from './sendBookingWelcomeEmail';
 export * from './sendBookingConfirmation';
 export * from './sendHostNotification';
 export * from './sendPreStay24hReminder';
+export * from './sendPreStayReminder';
 export * from './sendDoorCodeEmail';
-export * from './sendAddOnConfirmation';
+
 export * from './sendBookingModificationConfirmation';
 export * from './sendNoShowNotification';
 export * from './sendPaymentFailure';
@@ -33,7 +34,7 @@ export * from './sendSystemCronSummary';
 export * from './sendSystemMajorIssue';
 export * from './sendSystemCalendarSyncError';
 export * from './sendSystemPaymentException';
-export * from './sendHostAddOnSold';
+
 export * from './sendHostBookingModified';
 export * from './sendHostCleanerReport';
 export * from './sendHostNoiseAlert';
@@ -46,3 +47,4 @@ export * from './sendHostChargebackAlert';
 export * from './sendHostOnboardingWelcome';
 export * from './sendHostListingReady';
 export * from './sendHostVerificationProgress';
+export * from './sendMessagingNotifications';

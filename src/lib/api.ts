@@ -1,19 +1,28 @@
 import type {
   AvailabilityResponse,
+  BookingConversationResponse,
   BookingDetailsResponse,
   BookingRequest,
   BookingResponse,
+  ConversationMessage,
   Property,
-  PropertyAddon,
 } from "@/types";
 
 const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-type PropertyAddonsResult = {
-  addons: PropertyAddon[];
-  addonsEnabled: boolean;
+
+
+export type BookingConversationCredentials = {
+  guestEmail: string;
+  bookingReference: string;
+};
+
+export type SendBookingMessageInput = {
+  body: string;
+  guestEmail?: string;
+  bookingReference?: string;
 };
 
 const mockApi = {
@@ -44,8 +53,6 @@ const mockApi = {
         cleaningFeeCents: 0,
         serviceFeeCents: 0,
         nightlyLineItems: [],
-        addonsTotalCents: 0,
-        addonLineItems: [],
       },
     };
   },
@@ -70,7 +77,7 @@ const mockApi = {
           guestBookUrl: null,
           hostSupportEmail: null,
         },
-        addons: [],
+
       },
     };
   },
@@ -86,70 +93,53 @@ const mockApi = {
     });
     return blocked;
   },
-  async fetchAddonsForProperty(slug: Property["slug"]): Promise<PropertyAddonsResult> {
-    await delay(250);
-    if (slug === "steamboat-downtown-townhome") {
-      return {
-        addonsEnabled: true,
-        addons: [
-        {
-          id: 901,
-          slug: "ss_snowcat_adventure",
-          title: "Private Snowcat Skiing Adventure",
-          description: "Guided backcountry powder day with Steamboat's top snowcat outfitter.",
-          category: "Adventure",
-          provider: "custom",
-          basePriceCents: 120000,
-          currency: "USD",
-          durationMinutes: 480,
-          imageUrl: "https://example.com/snowcat.jpg",
-        },
-        {
-          id: 902,
-          slug: "ss_hot_air_balloon",
-          title: "Sunrise Hot-Air Balloon Ride",
-          description: "Balloon flight over Yampa Valley with champagne toast.",
-          category: "Scenic",
-          provider: "viator",
-          providerProductId: "viator_steamboat_balloon_001",
-          basePriceCents: 35000,
-          currency: "USD",
-          durationMinutes: 120,
-          imageUrl: "https://example.com/balloon.jpg",
-        },
-        ],
-      };
+
+  async fetchBookingConversation(
+    bookingId: number,
+    credentials?: BookingConversationCredentials,
+  ): Promise<BookingConversationResponse> {
+    const params = new URLSearchParams();
+    if (credentials?.guestEmail) {
+      params.set("guestEmail", credentials.guestEmail);
+    }
+    if (credentials?.bookingReference) {
+      params.set("bookingReference", credentials.bookingReference);
     }
 
-    return {
-      addonsEnabled: true,
-      addons: [
-      {
-        id: 801,
-        slug: "sb_beach_picnic",
-        title: "Luxury Beach Picnic Experience",
-        description: "Designer décor, florals, and curated bites on the Summerland shoreline.",
-        category: "Special Occasion",
-        provider: "custom",
-        basePriceCents: 45000,
-        currency: "USD",
-        durationMinutes: 120,
-        imageUrl: "https://example.com/picnic.jpg",
-      },
-      {
-        id: 802,
-        slug: "sb_private_wine_tour",
-        title: "Private Santa Ynez Wine Tour",
-        description: "Chauffeured tastings with vineyard access and gourmet lunch.",
-        category: "Wine & Lifestyle",
-        provider: "custom",
-        basePriceCents: 65000,
-        currency: "USD",
-        durationMinutes: 300,
-        imageUrl: "https://example.com/winetour.jpg",
-      },
-      ],
-    };
+    const query = params.toString();
+    const url = query ? `/api/bookings/${bookingId}/conversation?${query}` : `/api/bookings/${bookingId}/conversation`;
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res.ok) {
+      const message = await res.text();
+      throw new Error(message || "Failed to load conversation");
+    }
+
+    return res.json();
+  },
+  async sendBookingMessage(
+    bookingId: number,
+    payload: SendBookingMessageInput,
+  ): Promise<ConversationMessage> {
+    const res = await fetch(`/api/bookings/${bookingId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : null;
+
+    if (!res.ok) {
+      const errorMessage = ((data as { error?: string } | null)?.error ?? text) || "Failed to send message";
+      throw new Error(typeof errorMessage === "string" ? errorMessage : "Failed to send message");
+    }
+
+    if (!data) {
+      throw new Error("Empty response from messaging API");
+    }
+
+    return data as ConversationMessage;
   },
 };
 
@@ -209,16 +199,53 @@ const realApi = {
     const data = await res.json();
     return data.blockedDates?.map((entry: { date: string }) => entry.date) ?? [];
   },
-  async fetchAddonsForProperty(slug: Property["slug"]): Promise<PropertyAddonsResult> {
-    const res = await fetch(`/api/properties/${slug}/addons`);
-    if (!res.ok) {
-      throw new Error("Failed to load add-ons");
+
+  async fetchBookingConversation(
+    bookingId: number,
+    credentials?: BookingConversationCredentials,
+  ): Promise<BookingConversationResponse> {
+    const params = new URLSearchParams();
+    if (credentials?.guestEmail) {
+      params.set("guestEmail", credentials.guestEmail);
     }
-    const data = await res.json();
-    return {
-      addons: data.addons ?? [],
-      addonsEnabled: Boolean(data.featureFlags?.addonsEnabled ?? true),
-    };
+    if (credentials?.bookingReference) {
+      params.set("bookingReference", credentials.bookingReference);
+    }
+
+    const query = params.toString();
+    const url = query ? `/api/bookings/${bookingId}/conversation?${query}` : `/api/bookings/${bookingId}/conversation`;
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res.ok) {
+      const message = await res.text();
+      throw new Error(message || "Failed to load conversation");
+    }
+
+    return res.json();
+  },
+  async sendBookingMessage(
+    bookingId: number,
+    payload: SendBookingMessageInput,
+  ): Promise<ConversationMessage> {
+    const res = await fetch(`/api/bookings/${bookingId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : null;
+
+    if (!res.ok) {
+      const errorMessage = ((data as { error?: string } | null)?.error ?? text) || "Failed to send message";
+      throw new Error(typeof errorMessage === "string" ? errorMessage : "Failed to send message");
+    }
+
+    if (!data) {
+      throw new Error("Empty response from messaging API");
+    }
+
+    return data as ConversationMessage;
   },
   async fetchBookingDetails(bookingReference: string, guestEmail: string): Promise<BookingDetailsResponse> {
     const params = new URLSearchParams({ email: guestEmail });

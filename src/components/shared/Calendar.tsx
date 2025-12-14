@@ -21,6 +21,17 @@ const normalizeDate = (value: Date) => {
   return next;
 };
 
+const parseISODateAsLocal = (value: string) => {
+  const parts = value.split("-").map(Number);
+  if (parts.length === 3 && parts.every((part) => Number.isFinite(part))) {
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+  const fallback = new Date(value);
+  fallback.setHours(0, 0, 0, 0);
+  return fallback;
+};
+
 export function Calendar({
   blockedDates = [],
   onSelectDates,
@@ -45,7 +56,7 @@ export function Calendar({
 
   const isDateBlocked = (date: Date) =>
     blockedDates.some((blocked) => {
-      const blockedDate = new Date(blocked);
+      const blockedDate = parseISODateAsLocal(blocked);
       return (
         blockedDate.getDate() === date.getDate() &&
         blockedDate.getMonth() === date.getMonth() &&

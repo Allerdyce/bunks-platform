@@ -9,148 +9,49 @@ http://localhost:3000/guide//summit-ridge is a broken link
 ---
 
 48-Hour Pre-Stay Reminder:
+## Guest Journey Email QA Checklist
 
-Open updated instructions
-And 
-Browse recommendations
- Take me to exactly the same place - would installing an anchor link to the recommendations on the guide make sense here?
+Use this backlog to keep the transactional email system production-ready. Each bullet captures a concrete fix or validation task for the templates listed below.
 
+### 24-Hour Pre-Stay Reminder
+- Update the guide CTA to use the public URL (`https://bunks.com/guides/summit-ridge`) instead of the broken local link.
+- De-duplicate the “Open updated instructions” and “Browse recommendations” CTAs—only show the anchor jump if we can deep-link straight into the recommendations section.
 
-----
+### 48-Hour Pre-Stay Reminder
+- Ensure the two CTAs reference distinct destinations (instructions vs. guide anchor). If they intentionally point to the same section, consolidate into a single CTA with clearer copy.
 
+### Booking Confirmation
+- “Check-in instructions” / “Open check-in guide” / “Guest Book” currently resolve to the same URL. Collapse these into one well-labeled block and CTA so guests aren’t confused by redundant buttons.
 
-Booking Confirmation:
+### Booking Details / Welcome Email
+- Add spacing between the info cards—text currently touches the borders and adjacent cards.
 
-Check-in instructions
-Everything you need for smooth arrival—door codes, parking, and tips.
+### Booking Modification Confirmation
+- Define the target for “View booking details →” (likely `/property/[slug]?view=booking-details` with query params). Hide the CTA until that destination is implemented.
 
-Open check-in guide
-Guest Book
-Explore the neighborhood, chef recommendations, trails, and hidden gems curated by the Bunks team.
+### Cancellation Confirmation
+- Remove add-on specific lines (“Private chef deposit”, “Kitchen already sourced ingredients”) until we sell those add-ons again.
 
-Launch guest book
+### Checkout Reminder
+- Drop the hard-coded weather callout. Replace it with a generic travel buffer tip or pull live data before re-enabling.
+- Remove the “Add-on gear to leave out” module, including the baby-gear pickup note, since gear rentals aren’t in the product yet.
 
+### Door Code / Smart Lock Delivery
+- Adjust the Parking / Entry steps table so column gutters are consistent and borders line up with the surrounding cards.
 
-These CTA's seem to be the exact same URL - can we collapse into one text block and CTA?
+### Guest Refund Issued
+- Align the status pills (“Issue reported”, “Ops approved refund”, “Funds in transit”) along the top edge so the icons and copy don’t appear staggered.
 
+### Mid-Stay Check-In
+- Replace the greeting (“Happy Day 2 of 4…”) and weather snippet with dynamic content or generalized copy—nothing should imply we have data sources we don’t actually integrate yet.
+- Remove the “Today’s check-in” and “Hot tub crew” blocks until we can feed schedules from ops systems; otherwise they risk being incorrect.
 
----
+### Payment Failure / Retry Request
+- Remove the “Other ways to pay” list (Apple Pay, wire transfer) unless Stripe’s hosted flow exposes those options for the guest.
 
-Booking Details / Welcome Email:
-Formatting issue for the text in boxes and the boxes themselves seem to have no margin between them...
-
-
-----
-
-
-Booking Modification Confirmation:
-Where would "View booking details →" take me? What is the logic here? 
-
-
------
-
-Cancellation Confirmation:
-
-Remove 
+### Post-Stay Thank You
+- Remove the “Highlights we loved hearing about” and “Stay keepsakes” sections.
+- Rework “Reasons to come back soon” so it focuses on property/experience value rather than add-on upsells.
 Private chef deposit
+
 Kitchen already sourced ingredients
-Since this is part of add ons.
-
-
------
-
-
-Checkout Reminder
-
-Remove: "Snow showers expected tomorrow evening—allow extra time if you’re driving over Rabbit Ears Pass." As this data point we do not have.
-
-
-Remove:
-Add-on gear to leave out
-Baby gear rental
-
-Pickup 12:30
-Leave crib + high-chair in the downstairs bedroom.
-
-Since we do not have add ons.
-
-
-----
-
-
-Door Code / Smart Lock Delivery:
-Fox slight formatting issue of
-Parking / Entry steps table.
-
-
-----
-
-
-
-Guest Refund Issued.. 
-
-align to row top the pills complete / complete / in-progress
-
-complete
-Issue reported
-
-You texted concierge at 21:05 MT when fireplace remote failed.
-
-complete
-Ops approved refund
-
-Duty manager Alissa authorized the credit after vendor diagnosis.
-
-in-progress
-Funds in transit
-
-Stripe released the refund to your bank. Watch for pending status in 24h.
-
-
-----
-
-
-Mid-Stay Check-In:
-
-Hey Maya, happy Day 2 of 4 - checking these numbers are logic driven and not hard coded.
-
-"Bluebird morning at 36°F climbing to 48°F by afternoon · light winds, perfect for an outdoor soak." - we do not have this data point?
-
-Remove Today's check-in
-Morning check
-
-Shuttle arrives 08:00 sharp. Reply if you need to bump to 09:00 and we will confirm within minutes.
-
-Hot tub crew
-
-Service stop scheduled 13:30. Please keep the cover on beforehand so temps stay high.
-
-No data point for this content...
-
-
-----
-
-Payment Failure / Retry Request
-
-Remove 
-Other ways to pay
-Apple Pay via the link above
-Wire transfer · reply for instructions
-
-Unless supported by Stripe
-
-
-----
-
-
-Post-Stay Thank You
-
-Remove Highlights we loved hearing about section
-
-
-Change: "Reasons to come back soon" section to be less about Add ons and more general please
-
-Remove: Stay keepsakes section.
-
----
-
