@@ -337,7 +337,9 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       const propertyPayload = payload as Property;
       setSelectedProperty(propertyPayload);
       resetBookingState();
-      updateUrlState({ slug: propertyPayload.slug, view: null, post: null }, "push", { scroll: true });
+      setView("property");
+      window.scrollTo(0, 0);
+      updateUrlState({ slug: propertyPayload.slug, view: null, post: null }, "push", { scroll: false });
     }
 
     if (target === "booking" && selectedProperty) {
