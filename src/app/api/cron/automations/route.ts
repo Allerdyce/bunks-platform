@@ -9,6 +9,8 @@ import {
   sendPreStay24hReminder,
   sendPreStayReminder,
   sendReviewRequest,
+  sendMidStayCheckIn,
+  sendDoorCodeEmail,
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
 import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
@@ -43,6 +45,8 @@ export async function POST() {
     reviewRequests: await handleReviewRequests(now),
     hostPrepThreeDay: await handleHostPrepThreeDay(now, opsDetails),
     hostPrepSameDay: await handleHostPrepSameDay(now, opsDetails),
+    midStayCheckIn: await handleMidStayCheckIn(now),
+    doorCodeDelivery: await handleDoorCodeDelivery(now),
   };
 
   return NextResponse.json({ ok: true, ranAt: now.toISOString(), summary });
@@ -219,6 +223,94 @@ async function handleHostPrepSameDay(now: Date, opsDetails: Awaited<ReturnType<t
     now,
     leadHours: HOST_PREP_SAME_DAY_LEAD,
     toleranceHours: HOST_PREP_SAME_DAY_TOLERANCE,
+  });
+}
+
+const MID_STAY_DELAY_HOURS = 18; // 10 AM day after check-in (assuming 4pm checkin)
+const MID_STAY_TOLERANCE = 4;
+
+async function handleMidStayCheckIn(now: Date): Promise<BatchSummary> {
+  // We want to target books where checkInDate + MID_STAY_DELAY_HOURS is roughly NOW.
+  // This is a "Lead Time" of negative hours (Delay).
+  // Our runLeadTimeBatch logic uses leadHours as "Hours BEFORE event".
+  // Event = CheckInDate.
+  // We want trigger at CheckIn + 18.
+  // So leadHours = -18.
+
+  const targetStart = addHours(now, -(MID_STAY_DELAY_HOURS + MID_STAY_TOLERANCE));
+  const targetEnd = addHours(now, -MID_STAY_DELAY_HOURS);
+
+  // But prisma query needs to find bookings where checkIn match these.
+  // checkIn >= targetStart AND checkIn <= targetEnd
+
+  const active = await prisma.booking.findMany({
+    where: {
+      status: 'PAID',
+      checkInDate: {
+        gte: targetStart,
+        lte: targetEnd,
+      },
+      // Ensure we don't send if they checkout today? (1 night stay)
+      // If 1 night stay, checkIn=Day1, CheckOut=Day2 11am.
+      // Trigger at 10am Day 2 is tight but okay.
+      // But maybe exclude if checkOutDate <= now?
+    },
+    select: { id: true, checkInDate: true },
+  });
+
+  const bookings: BasicBookingRecord[] = active.map((booking) => ({
+    id: booking.id,
+    scheduleDate: booking.checkInDate,
+  }));
+
+  return runLeadTimeBatch({
+    bookings,
+    type: 'MID_STAY_CONCIERGE',
+    sender: (bookingId) => sendMidStayCheckIn(bookingId), // Assuming signature is (bookingId)
+    now,
+    leadHours: -MID_STAY_DELAY_HOURS,
+    toleranceHours: MID_STAY_TOLERANCE,
+  });
+}
+
+const DOOR_CODE_LEAD_HOURS = 24;
+
+async function handleDoorCodeDelivery(now: Date): Promise<BatchSummary> {
+  const upcoming = await prisma.booking.findMany({
+    where: {
+      status: 'PAID',
+      checkInDate: {
+        gte: now,
+        lte: addHours(now, DOOR_CODE_LEAD_HOURS + PRE_STAY_TOLERANCE_HOURS),
+      },
+    },
+    include: { property: true },
+    orderBy: { checkInDate: 'asc' },
+  });
+
+  const bookings = upcoming.filter(b => b.property.lockboxCode || b.property.garageCode || b.property.skiLockerDoorCode);
+
+  return runLeadTimeBatch({
+    bookings: bookings.map(b => ({ id: b.id, scheduleDate: b.checkInDate })),
+    type: 'DOOR_CODE_DELIVERY',
+    sender: async (bookingId) => {
+      const booking = upcoming.find(b => b.id === bookingId);
+      if (!booking) return;
+
+      const code = booking.property.lockboxCode ??
+        booking.property.garageCode ??
+        booking.property.skiLockerDoorCode;
+
+      if (!code) return; // Should be filtered already, but safe guard
+
+      await sendDoorCodeEmail(bookingId, {
+        doorCode: code,
+        // We could populate specific entry steps here if we had them structured on the property
+      });
+    },
+    now,
+    leadHours: DOOR_CODE_LEAD_HOURS,
+    toleranceHours: PRE_STAY_TOLERANCE_HOURS,
   });
 }
 

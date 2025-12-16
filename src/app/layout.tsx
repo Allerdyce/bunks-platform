@@ -15,17 +15,21 @@ export const metadata: Metadata = {
     default: "Bunks | Unique Stays & Bunkhouses",
     template: "%s | Bunks",
   },
-  description: "Book unique bunkhouses and boutique stays with ease. Experience curated properties in top destinations.",
+  description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
+  applicationName: "Bunks",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
     siteName: "Bunks",
-    title: "Bunks | Unique Stays & Bunkhouses",
-    description: "Book unique bunkhouses and boutique stays with ease. Experience curated properties in top destinations.",
+    title: {
+      default: "Bunks | Unique Stays & Bunkhouses",
+      template: "%s | Bunks",
+    },
+    description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
     images: [
       {
-        url: "/og-image.jpg", // We need to ensure this exists or use a fallback
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Bunks - Unique Stays",
@@ -34,10 +38,26 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bunks | Unique Stays & Bunkhouses",
-    description: "Book unique bunkhouses and boutique stays with ease.",
+    title: {
+      default: "Bunks | Unique Stays & Bunkhouses",
+      template: "%s | Bunks",
+    },
+    description: "Book unique bunkhouses and boutique stays.",
     images: ["/og-image.jpg"],
+    creator: "@bunks",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  manifest: "/site.webmanifest",
   icons: {
     icon: "/favicon-32x32.png",
     shortcut: "/favicon.ico",

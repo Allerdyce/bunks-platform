@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { CLEANING_PROFILES } from '@/lib/cleaning/data';
-import { ResourceList } from '@/components/resources/ResourceList';
+
 
 export default function CleanerDashboard() {
     return (
@@ -45,9 +45,6 @@ export default function CleanerDashboard() {
                 ))}
             </div>
 
-            <div>
-                <ResourceList />
-            </div>
-        </div >
+        </div>
     );
 }

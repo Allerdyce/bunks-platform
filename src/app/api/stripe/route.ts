@@ -8,6 +8,7 @@ import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
 import { sendGuestRefundIssued } from '@/lib/email/sendGuestRefundIssued';
 import { sendHostRefundAdjustment } from '@/lib/email/sendHostRefundAdjustment';
+import { sendPaymentFailure } from '@/lib/email/sendPaymentFailure';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 
@@ -248,6 +249,39 @@ export async function POST(req: NextRequest) {
           }
         } else {
           console.warn(`Refund event for unknown booking PaymentIntent: ${paymentIntentId}`);
+        }
+      }
+    }
+
+
+
+    if (event.type === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntentId = paymentIntent.id;
+
+      // Attempt to find booking by intent
+      const booking = await prisma.booking.findUnique({
+        where: { stripePaymentIntentId: paymentIntentId },
+      });
+
+      if (booking) {
+        console.log(`❌ Payment failed for booking ${booking.id}`);
+        try {
+          const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: paymentIntent.currency.toUpperCase(),
+          });
+          const formattedAmount = formatter.format(paymentIntent.amount / 100);
+
+          await sendPaymentFailure(booking.id, {
+            amountDue: formattedAmount,
+            dueBy: 'Immediately',
+            failureReason: paymentIntent.last_payment_error?.message ?? 'Payment declined by bank',
+            paymentLink: `https://bunks.com/trips/${booking.publicReference ?? booking.id}`,
+          });
+          console.log(`✅ Sent payment failure email for booking ${booking.id}`);
+        } catch (err) {
+          console.error('Failed to send payment failure email', err);
         }
       }
     }
