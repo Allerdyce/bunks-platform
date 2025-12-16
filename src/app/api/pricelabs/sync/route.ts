@@ -1,4 +1,3 @@
-```typescript
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (!property) {
-                console.warn(`PriceLabs sync: Property not found for listingId ${ listingId }`);
+                console.warn(`PriceLabs sync: Property not found for listingId ${listingId}`);
                 continue;
             }
 
