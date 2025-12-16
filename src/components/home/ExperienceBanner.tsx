@@ -40,7 +40,7 @@ export function ExperienceBanner() {
               White-glove hospitality with the soul of the mountains.
             </h2>
             <p className="text-lg text-stone-500 max-w-2xl">
-              We obsess over every touchpoint—so your group arrives to a home staged like your favorite Airbnb, layered
+              We obsess over every touchpoint—so your group arrives to a home staged like your favorite boutique hotel, layered
               with concierge-level service, curated local rituals, and humans who reply when inspiration strikes at
               midnight.
             </p>

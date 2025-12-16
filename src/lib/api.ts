@@ -52,6 +52,8 @@ const mockApi = {
         nightlySubtotalCents: 0,
         cleaningFeeCents: 0,
         serviceFeeCents: 0,
+        taxCents: 0,
+        undiscountedNightlySubtotalCents: 0,
         nightlyLineItems: [],
       },
     };

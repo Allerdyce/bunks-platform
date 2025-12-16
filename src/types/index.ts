@@ -177,6 +177,8 @@ export interface BookingBreakdown {
   nightlySubtotalCents: number;
   cleaningFeeCents: number;
   serviceFeeCents: number;
+  taxCents: number;
+  undiscountedNightlySubtotalCents?: number;
   nightlyLineItems: NightlyLineItem[];
 }
 

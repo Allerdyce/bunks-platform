@@ -103,7 +103,7 @@ export function PropertyDetailView({
   const nightlyRateLabel = formatCurrency(property.price);
   const comparableRateLabel = formatCurrency(comparableNightlyRate);
   const reviewCount = property.reviews;
-  const savingsCopy = "Save 10% compared to the same Airbnb listing";
+  const savingsCopy = "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
 
   useEffect(() => {
@@ -660,7 +660,18 @@ export function PropertyDetailView({
             </div>
             <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-base font-semibold text-gray-900">{pendingSummary}</p>
+                {pendingNights ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-stone-400 line-through decoration-stone-400">
+                      {formatCurrency(pendingTotal)}
+                    </p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {formatCurrency(pendingTotal * 0.9)} for {pendingNights} night{pendingNights > 1 ? "s" : ""}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-base font-semibold text-gray-900">{pendingSummary}</p>
+                )}
                 {pendingNights ? (
                   <p className="text-sm text-gray-500">{formatRangeSummary(pendingRange)}</p>
                 ) : (
@@ -740,7 +751,18 @@ export function PropertyDetailView({
             >
               <div className="flex items-center gap-3">
                 <div>
-                  <p className="text-base font-semibold text-gray-900">{footerPrimaryText}</p>
+                  {canBook ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-stone-400 line-through decoration-stone-400">
+                        {formatCurrency(confirmedTotal)}
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {formatCurrency(confirmedTotal * 0.9)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-base font-semibold text-gray-900">{footerPrimaryText}</p>
+                  )}
                   <p className="text-xs text-gray-500">{footerSecondaryText}</p>
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-900 underline">Edit</span>

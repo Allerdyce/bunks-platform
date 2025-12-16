@@ -38,7 +38,7 @@ export const PROPERTY_REVIEWS: Record<string, PropertyReview[]> = {
       nights: 3,
       rating: 5,
       body:
-        "Booked direct with Bunks and saved compared to Airbnb. Communication was seamless and the team had a chilled bottle of wine waiting for us—thoughtful touches throughout!",
+        "Booked direct with Bunks and saved compared to the booking platforms. Communication was seamless and the team had a chilled bottle of wine waiting for us—thoughtful touches throughout!",
     },
   ],
   "steamboat-downtown-townhome": [

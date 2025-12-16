@@ -48,11 +48,16 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
 
   const nights = useMemo(() => calculateNights(dates), [dates]);
   const fallbackTotals = useMemo(() => {
-    const subtotal = nights * property.price;
+    // Client-side approximation of pricing engine
+    const undiscountedNightlyRate = property.price;
+    const discountedNightlyRate = Math.round(undiscountedNightlyRate * 0.9);
+
+    const subtotal = nights * discountedNightlyRate;
     const cleaningFee = CLEANING_FEE;
-    const serviceFee = SERVICE_FEE;
+    const serviceFee = Math.round(subtotal * 0.15); // 15% Service Fee
     const total = subtotal + cleaningFee + serviceFee;
-    return { subtotal, cleaningFee, serviceFee, total };
+
+    return { subtotal, cleaningFee, serviceFee, total, undiscountedNightlyRate, discountedNightlyRate };
   }, [nights, property.price]);
 
   const handleDetailsSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
@@ -153,9 +158,10 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
           nights={nights}
           breakdown={pricingBreakdown}
           fallbackPricing={{
-            nightlyRate: property.price,
-            cleaningFee: CLEANING_FEE,
-            serviceFee: SERVICE_FEE,
+            nightlyRate: fallbackTotals.discountedNightlyRate,
+            cleaningFee: fallbackTotals.cleaningFee,
+            serviceFee: fallbackTotals.serviceFee,
+            undiscountedNightlyRate: fallbackTotals.undiscountedNightlyRate,
           }}
           currency={quoteTotals?.currency ?? "USD"}
           onContinue={step === "details" ? handleRequestContinue : undefined}

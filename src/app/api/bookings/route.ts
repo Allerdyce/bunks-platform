@@ -181,6 +181,7 @@ export async function POST(req: NextRequest) {
 
     const property = await prisma.property.findUnique({
       where: { slug: propertySlug },
+      include: { taxes: true },
     });
 
     if (!property) {
@@ -325,9 +326,11 @@ export async function POST(req: NextRequest) {
     const weekdayRate = propertyWithRates.weekdayRate ?? propertyWithRates.baseNightlyRate;
     const weekendRate = propertyWithRates.weekendRate ?? propertyWithRates.baseNightlyRate;
     const cleaningFeeCents = propertyWithRates.cleaningFee ?? 8500;
-    const serviceFeeCents = propertyWithRates.serviceFee ?? 2000;
+    // Old service fee removed in favor of dynamic 15% calc below
 
     const cursor = new Date(checkInDate);
+    let undiscountedNightlySubtotalCents = 0;
+
     while (cursor < checkOutDate) {
       const isoDate = toISODate(cursor);
       const special = specialByDate.get(isoDate);
@@ -356,7 +359,7 @@ export async function POST(req: NextRequest) {
             ? 'WEEKEND'
             : 'WEEKDAY';
 
-      const amountCents = priceLabs
+      const undiscountedCents = priceLabs
         ? priceLabs.priceCents
         : special
           ? special.price
@@ -364,17 +367,61 @@ export async function POST(req: NextRequest) {
             ? weekendRate
             : weekdayRate;
 
+      // Apply 10% discount to ALL rates for direct booking advantage
+      const amountCents = Math.round(undiscountedCents * 0.90);
+
+      undiscountedNightlySubtotalCents += undiscountedCents;
+
       nightlyLineItems.push({ date: isoDate, amountCents, source });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     const nightlySubtotalCents = nightlyLineItems.reduce((sum, item) => sum + item.amountCents, 0);
 
+    // Recalculate based on the logic we just defined (since I can't declare a variable outside the loop easily in this patch without replacing lines 330+)
+    // Actually, I can just recalculate it from PriceLabs map again? No, that's inefficient.
+    // I will calculate `undiscountedNightlySubtotalCents` by iterating `nightlyLineItems` and checking the source/re-fetching?
+    // No, `nightlyLineItems` doesn't have the original price.
+
+    // CORRECT APPROACH:
+    // I will use a second reduce to calculate undiscounted total, looking up the price again?
+    // Or, I will perform a LARGER replace to initialize a variable.
+    // Let's do a larger replace from `const cursor = ...`
+
+    /* 
+    const cursor = new Date(checkInDate);
+    let undiscountedNightlySubtotalCents = 0; // New var
+    while (cursor < checkOutDate) { ... }
+    */
+
+    // This is safer.
 
 
     const partySize = Math.max(1, Math.min(body.guests ?? property.maxGuests ?? 1, property.maxGuests ?? 16));
 
-    const totalPriceCents = nightlySubtotalCents + cleaningFeeCents + serviceFeeCents;
+    // SERVICE FEE: 15% of nightly subtotal
+    const serviceFeeCents = Math.round(nightlySubtotalCents * 0.15);
+
+    // TAX CALCULATION
+    let taxCents = 0;
+    // Fetch taxes if they were included in the query, else we might need another query or include them in the initial findUnique
+    // Since we didn't include them in the initial query, let's fetch them now or update the initial query. 
+    // Updating initial query is cleaner.
+
+    // NOTE: Usage below relies on property.taxes being present. 
+    // I will update the initial query in a moment. For now, assuming property.taxes is available.
+    if ((property as any).taxes) {
+      for (const tax of (property as any).taxes) {
+        let taxableBase = 0;
+        if (tax.appliesTo.includes('nightly')) taxableBase += nightlySubtotalCents;
+        if (tax.appliesTo.includes('cleaning')) taxableBase += cleaningFeeCents;
+        if (tax.appliesTo.includes('service')) taxableBase += serviceFeeCents;
+
+        taxCents += Math.round(taxableBase * tax.rate);
+      }
+    }
+
+    const totalPriceCents = nightlySubtotalCents + cleaningFeeCents + serviceFeeCents + taxCents;
 
     // 4) Create booking in DB with PENDING status
     await ensureBookingReferenceColumn();
@@ -466,6 +513,8 @@ export async function POST(req: NextRequest) {
         nightlySubtotalCents,
         cleaningFeeCents,
         serviceFeeCents,
+        taxCents,
+        undiscountedNightlySubtotalCents,
         nightlyLineItems,
 
       },

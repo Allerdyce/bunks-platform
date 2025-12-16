@@ -44,6 +44,16 @@ model Property {
   opsProfiles       OpsContactProfile[]
   pricelabsListingId String? @unique
   pricing           PropertyPricing[]
+  taxes             PropertyTax[]
+}
+
+model PropertyTax {
+  id          Int      @id @default(autoincrement())
+  propertyId  Int
+  name        String
+  rate        Float
+  appliesTo   String[] // ["nightly", "cleaning", "service"]
+  property    Property @relation(fields: [propertyId], references: [id])
 }
 
 model PropertyPricing {

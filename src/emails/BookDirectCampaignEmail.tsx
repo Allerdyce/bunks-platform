@@ -1,125 +1,97 @@
-
 import * as React from 'react';
 import {
-    Body,
     Button,
-    Container,
-    Head,
     Heading,
-    Html,
     Img,
     Link,
-    Preview,
     Section,
     Text,
-    Hr,
-    Tailwind,
+    Hr
 } from '@react-email/components';
+import { EmailLayout } from './components/EmailLayout';
 
 interface BookDirectCampaignEmailProps {
     guestName?: string;
     ctaUrl?: string;
+    baseUrl?: string;
 }
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunks.com';
 
 export const BookDirectCampaignEmail = ({
     guestName = 'Guest',
     ctaUrl = 'https://bunks.com',
-}: BookDirectCampaignEmailProps) => {
+    baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunks.com',
+}: BookDirectCampaignEmailProps & { baseUrl?: string }) => {
     const previewText = 'Save 10-20% on your next stay by booking direct.';
 
     return (
-        <Html>
-            <Head />
-            <Preview>{previewText}</Preview>
-            <Tailwind
-                config={{
-                    theme: {
-                        extend: {
-                            colors: {
-                                brand: '#fe5000',
-                                offwhite: '#fafafa',
-                            },
-                        },
-                    },
-                }}
-            >
-                <Body className="bg-white my-auto mx-auto font-sans">
-                    <Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
-                        {/* Header / Logo */}
-                        <Section className="mt-[20px]">
-                            <Img
-                                src={`${baseUrl}/static/logo.png`}
-                                width="120"
-                                height="40"
-                                alt="Bunks"
-                                className="my-0 mx-auto"
-                            />
-                        </Section>
+        <EmailLayout previewText={previewText} footerText="Sent with 🧡 from Bunks hospitality.">
 
-                        {/* Hero Heading */}
-                        <Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
-                            Why book direct next time?
-                        </Heading>
+            {/* Hero Image */}
+            <Section className="w-full mb-6 rounded-lg overflow-hidden">
+                <Img
+                    src="https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1000&auto=format&fit=crop"
+                    width="100%"
+                    alt="Cozy Mountain Cabin"
+                    className="w-full object-cover"
+                    style={{ width: '100%', maxWidth: '100%' }}
+                />
+            </Section>
 
-                        {/* Personal Note */}
-                        <Text className="text-black text-[14px] leading-[24px]">
-                            Hi {guestName},
-                        </Text>
-                        <Text className="text-black text-[14px] leading-[24px]">
-                            We hope you enjoyed your stay! While you likely booked via Airbnb or VRBO this time, we wanted to
-                            invite you to join our <strong>Bunks Direct</strong> program for your next mountain getaway.
-                        </Text>
+            <Heading className="text-[#101828] text-2xl font-semibold text-center mb-4">
+                Until Next Time 🏔️
+            </Heading>
 
-                        {/* Value Props */}
-                        <Section className="bg-offwhite rounded-lg p-6 my-6">
-                            <Heading as="h3" className="text-[18px] font-medium mt-0 mb-4">
-                                The Direct Advantage
-                            </Heading>
+            <Text className="text-[#475467] text-base mb-4">
+                Hi {guestName},
+            </Text>
+            <Text className="text-[#475467] text-base mb-4">
+                Thanks for choosing to stay with Bunks! We hope you made some amazing mountain memories.
+            </Text>
+            <Text className="text-[#475467] text-base mb-6">
+                When the mountains call you back, skip the third-party fees and book with us directly to unlock VIP perks.
+            </Text>
 
-                            <div className="flex flex-col gap-3">
-                                <Text className="text-[14px] leading-[24px] m-0">
-                                    ⭐ <strong>No booking platform fees</strong> (save ~15% instantly)
-                                </Text>
-                                <Text className="text-[14px] leading-[24px] m-0">
-                                    💰 <strong>Save 10–20%</strong> on nightly rates
-                                </Text>
-                                <Text className="text-[14px] leading-[24px] m-0">
-                                    🤝 <strong>Extra 10% off</strong> when you refer a friend
-                                </Text>
-                                <Text className="text-[14px] leading-[24px] m-0">
-                                    📅 <strong>First access</strong> to peak dates (Xmas, 4th of July)
-                                </Text>
-                                <Text className="text-[14px] leading-[24px] m-0">
-                                    ⏰ <strong>Early check-in</strong> / late check-out priority
-                                </Text>
-                            </div>
-                        </Section>
+            {/* Value Props Card */}
+            <Section className="bg-[#F8F9FC] rounded-xl p-5 mb-6 border border-[#EAECF0]">
+                <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-4 text-center">
+                    The Direct Advantage
+                </Heading>
 
-                        {/* CTA */}
-                        <Section className="text-center mt-[32px] mb-[32px]">
-                            <Button
-                                className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
-                                href={ctaUrl}
-                            >
-                                Book Your Next Stay
-                            </Button>
-                        </Section>
+                <div className="space-y-3">
+                    <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
+                        <span style={{ fontSize: '18px' }}>💰</span>
+                        <span><strong>Save 15% instantly</strong> (no service fees)</span>
+                    </Text>
+                    <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
+                        <span style={{ fontSize: '18px' }}>📅</span>
+                        <span><strong>Priority Access</strong> to peak dates</span>
+                    </Text>
+                    <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
+                        <span style={{ fontSize: '18px' }}>⏰</span>
+                        <span><strong>Early Check-in</strong> priority</span>
+                    </Text>
+                </div>
+            </Section>
 
-                        <Text className="text-black text-[14px] leading-[24px]">
-                            We'd love to host you again whenever the mountains call.
-                        </Text>
+            {/* CTA */}
+            <Section className="text-center mb-6">
+                <Button
+                    className="bg-[#111827] rounded-lg text-white text-sm font-semibold no-underline text-center px-6 py-3"
+                    href={ctaUrl}
+                >
+                    Book Your Next Stay
+                </Button>
+                <Text className="text-[#98A2B3] text-xs mt-3">
+                    Check availability for Steamboat & Summerland
+                </Text>
+            </Section>
 
-                        <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
+            <Text className="text-[#475467] text-sm text-center">
+                We&apos;d love to host you again whenever the mountains call.<br />
+                <Link href={ctaUrl} className="text-[#7F56D9]">Visit Bunks.com</Link>
+            </Text>
 
-                        <Text className="text-[#666666] text-[12px] leading-[24px]">
-                            Bunks Hospitality · Steamboat Springs & Summerland CA
-                        </Text>
-                    </Container>
-                </Body>
-            </Tailwind>
-        </Html>
+        </EmailLayout>
     );
 };
 

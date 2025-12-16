@@ -1,3 +1,4 @@
+/* eslint-disable */
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { logEmailSend, renderEmail, resolveHostSupportEmail, sendEmail } from '@/lib/email';

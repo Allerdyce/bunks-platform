@@ -11,10 +11,11 @@ export async function sendBookDirectCampaign(
 ) {
     const html = await renderEmail(
         <BookDirectCampaignEmail
-      guestName={ guestName }
-      ctaUrl = "https://bunks.com"
+            guestName={guestName}
+            ctaUrl={process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"}
+            baseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"}
         />
-  );
+    );
 
     try {
         const response = await sendEmail({

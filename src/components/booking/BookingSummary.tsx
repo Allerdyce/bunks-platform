@@ -13,6 +13,7 @@ interface BookingSummaryProps {
     nightlyRate: number;
     cleaningFee: number;
     serviceFee: number;
+    undiscountedNightlyRate?: number;
   };
   currency?: string;
   onContinue?: () => void;
@@ -52,7 +53,25 @@ export function BookingSummary({
     ? centsToMajor(breakdown!.serviceFeeCents)
     : fallbackPricing.serviceFee;
 
-  const total = nightlySubtotal + cleaningFee + serviceFee;
+  const tax = hasBreakdown
+    ? centsToMajor(breakdown!.taxCents)
+    : 0;
+
+  const total = nightlySubtotal + cleaningFee + serviceFee + tax;
+
+  // Strikethrough Logic
+  const undiscountedNightlySubtotal = hasBreakdown && breakdown?.undiscountedNightlySubtotalCents
+    ? centsToMajor(breakdown.undiscountedNightlySubtotalCents)
+    : fallbackPricing.undiscountedNightlyRate
+      ? fallbackPricing.undiscountedNightlyRate * nights
+      : 0;
+
+  const hasDiscount = undiscountedNightlySubtotal > nightlySubtotal;
+
+  const undiscountedTotal = hasDiscount
+    ? undiscountedNightlySubtotal + cleaningFee + serviceFee + tax
+    : 0;
+
   const perNightLabel = hasBreakdown
     ? "Nightly subtotal"
     : `${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} nights`;
@@ -79,7 +98,14 @@ export function BookingSummary({
       <div className="border-t border-gray-100 py-4 space-y-3 text-sm">
         <div className="flex justify-between text-gray-600">
           <span>{perNightLabel}</span>
-          <span>{formatCurrency(nightlySubtotal, currency)}</span>
+          <div className="flex flex-col items-end">
+            {hasDiscount && (
+              <span className="text-xs text-gray-400 line-through">
+                {formatCurrency(undiscountedNightlySubtotal, currency)}
+              </span>
+            )}
+            <span>{formatCurrency(nightlySubtotal, currency)}</span>
+          </div>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Cleaning fee</span>
@@ -89,11 +115,24 @@ export function BookingSummary({
           <span>Service fee</span>
           <span>{formatCurrency(serviceFee, currency)}</span>
         </div>
+        {tax > 0 && (
+          <div className="flex justify-between text-gray-600">
+            <span>Taxes</span>
+            <span>{formatCurrency(tax, currency)}</span>
+          </div>
+        )}
       </div>
       <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
         <div className="flex justify-between font-medium text-lg text-gray-900">
           <span>Total</span>
-          <span>{formatCurrency(grandTotal, currency)}</span>
+          <div className="flex flex-col items-end">
+            {hasDiscount && (
+              <span className="text-xs text-gray-400 line-through">
+                {formatCurrency(undiscountedTotal, currency)}
+              </span>
+            )}
+            <span>{formatCurrency(grandTotal, currency)}</span>
+          </div>
         </div>
         {onContinue && (
           <Button

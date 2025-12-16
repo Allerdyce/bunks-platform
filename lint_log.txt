@@ -1,0 +1,60 @@
+
+> bunks@0.1.0 lint /Users/work/Desktop/bunks
+> eslint
+
+
+/Users/work/Desktop/bunks/scripts/register-pricelabs.ts
+  7:11  warning  'IntegrationRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/app/admin/emails/TemplateControls.tsx
+  5:10  warning  'getEmailSubject' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/app/admin/emails/page.tsx
+  11:7  warning  'STATUS_ORDER' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  57:9  warning  'totalTemplates' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/app/admin/messages/page.tsx
+  213:9  warning  'conversationPanel' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  231:9  warning  'reservationPanel' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/app/api/bookings/route.ts
+    8:10  warning  'isFeatureEnabled' is defined but never used                     @typescript-eslint/no-unused-vars
+   54:7   warning  'DEFAULT_ACTIVITY_TIME_SLOT' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  153:10  warning  'parseActivityDate' is defined but never used                    @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/components/BunksApp.tsx
+  86:5  warning  'auth' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  88:5  warning  'signInAnonymously' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/components/admin/AdminTopNav.tsx
+  3:15  warning  'ReactNode' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/components/layout/Navbar.tsx
+  67:9  warning  'handleNavigate' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/components/views/BookingDetailsView.tsx
+  83:25  warning  'propertyName' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/emails/BookDirectCampaignEmail.tsx
+   11:5   warning  'Link' is defined but never used                                 @typescript-eslint/no-unused-vars
+  111:31  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/work/Desktop/bunks/src/lib/email/sendPostStayThankYou.tsx
+  22:10  warning  'defaultHighlights' is defined but never used       @typescript-eslint/no-unused-vars
+  35:10  warning  'defaultOffer' is defined but never used            @typescript-eslint/no-unused-vars
+  46:10  warning  'defaultReferral' is defined but never used         @typescript-eslint/no-unused-vars
+  56:10  warning  'defaultUpcomingReasons' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/work/Desktop/bunks/src/lib/email/sendReviewRequest.tsx
+  1:13  warning  'React' is defined but never used                    @typescript-eslint/no-unused-vars
+  3:10  warning  'logEmailSend' is defined but never used             @typescript-eslint/no-unused-vars
+  3:24  warning  'renderEmail' is defined but never used              @typescript-eslint/no-unused-vars
+  3:37  warning  'resolveHostSupportEmail' is defined but never used  @typescript-eslint/no-unused-vars
+  3:62  warning  'sendEmail' is defined but never used                @typescript-eslint/no-unused-vars
+  4:10  warning  'ReviewRequestEmail' is defined but never used       @typescript-eslint/no-unused-vars
+  6:7   warning  'EMAIL_TYPE' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  7:7   warning  'APP_URL' is assigned a value but never used         @typescript-eslint/no-unused-vars
+
+✖ 28 problems (1 error, 27 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.
