@@ -67,6 +67,11 @@ export function Footer({ onNavigate }: FooterProps) {
                 Privacy Policy
               </Link>
             </li>
+            <li>
+              <Link href="/cleaner/login" className="transition hover:text-[var(--color-text-primary)]">
+                Cleaner Portal
+              </Link>
+            </li>
           </ul>
         </div>
       </div>
