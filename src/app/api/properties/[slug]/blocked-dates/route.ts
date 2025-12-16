@@ -91,13 +91,14 @@ export async function GET(req: NextRequest) {
 
     const specialBlocks = specialDelegate
       ? ((await specialDelegate.findMany({
-          where: { propertyId: property.id, isBlocked: true },
-          orderBy: { date: 'asc' },
-        })) as { date: Date }[])
+        where: { propertyId: property.id, isBlocked: true },
+        orderBy: { date: 'asc' },
+      })) as { date: Date }[])
       : [];
 
+    // If no blocked dates found, return empty list (property is fully available)
     if (!blocked.length && !specialBlocks.length) {
-      return respondWithFallback(slug);
+      return NextResponse.json({ property: slug, blockedDates: [] });
     }
 
     const dates = [
