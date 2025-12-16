@@ -393,90 +393,87 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     }
 
     setView(target);
-    if (typeof window !== "undefined" && target !== "booking") {
-      if (typeof window !== "undefined" && target !== "booking") {
-        // Scroll handled by useEffect on view change
-      }
-    };
+    // Scroll handled by useEffect on view change
+  };
 
-    if (loadingAuth) {
-      return <LoaderScreen />;
-    }
-
-    const isBookingViewState = view === "booking-details" || (typeof view === "string" && view.startsWith("booking-"));
-
-    return (
-      <Layout
-        onNavigate={handleNavigate}
-        currentView={view}
-        bookingSection={bookingSection}
-        bookingRef={pathBookingRef}
-        hideFooter={isBookingViewState}
-      >
-        {view === "home" && (
-          <>
-            <HomeView properties={properties} onSelectProperty={(property) => handleNavigate("property", property)} />
-            <HomeCtaBanner onNavigate={handleNavigate} />
-          </>
-        )}
-
-        {view === "about" && <AboutView onNavigate={handleNavigate} />}
-
-        {view === "journal" && (
-          <JournalView
-            posts={JOURNAL_POSTS}
-            onNavigate={handleNavigate}
-            onOpenPost={(post) => handleNavigate("blog-post", post)}
-          />
-        )}
-
-        {view === "blog-post" && selectedPost && (
-          <BlogPostView
-            post={selectedPost}
-            relatedPosts={JOURNAL_POSTS.filter((post) => post.id !== selectedPost.id).slice(0, 2)}
-            onBack={() => handleNavigate("journal")}
-            onOpenPost={(post) => handleNavigate("blog-post", post)}
-          />
-        )}
-
-        {view === "property" && selectedProperty && (
-          <PropertyDetailView
-            property={selectedProperty}
-            bookingDates={bookingDates}
-            onSelectDates={setBookingDates}
-            guestCount={guestCount}
-            onGuestCountChange={setGuestCount}
-            onNavigate={handleNavigate}
-          />
-        )}
-
-        {view === "booking" && selectedProperty && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <BookingContainer
-              property={selectedProperty}
-              dates={bookingDates}
-              guestCount={guestCount}
-              onBack={() => setView("property")}
-              onSuccess={(payload) => {
-                persistBookingLookup(payload);
-                handleNavigate("booking-details");
-              }}
-            />
-          </div>
-        )}
-
-        {view === "success" && <SuccessView onNavigate={handleNavigate} />}
-
-        {isBookingViewState && (
-          <BookingDetailsView
-            onNavigate={handleNavigate}
-            initialLookup={recentBookingLookup}
-            onPersistLookup={persistBookingLookup}
-            section={bookingSection ?? "essential"}
-          />
-        )}
-      </Layout>
-    );
+  if (loadingAuth) {
+    return <LoaderScreen />;
   }
 
-  export default BunksApp;
+  const isBookingViewState = view === "booking-details" || (typeof view === "string" && view.startsWith("booking-"));
+
+  return (
+    <Layout
+      onNavigate={handleNavigate}
+      currentView={view}
+      bookingSection={bookingSection}
+      bookingRef={pathBookingRef}
+      hideFooter={isBookingViewState}
+    >
+      {view === "home" && (
+        <>
+          <HomeView properties={properties} onSelectProperty={(property) => handleNavigate("property", property)} />
+          <HomeCtaBanner onNavigate={handleNavigate} />
+        </>
+      )}
+
+      {view === "about" && <AboutView onNavigate={handleNavigate} />}
+
+      {view === "journal" && (
+        <JournalView
+          posts={JOURNAL_POSTS}
+          onNavigate={handleNavigate}
+          onOpenPost={(post) => handleNavigate("blog-post", post)}
+        />
+      )}
+
+      {view === "blog-post" && selectedPost && (
+        <BlogPostView
+          post={selectedPost}
+          relatedPosts={JOURNAL_POSTS.filter((post) => post.id !== selectedPost.id).slice(0, 2)}
+          onBack={() => handleNavigate("journal")}
+          onOpenPost={(post) => handleNavigate("blog-post", post)}
+        />
+      )}
+
+      {view === "property" && selectedProperty && (
+        <PropertyDetailView
+          property={selectedProperty}
+          bookingDates={bookingDates}
+          onSelectDates={setBookingDates}
+          guestCount={guestCount}
+          onGuestCountChange={setGuestCount}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {view === "booking" && selectedProperty && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <BookingContainer
+            property={selectedProperty}
+            dates={bookingDates}
+            guestCount={guestCount}
+            onBack={() => setView("property")}
+            onSuccess={(payload) => {
+              persistBookingLookup(payload);
+              handleNavigate("booking-details");
+            }}
+          />
+        </div>
+      )}
+
+      {view === "success" && <SuccessView onNavigate={handleNavigate} />}
+
+      {isBookingViewState && (
+        <BookingDetailsView
+          onNavigate={handleNavigate}
+          initialLookup={recentBookingLookup}
+          onPersistLookup={persistBookingLookup}
+          section={bookingSection ?? "essential"}
+        />
+      )}
+    </Layout>
+  );
+}
+
+export default BunksApp;
