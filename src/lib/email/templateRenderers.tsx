@@ -37,13 +37,7 @@ import { HostChargebackEmail } from '@/emails/HostChargebackEmail';
 import { HostOnboardingWelcomeEmail } from '@/emails/HostOnboardingWelcomeEmail';
 import { HostVerificationProgressEmail } from '@/emails/HostVerificationProgressEmail';
 import { HostListingReadyEmail } from '@/emails/HostListingReadyEmail';
-import { SystemEmailFailedEmail } from '@/emails/SystemEmailFailedEmail';
-import { SystemStripeWebhookFailedEmail } from '@/emails/SystemStripeWebhookFailedEmail';
-import { SystemBookingCreationFailedEmail } from '@/emails/SystemBookingCreationFailedEmail';
-import { SystemCronSummaryEmail } from '@/emails/SystemCronSummaryEmail';
-import { SystemMajorIssueEmail } from '@/emails/SystemMajorIssueEmail';
-import { SystemCalendarSyncErrorEmail } from '@/emails/SystemCalendarSyncErrorEmail';
-import { SystemPaymentExceptionEmail } from '@/emails/SystemPaymentExceptionEmail';
+
 import {
 	sampleBookingConfirmationProps,
 	sampleBookingWelcomeProps,
@@ -82,13 +76,7 @@ import {
 	sampleHostOnboardingWelcomeProps,
 	sampleHostVerificationProgressProps,
 	sampleHostListingReadyProps,
-	sampleSystemEmailFailedProps,
-	sampleSystemStripeWebhookFailedProps,
-	sampleSystemBookingCreationFailedProps,
-	sampleSystemCronSummaryProps,
-	sampleSystemMajorIssueProps,
-	sampleSystemCalendarSyncErrorProps,
-	sampleSystemPaymentExceptionProps,
+
 } from '@/lib/email/sampleData';
 
 export interface TemplateRendererEntry {
@@ -191,26 +179,7 @@ export const TEMPLATE_RENDERERS: Record<string, TemplateRendererEntry> = {
 		render: () => renderEmail(<HostDoorCodeReminderEmail {...sampleHostDoorCodeReminderProps()} />),
 		getSampleProps: sampleHostDoorCodeReminderProps,
 	},
-	'host-damage-report': {
-		render: () => renderEmail(<HostDamageReportEmail {...sampleHostDamageReportProps()} />),
-		getSampleProps: sampleHostDamageReportProps,
-	},
-	'host-cleaner-report': {
-		render: () => renderEmail(<HostCleanerReportEmail {...sampleHostCleanerReportProps()} />),
-		getSampleProps: sampleHostCleanerReportProps,
-	},
-	'host-noise-alert': {
-		render: () => renderEmail(<HostNoiseAlertEmail {...sampleHostNoiseAlertProps()} />),
-		getSampleProps: sampleHostNoiseAlertProps,
-	},
-	'host-checkout-confirmed': {
-		render: () => renderEmail(<HostCheckoutConfirmedEmail {...sampleHostCheckoutConfirmedProps()} />),
-		getSampleProps: sampleHostCheckoutConfirmedProps,
-	},
-	'host-cleaner-assigned': {
-		render: () => renderEmail(<HostCleanerAssignedEmail {...sampleHostCleanerAssignedProps()} />),
-		getSampleProps: sampleHostCleanerAssignedProps,
-	},
+
 	'host-guest-cancelled': {
 		render: () => renderEmail(<HostGuestCancelledEmail {...sampleHostGuestCancelledProps()} />),
 		getSampleProps: sampleHostGuestCancelledProps,
@@ -227,46 +196,8 @@ export const TEMPLATE_RENDERERS: Record<string, TemplateRendererEntry> = {
 		render: () => renderEmail(<HostChargebackEmail {...sampleHostChargebackProps()} />),
 		getSampleProps: sampleHostChargebackProps,
 	},
-	'host-onboarding-welcome': {
-		render: () => renderEmail(<HostOnboardingWelcomeEmail {...sampleHostOnboardingWelcomeProps()} />),
-		getSampleProps: sampleHostOnboardingWelcomeProps,
-	},
-	'host-verification-progress': {
-		render: () => renderEmail(<HostVerificationProgressEmail {...sampleHostVerificationProgressProps()} />),
-		getSampleProps: sampleHostVerificationProgressProps,
-	},
-	'host-listing-ready': {
-		render: () => renderEmail(<HostListingReadyEmail {...sampleHostListingReadyProps()} />),
-		getSampleProps: sampleHostListingReadyProps,
-	},
-	'system-email-failed': {
-		render: () => renderEmail(<SystemEmailFailedEmail {...sampleSystemEmailFailedProps()} />),
-		getSampleProps: sampleSystemEmailFailedProps,
-	},
-	'system-stripe-webhook-failed': {
-		render: () => renderEmail(<SystemStripeWebhookFailedEmail {...sampleSystemStripeWebhookFailedProps()} />),
-		getSampleProps: sampleSystemStripeWebhookFailedProps,
-	},
-	'system-booking-creation-failed': {
-		render: () => renderEmail(<SystemBookingCreationFailedEmail {...sampleSystemBookingCreationFailedProps()} />),
-		getSampleProps: sampleSystemBookingCreationFailedProps,
-	},
-	'system-cron-summary': {
-		render: () => renderEmail(<SystemCronSummaryEmail {...sampleSystemCronSummaryProps()} />),
-		getSampleProps: sampleSystemCronSummaryProps,
-	},
-	'system-major-issue': {
-		render: () => renderEmail(<SystemMajorIssueEmail {...sampleSystemMajorIssueProps()} />),
-		getSampleProps: sampleSystemMajorIssueProps,
-	},
-	'system-calendar-sync-error': {
-		render: () => renderEmail(<SystemCalendarSyncErrorEmail {...sampleSystemCalendarSyncErrorProps()} />),
-		getSampleProps: sampleSystemCalendarSyncErrorProps,
-	},
-	'system-payment-exception': {
-		render: () => renderEmail(<SystemPaymentExceptionEmail {...sampleSystemPaymentExceptionProps()} />),
-		getSampleProps: sampleSystemPaymentExceptionProps,
-	},
+
+
 };
 
 export function getTemplateRenderer(slug: string): TemplateRendererEntry | undefined {
