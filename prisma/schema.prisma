@@ -261,4 +261,5 @@ enum UserRole {
   GUEST
   HOST
   ADMIN
+  CLEANER
 }
