@@ -8,8 +8,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    let body;
     try {
-        const body = await req.json();
+        // PriceLabs verification might send empty body or specific probe
+        const text = await req.text();
+        if (!text) {
+            console.log("PriceLabs probe (empty body)");
+            return NextResponse.json({ status: "ok" });
+        }
+        body = JSON.parse(text);
+    } catch (e) {
+        console.log("PriceLabs probe (invalid json)", e);
+        return NextResponse.json({ status: "ok" });
+    }
+
+    try {
         // PriceLabs payload structure:
         // { listing_id: "...", prices: [ { date: "YYYY-MM-DD", price: 123, min_stay: 2, ... } ] }
 
