@@ -7,6 +7,7 @@ import { sendBookingWelcomeEmail } from '@/lib/email/sendBookingWelcomeEmail';
 import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
 import { sendGuestRefundIssued } from '@/lib/email/sendGuestRefundIssued';
+import { sendHostRefundAdjustment } from '@/lib/email/sendHostRefundAdjustment';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 
@@ -180,6 +181,7 @@ export async function POST(req: NextRequest) {
       if (paymentIntentId) {
         const booking = await prisma.booking.findUnique({
           where: { stripePaymentIntentId: paymentIntentId },
+          include: { property: true },
         });
 
         if (booking) {
@@ -212,8 +214,37 @@ export async function POST(req: NextRequest) {
               initiatedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
             });
             console.log(`✅ Sent refund email to guest for booking ${booking.id}`);
+
+            // Notify Host/Ops about the adjustment
+            try {
+              await sendHostRefundAdjustment({
+                bookingId: booking.id,
+                logBookingId: booking.id,
+                hostName: 'Host',
+                propertyName: booking.property.name,
+                guestName: booking.guestName,
+                processedAt: new Date().toLocaleString('en-US', { timeZone: booking.property.timezone ?? 'America/Los_Angeles' }),
+                guestRefund: formattedTotal,
+                payoutBefore: 'See Dashboard',
+                payoutAfter: 'See Dashboard',
+                adjustmentReason: 'Refund processed via Stripe',
+                adjustments: [
+                  {
+                    label: 'Refund to Guest',
+                    amount: formattedTotal,
+                    direction: 'debit',
+                  }
+                ],
+                // We don't have detailed payout info here easily without checking balance transactions
+                // But for notification purposes, showing the refund amount is key.
+              });
+              console.log(`✅ Sent host refund adjustment email for booking ${booking.id}`);
+            } catch (hostEmailError) {
+              console.error('Failed to send host refund adjustment email', hostEmailError);
+            }
+
           } catch (err) {
-            console.error('Failed to send guest refund email', err);
+            console.error('Failed to send refund emails', err);
           }
         } else {
           console.warn(`Refund event for unknown booking PaymentIntent: ${paymentIntentId}`);

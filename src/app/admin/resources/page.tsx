@@ -8,6 +8,7 @@ import { AdminTopNav } from "@/components/admin/AdminTopNav";
 
 import { CLEANING_PROFILES } from "@/lib/cleaning/data";
 import { ChecklistProfile, ChecklistSection, ChecklistSubsection } from "@/types/cleaning";
+import { ResourceList } from "@/components/resources/ResourceList";
 
 const STORAGE_KEY = "admin-cleaning-profiles";
 
@@ -59,13 +60,7 @@ const sanitizeProfile = (profile: ChecklistProfile): ChecklistProfile => ({
   })),
 });
 
-const SUPPLY_LINKS = [
-  {
-    label: "Mountain Escape Toiletries",
-    description: "Rental-ready amenity kit (shampoo, conditioner, body wash, lotion, soaps)",
-    href: "https://www.amazon.com/Mountain-Escape-Toiletries-Conditioner-Amenities/dp/B0DVC7MRSD",
-  },
-];
+
 
 export default function AdminResourcesPage() {
   const [profiles, setProfiles] = useState<Record<string, ChecklistProfile>>(() => buildProfileMap(CLEANING_PROFILES));
@@ -698,36 +693,7 @@ export default function AdminResourcesPage() {
               ))}
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Supply list</p>
-                  <h3 className="text-2xl font-serif text-slate-900">Restock-ready links</h3>
-                  <p className="text-sm text-slate-500">
-                    Share these direct-order kits with local teams to keep baskets full week after week.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {SUPPLY_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-200"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-slate-900">{link.label}</p>
-                        <p className="text-sm text-slate-600">{link.description}</p>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-violet-500" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+            <ResourceList />
           </div>
         </div>
       </main>
