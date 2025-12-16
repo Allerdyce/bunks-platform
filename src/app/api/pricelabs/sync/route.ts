@@ -1,22 +1,33 @@
+```typescript
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
+    // 1. Read body to detect empty probes (PriceLabs verification)
+    let bodyText = "";
+    try {
+        bodyText = await req.text();
+    } catch (e) {
+        console.error("Failed to read request body", e);
+    }
+
+    // 2. Allow empty probes to bypass auth (PriceLabs checks connectivity via empty POST)
+    if (!bodyText) {
+        console.log("PriceLabs probe (empty body) - Allowing");
+        return NextResponse.json({ status: "ok" });
+    }
+
+    // 3. Authenticate payload requests
     const token = req.headers.get("x-integration-token");
     if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
         console.error("PriceLabs sync auth failed. Token mismatch.");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // 4. Parse Body
     let body;
     try {
-        // PriceLabs verification might send empty body or specific probe
-        const text = await req.text();
-        if (!text) {
-            console.log("PriceLabs probe (empty body)");
-            return NextResponse.json({ status: "ok" });
-        }
-        body = JSON.parse(text);
+        body = JSON.parse(bodyText);
     } catch (e) {
         console.log("PriceLabs probe (invalid json)", e);
         return NextResponse.json({ status: "ok" });
@@ -50,7 +61,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (!property) {
-                console.warn(`PriceLabs sync: Property not found for listingId ${listingId}`);
+                console.warn(`PriceLabs sync: Property not found for listingId ${ listingId }`);
                 continue;
             }
 
