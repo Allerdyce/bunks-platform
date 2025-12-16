@@ -79,7 +79,7 @@ export async function calculatePricing(
         if (special && !special.isBlocked) {
             source = 'SPECIAL';
             undiscountedCents = special.price;
-        } else if (priceLabs && !priceLabs.isBlocked) {
+        } else if (priceLabs) {
             source = 'PRICELABS';
             undiscountedCents = priceLabs.priceCents;
         } else if (isWeekendNight(cursor)) {
