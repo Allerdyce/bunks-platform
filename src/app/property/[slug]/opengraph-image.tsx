@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { fetchMarketingProperties } from '@/lib/marketingProperties';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export const alt = 'Bunks Property';
 export const size = {
