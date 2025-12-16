@@ -182,6 +182,18 @@ export interface BookingBreakdown {
   nightlyLineItems: NightlyLineItem[];
 }
 
+export interface PricingQuote {
+  totalPriceCents: number;
+  nightlySubtotalCents: number;
+  cleaningFeeCents: number;
+  serviceFeeCents: number;
+  taxCents: number;
+  undiscountedNightlySubtotalCents: number;
+  nightlyLineItems: NightlyLineItem[];
+  averageNightlyRateCents: number;
+  nights: number;
+}
+
 export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY" | "PRICELABS";
 
 export interface NightlyLineItem {
