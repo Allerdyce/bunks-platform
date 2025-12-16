@@ -11,6 +11,11 @@ export const metadata: Metadata = {
     robots: 'noindex, nofollow',
 };
 
+import Image from 'next/image';
+import { LogoutButton } from '@/components/cleaner/LogoutButton';
+
+// ... (keep exports)
+
 export default async function CleanerLayout({
     children,
 }: {
@@ -28,19 +33,23 @@ export default async function CleanerLayout({
         <div className="min-h-screen bg-slate-50 pb-20">
             {/* Mobile Header */}
             <header className="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 py-3 flex items-center justify-between">
-                <Link href="/cleaner" className="font-serif text-lg text-slate-900 font-medium">
-                    Bunks Housekeeping
+                <Link href="/cleaner" className="flex items-center gap-2">
+                    <Image
+                        src="/bunks-logo.svg"
+                        alt="Bunks"
+                        width={80}
+                        height={24}
+                        className="h-6 w-auto"
+                    />
+                    <span className="text-sm font-medium text-slate-500 border-l border-slate-300 pl-3 ml-1">
+                        Housekeeping
+                    </span>
                 </Link>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <div className="text-xs text-slate-500 hidden sm:block">
                         {session.email}
                     </div>
-                    {/* We can't use client-side handlers (onClick) in a Server Component layout easily without a client island.
-                 For now, let's keep it simple or make a ClientHeader component.
-                 Let's stick to a simple form action or just a link?
-                 Actually, logout needs a POST usually, or client side JS.
-                 Let's make a tiny client component for the UserMenu/Logout.
-             */}
+                    <LogoutButton />
                 </div>
             </header>
             <main className="p-4 md:p-6 lg:p-8">
