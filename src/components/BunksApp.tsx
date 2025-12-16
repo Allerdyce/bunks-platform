@@ -326,6 +326,15 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     }
   }, [activePropertySlug, isMessagesRoute, searchParams, view, selectedProperty, selectedPost, resetBookingState, bookingSection]);
 
+  useEffect(() => {
+    if (view === "booking") return;
+    // For listings target, we handle scroll in the specific handler
+    // But listings also sets view='home' which triggers this.
+    // However, the listings handler has a setTimeout which will override this immediate scroll (or happen after).
+    // Standard navigation should scroll to top.
+    window.scrollTo(0, 0);
+  }, [view, selectedProperty, selectedPost]);
+
   const handleNavigate = (target: ViewState, payload?: unknown) => {
     if (["home", "listings", "about", "journal", "booking-details", "booking-essential", "booking-guide", "booking-messages"].includes(target)) {
       setSelectedProperty(null);
@@ -338,7 +347,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       setSelectedProperty(propertyPayload);
       resetBookingState();
       setView("property");
-      window.scrollTo(0, 0);
+      setView("property");
       updateUrlState({ slug: propertyPayload.slug, view: null, post: null }, "push", { scroll: false });
     }
 
@@ -385,88 +394,89 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
 
     setView(target);
     if (typeof window !== "undefined" && target !== "booking") {
-      window.scrollTo(0, 0);
-    }
-  };
+      if (typeof window !== "undefined" && target !== "booking") {
+        // Scroll handled by useEffect on view change
+      }
+    };
 
-  if (loadingAuth) {
-    return <LoaderScreen />;
+    if (loadingAuth) {
+      return <LoaderScreen />;
+    }
+
+    const isBookingViewState = view === "booking-details" || (typeof view === "string" && view.startsWith("booking-"));
+
+    return (
+      <Layout
+        onNavigate={handleNavigate}
+        currentView={view}
+        bookingSection={bookingSection}
+        bookingRef={pathBookingRef}
+        hideFooter={isBookingViewState}
+      >
+        {view === "home" && (
+          <>
+            <HomeView properties={properties} onSelectProperty={(property) => handleNavigate("property", property)} />
+            <HomeCtaBanner onNavigate={handleNavigate} />
+          </>
+        )}
+
+        {view === "about" && <AboutView onNavigate={handleNavigate} />}
+
+        {view === "journal" && (
+          <JournalView
+            posts={JOURNAL_POSTS}
+            onNavigate={handleNavigate}
+            onOpenPost={(post) => handleNavigate("blog-post", post)}
+          />
+        )}
+
+        {view === "blog-post" && selectedPost && (
+          <BlogPostView
+            post={selectedPost}
+            relatedPosts={JOURNAL_POSTS.filter((post) => post.id !== selectedPost.id).slice(0, 2)}
+            onBack={() => handleNavigate("journal")}
+            onOpenPost={(post) => handleNavigate("blog-post", post)}
+          />
+        )}
+
+        {view === "property" && selectedProperty && (
+          <PropertyDetailView
+            property={selectedProperty}
+            bookingDates={bookingDates}
+            onSelectDates={setBookingDates}
+            guestCount={guestCount}
+            onGuestCountChange={setGuestCount}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {view === "booking" && selectedProperty && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <BookingContainer
+              property={selectedProperty}
+              dates={bookingDates}
+              guestCount={guestCount}
+              onBack={() => setView("property")}
+              onSuccess={(payload) => {
+                persistBookingLookup(payload);
+                handleNavigate("booking-details");
+              }}
+            />
+          </div>
+        )}
+
+        {view === "success" && <SuccessView onNavigate={handleNavigate} />}
+
+        {isBookingViewState && (
+          <BookingDetailsView
+            onNavigate={handleNavigate}
+            initialLookup={recentBookingLookup}
+            onPersistLookup={persistBookingLookup}
+            section={bookingSection ?? "essential"}
+          />
+        )}
+      </Layout>
+    );
   }
 
-  const isBookingViewState = view === "booking-details" || (typeof view === "string" && view.startsWith("booking-"));
-
-  return (
-    <Layout
-      onNavigate={handleNavigate}
-      currentView={view}
-      bookingSection={bookingSection}
-      bookingRef={pathBookingRef}
-      hideFooter={isBookingViewState}
-    >
-      {view === "home" && (
-        <>
-          <HomeView properties={properties} onSelectProperty={(property) => handleNavigate("property", property)} />
-          <HomeCtaBanner onNavigate={handleNavigate} />
-        </>
-      )}
-
-      {view === "about" && <AboutView onNavigate={handleNavigate} />}
-
-      {view === "journal" && (
-        <JournalView
-          posts={JOURNAL_POSTS}
-          onNavigate={handleNavigate}
-          onOpenPost={(post) => handleNavigate("blog-post", post)}
-        />
-      )}
-
-      {view === "blog-post" && selectedPost && (
-        <BlogPostView
-          post={selectedPost}
-          relatedPosts={JOURNAL_POSTS.filter((post) => post.id !== selectedPost.id).slice(0, 2)}
-          onBack={() => handleNavigate("journal")}
-          onOpenPost={(post) => handleNavigate("blog-post", post)}
-        />
-      )}
-
-      {view === "property" && selectedProperty && (
-        <PropertyDetailView
-          property={selectedProperty}
-          bookingDates={bookingDates}
-          onSelectDates={setBookingDates}
-          guestCount={guestCount}
-          onGuestCountChange={setGuestCount}
-          onNavigate={handleNavigate}
-        />
-      )}
-
-      {view === "booking" && selectedProperty && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <BookingContainer
-            property={selectedProperty}
-            dates={bookingDates}
-            guestCount={guestCount}
-            onBack={() => setView("property")}
-            onSuccess={(payload) => {
-              persistBookingLookup(payload);
-              handleNavigate("booking-details");
-            }}
-          />
-        </div>
-      )}
-
-      {view === "success" && <SuccessView onNavigate={handleNavigate} />}
-
-      {isBookingViewState && (
-        <BookingDetailsView
-          onNavigate={handleNavigate}
-          initialLookup={recentBookingLookup}
-          onPersistLookup={persistBookingLookup}
-          section={bookingSection ?? "essential"}
-        />
-      )}
-    </Layout>
-  );
-}
-
-export default BunksApp;
+  export default BunksApp;
