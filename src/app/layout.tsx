@@ -10,8 +10,34 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Bunks",
-  description: "Book unique bunkhouses and boutique stays with ease.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"),
+  title: {
+    default: "Bunks | Unique Stays & Bunkhouses",
+    template: "%s | Bunks",
+  },
+  description: "Book unique bunkhouses and boutique stays with ease. Experience curated properties in top destinations.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "Bunks",
+    title: "Bunks | Unique Stays & Bunkhouses",
+    description: "Book unique bunkhouses and boutique stays with ease. Experience curated properties in top destinations.",
+    images: [
+      {
+        url: "/og-image.jpg", // We need to ensure this exists or use a fallback
+        width: 1200,
+        height: 630,
+        alt: "Bunks - Unique Stays",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bunks | Unique Stays & Bunkhouses",
+    description: "Book unique bunkhouses and boutique stays with ease.",
+    images: ["/og-image.jpg"],
+  },
   icons: {
     icon: "/favicon-32x32.png",
     shortcut: "/favicon.ico",
