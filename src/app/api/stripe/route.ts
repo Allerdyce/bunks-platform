@@ -6,6 +6,7 @@ import { sendReceiptEmail } from '@/lib/email/sendReceiptEmail';
 import { sendBookingWelcomeEmail } from '@/lib/email/sendBookingWelcomeEmail';
 import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
+import { sendGuestRefundIssued } from '@/lib/email/sendGuestRefundIssued';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 
@@ -167,6 +168,56 @@ export async function POST(req: NextRequest) {
         await sendBookingWelcomeEmail(booking.id);
       } catch (err) {
         console.error('Failed to send booking welcome email', err);
+      }
+    }
+
+    if (event.type === 'charge.refunded') {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId = typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : (charge.payment_intent as Stripe.PaymentIntent)?.id;
+
+      if (paymentIntentId) {
+        const booking = await prisma.booking.findUnique({
+          where: { stripePaymentIntentId: paymentIntentId },
+        });
+
+        if (booking) {
+          const amount = charge.amount_refunded; // cents
+          const currency = charge.currency.toUpperCase();
+          const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+          });
+          const formattedTotal = formatter.format(amount / 100);
+
+          console.log(`💸 Refund detected for booking ${booking.id}: ${formattedTotal}`);
+
+          try {
+            // Import dynamically or ensure top-level import exists
+            // Since we are inside the route, let's assume imports are added.
+            // Using the imported function from top of file (need to add import first, doing in next step if needed, or assumming I can add it now).
+            // Wait, I need to add the import to the top of the file first.
+            await sendGuestRefundIssued(booking.id, {
+              refundTotal: formattedTotal,
+              paymentMethod: describePaymentMethod(charge.payment_intent as Stripe.PaymentIntent) || 'Credit Card',
+              refundReason: 'Refund processed via Stripe',
+              lineItems: [
+                {
+                  label: 'Refund',
+                  amount: formattedTotal,
+                },
+              ],
+              expectedArrivalWindow: '5-10 business days',
+              initiatedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            });
+            console.log(`✅ Sent refund email to guest for booking ${booking.id}`);
+          } catch (err) {
+            console.error('Failed to send guest refund email', err);
+          }
+        } else {
+          console.warn(`Refund event for unknown booking PaymentIntent: ${paymentIntentId}`);
+        }
       }
     }
 
