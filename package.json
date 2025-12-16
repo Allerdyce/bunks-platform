@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "preview:emails": "tsx scripts/render-email-previews.tsx"
+    "preview:emails": "tsx scripts/render-email-previews.tsx",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
