@@ -3,12 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
     const token = req.headers.get("x-integration-token");
-    const name = req.headers.get("x-integration-name");
-
-    if (
-        token !== process.env.PRICELABS_INTEGRATION_TOKEN ||
-        name !== process.env.PRICELABS_INTEGRATION_NAME
-    ) {
+    if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
+        console.error("PriceLabs sync auth failed. Token mismatch.");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
