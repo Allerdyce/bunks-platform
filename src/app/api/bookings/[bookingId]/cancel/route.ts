@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ bookingId: string }> }
 ) {
     // 1. Verify Admin Auth
     const session = readSessionFromRequest(request);
@@ -18,7 +18,7 @@ export async function POST(
     }
 
     try {
-        const { id } = await params;
+        const { bookingId: id } = await params;
         const bookingId = parseInt(id, 10);
 
         if (isNaN(bookingId)) {
