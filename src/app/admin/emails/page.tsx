@@ -30,16 +30,6 @@ async function buildPreviews(): Promise<TemplatePreview[]> {
 }
 
 export default async function EmailPreviewGallery() {
-  if (process.env.NODE_ENV === 'production') {
-    return (
-      <main style={{ padding: 48 }}>
-        <h1 style={{ fontSize: 28, marginBottom: 12 }}>Email previews disabled</h1>
-        <p style={{ color: '#475467', maxWidth: 560 }}>
-          This preview surface is only available in development to prevent exposing test data.
-        </p>
-      </main>
-    );
-  }
 
   const previews = await buildPreviews();
   const templateControls = EMAIL_TEMPLATES.map(({ slug, name, audience, status, trigger, category }) => ({
