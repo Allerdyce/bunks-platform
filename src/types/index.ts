@@ -182,7 +182,7 @@ export interface BookingBreakdown {
   nightlyLineItems: NightlyLineItem[];
 }
 
-export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY";
+export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY" | "PRICELABS";
 
 export interface NightlyLineItem {
   date: string; // YYYY-MM-DD
@@ -219,6 +219,12 @@ export type ViewState =
 export type BookingPortalSection = "essential" | "guide" | "messages";
 
 export type NavigateHandler = (view: ViewState, payload?: unknown) => void;
+
+export interface BlockedDate {
+  id: number;
+  date: string; // ISO string
+  propertyId: number;
+}
 
 export interface AdminSpecialRate {
   id: number;

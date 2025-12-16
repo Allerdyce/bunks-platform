@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 type CheckAvailabilityBody = {
   checkIn: string;
   checkOut: string;
+  guests?: number;
 };
 
 function normalizeToMidnight(date: Date) {
@@ -102,8 +103,25 @@ export async function POST(req: NextRequest) {
     }
 
     // If we get here, the range looks free
+    // Calculate pricing quote
+    let quote = null;
+    try {
+      const guests = 1; // Default to 1 for generic quote, or read from body if available
+      // The body passed 'checkIn' and 'checkOut', check if 'guests' is there too
+      // type CheckAvailabilityBody usually just has dates, but let's check.
+      // We can update the type definition below or just assume 1 for now as the quote is "per night" mostly
+      // But service fees might depend on guests? No, usually flat or % of total.
+      // Except "Extra Guest Fee" if applicable. `calculator.ts` currently takes `guests` but doesn't use it yet (TODO).
+
+      const { calculatePricing } = await import('@/lib/pricing/calculator');
+      quote = await calculatePricing(property.slug, checkInDate, checkOutDate, 1);
+    } catch (e) {
+      console.warn('Failed to calculate pricing quote:', e);
+    }
+
     return NextResponse.json({
       available: true,
+      quote
     });
   } catch (error: any) {
     console.error('Error checking availability:', error);

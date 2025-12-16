@@ -22,7 +22,7 @@ import {
   Wifi,
   X,
 } from "lucide-react";
-import type { DateRange, NavigateHandler, Property } from "@/types";
+import type { DateRange, NavigateHandler, PricingQuote, Property } from "@/types";
 import { Calendar } from "@/components/shared/Calendar";
 import { Button } from "@/components/shared/Button";
 import { ImageLightbox } from "@/components/shared/ImageLightbox";
@@ -105,6 +105,8 @@ export function PropertyDetailView({
   const reviewCount = property.reviews;
   const savingsCopy = "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
+  const [quote, setQuote] = useState<PricingQuote | null>(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,6 +125,35 @@ export function PropertyDetailView({
       isMounted = false;
     };
   }, [property.slug]);
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      if (!bookingDates.start || !bookingDates.end) {
+        setQuote(null);
+        return;
+      }
+      setIsLoadingQuote(true);
+      try {
+        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
+          method: 'POST',
+          body: JSON.stringify({
+            checkIn: bookingDates.start.toISOString(),
+            checkOut: bookingDates.end.toISOString(),
+            guests: guestCount
+          })
+        });
+        const data = await res.json();
+        if (data.quote) {
+          setQuote(data.quote);
+        }
+      } catch (e) {
+        console.error("Failed to fetch quote", e);
+      } finally {
+        setIsLoadingQuote(false);
+      }
+    };
+    fetchQuote();
+  }, [bookingDates, property.slug, guestCount]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -151,8 +182,13 @@ export function PropertyDetailView({
   const canBook = Boolean(bookingDates.start && bookingDates.end);
   const confirmedNights = calculateNights(bookingDates);
   const pendingNights = calculateNights(pendingRange);
-  const confirmedTotal = confirmedNights * property.price;
+
+  // Use Quote if available, otherwise fallback to static calculation (but mostly rely on Quote for PriceLabs)
+  const confirmedTotal = quote ? (quote.totalPriceCents / 100) : (confirmedNights * property.price);
+
+  // Pending total: Only static for now as we don't quote pending range dynamically yet (could add later)
   const pendingTotal = pendingNights * property.price;
+
   const confirmedRangeSummary = formatRangeSummary(bookingDates);
   const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
     }` : "";
