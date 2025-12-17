@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-    // 1. Read body to detect empty probes (PriceLabs verification)
     let bodyText = "";
     try {
         bodyText = await req.text();
@@ -10,45 +9,29 @@ export async function POST(req: NextRequest) {
         console.error("Failed to read request body", e);
     }
 
-    // 2. Allow empty probes to bypass auth (PriceLabs checks connectivity via empty POST)
-    if (!bodyText) {
-        console.log("PriceLabs probe (empty body) - Allowing");
+    // 1. Allow verification probes to bypass auth
+    // PriceLabs sends empty body or {"verify":true} to check connectivity
+    if (!bodyText || bodyText.includes('"verify":true') || bodyText.includes('"verify": true')) {
         return NextResponse.json({ status: "ok" });
     }
 
-    // 3. Authenticate payload requests
+    // 2. Authenticate payload requests
     const token = req.headers.get("x-integration-token");
     if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
         console.error("PriceLabs sync auth failed. Token mismatch.");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 4. Parse Body
+    // 3. Parse Body
     let body;
     try {
         body = JSON.parse(bodyText);
     } catch (e) {
-        console.log("PriceLabs probe (invalid json)", e);
-        return NextResponse.json({ status: "ok" });
+        console.error("PriceLabs sync error: Invalid JSON", e);
+        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     try {
-        // PriceLabs payload structure:
-        // { listing_id: "...", prices: [ { date: "YYYY-MM-DD", price: 123, min_stay: 2, ... } ] }
-
-        // Depending on actual payload, we might need to iterate or handle bulk
-        // Per documentation/standard, it's typically one listing per request or a list of listings
-        // We'll assume the standard connector payload format.
-        // However, exact payload shape might vary. We'll log it for now if unsure,
-        // but typically:
-        // {
-        //   "listing_id": "string",
-        //   "data": [
-        //     { "date": "2024-01-01", "price": 100, "min_stay": 2, ... }
-        //   ]
-        // }
-
-        // Let's implement a robust handler that checks for `data` array
         const updates = Array.isArray(body) ? body : [body];
 
         for (const update of updates) {
@@ -67,13 +50,9 @@ export async function POST(req: NextRequest) {
 
             if (update.data && Array.isArray(update.data)) {
                 for (const item of update.data) {
-                    // item: { date: '2022-01-01', price: 100, min_stay: 3 }
                     const date = new Date(item.date);
                     const priceCents = Math.round(Number(item.price) * 100);
                     const minNights = item.min_stay ? Number(item.min_stay) : undefined;
-
-                    // Standard PriceLabs connector field for blocking is often `is_blocked` or implied by external sources.
-                    // If they send `is_blocked` (bool), we use it.
                     const isBlocked = 'is_blocked' in item ? Boolean(item.is_blocked) : false;
 
                     // @ts-ignore - Schema mismatch potential
