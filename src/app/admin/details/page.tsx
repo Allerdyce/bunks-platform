@@ -118,8 +118,8 @@ const toFormState = (details?: OpsDetails | null): OpsDetailsInput => ({
 
 export default function AdminOpsDetailsPage() {
   const [authState, setAuthState] = useState<"checking" | "unauthenticated" | "authenticated">("checking");
-  const [email, setEmail] = useState("ali@bunks.com");
-  const [password, setPassword] = useState("PMbunks101!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
