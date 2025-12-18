@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import fs from 'fs';
-
-function logToTmp(message: string) {
-    try {
-        fs.appendFileSync('/tmp/pl-debug.log', `[${new Date().toISOString()}] ${message}\n`);
-    } catch (e) { console.error("Log failed", e); }
-}
 
 export async function POST(req: NextRequest) {
     let bodyText = "";
     try {
         bodyText = await req.text();
-        logToTmp(`Received Body: ${bodyText.substring(0, 5000)}`); // Log first 5000 chars
     } catch (e) {
-        logToTmp(`Read Error: ${e}`);
         console.error("Failed to read request body", e);
     }
 
@@ -30,6 +21,32 @@ export async function POST(req: NextRequest) {
         console.error("PriceLabs sync auth failed. Token mismatch.");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // DEBUG: Write payload to DB to inspect data structure
+    try {
+        const debugProp = await prisma.property.findFirst();
+        if (debugProp) {
+            await prisma.propertyPricing.upsert({
+                where: {
+                    propertyId_date: {
+                        propertyId: debugProp.id,
+                        date: new Date("2099-12-31T00:00:00.000Z"),
+                    },
+                },
+                create: {
+                    propertyId: debugProp.id, // Assuming property ID 11 based on prev logs
+                    date: new Date("2099-12-31T00:00:00.000Z"),
+                    priceCents: 99999,
+                    source: `DEBUG: ${bodyText.substring(0, 1000)}`, // Log payload here
+                    isBlocked: true,
+                },
+                update: {
+                    source: `DEBUG: ${bodyText.substring(0, 1000)}`,
+                    updatedAt: new Date(),
+                }
+            });
+        }
+    } catch (e) { console.error("Debug log failed", e); }
 
     // 3. Parse Body
     let body;
