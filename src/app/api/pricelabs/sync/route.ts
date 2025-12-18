@@ -15,36 +15,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ok" });
     }
 
-    const token = req.headers.get("x-integration-token");
-
-    // DEBUG: Write payload to DB to inspect data structure AND Auth
-    try {
-        const debugProp = await prisma.property.findFirst();
-        if (debugProp) {
-            await prisma.propertyPricing.upsert({
-                where: {
-                    propertyId_date: {
-                        propertyId: debugProp.id,
-                        date: new Date("2099-12-31T00:00:00.000Z"), // Overwrite previous attempt
-                    },
-                },
-                create: {
-                    propertyId: debugProp.id,
-                    date: new Date("2099-12-31T00:00:00.000Z"),
-                    priceCents: 99999,
-                    source: `DEBUG: Token=${token} | Body=${bodyText.substring(0, 800)}`,
-                    isBlocked: true,
-                },
-                update: {
-                    source: `DEBUG: Token=${token} | Body=${bodyText.substring(0, 800)}`,
-                    updatedAt: new Date(),
-                }
-            });
-        }
-    } catch (e) { console.error("Debug log failed", e); }
-
-
     // 2. Authenticate payload requests
+    const token = req.headers.get("x-integration-token");
     if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
         console.error("PriceLabs sync auth failed. Token mismatch.");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
