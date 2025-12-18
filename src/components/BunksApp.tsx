@@ -170,7 +170,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       method: "push" | "replace" = "push",
       { scroll }: { scroll?: boolean } = {},
     ) => {
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      const params = new URLSearchParams(window.location.search);
       if (newState.slug !== undefined) {
         if (newState.slug) params.set("slug", newState.slug);
         else params.delete("slug");
@@ -206,10 +206,68 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
 
       const queryString = params.toString();
       const url = queryString ? `${basePath}?${queryString}` : basePath;
-      router[method](url, { scroll: scroll ?? false });
+
+      if (method === "push") {
+        window.history.pushState(null, "", url);
+      } else {
+        router.replace(url, { scroll: scroll ?? false });
+      }
     },
-    [activePropertySlug, router, searchParams, view, pathBookingRef],
+    [activePropertySlug, router, view, pathBookingRef],
   );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+
+      // Handle Property Routes
+      const propMatch = path.match(/\/property\/([a-z0-9-]+)/);
+      if (propMatch) {
+        const slug = propMatch[1];
+        const canonical = getCanonicalSlugFromPath(slug);
+        const prop = propertyIndex.get(canonical || '');
+        if (prop) {
+          setSelectedProperty(prop);
+          setView('property');
+          resetBookingState();
+          return;
+        }
+      }
+
+      // Handle Messaging Routes
+      if (path.startsWith("/my-trips")) {
+        // Let client router handle or simple toggle logic
+        // For now assume standard internal routing handles this by mount
+        return;
+      }
+
+      // Handle Params
+      const postSlug = params.get("post");
+      if (postSlug) {
+        const post = JOURNAL_POSTS.find(p => p.slug === postSlug);
+        if (post) {
+          setSelectedPost(post);
+          setView('blog-post');
+          return;
+        }
+      }
+
+      const viewParam = params.get("view") as ViewState | null;
+      if (viewParam) {
+        setView(viewParam);
+        return;
+      }
+
+      // Default Home
+      setView('home');
+      setSelectedProperty(null);
+      setSelectedPost(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [propertyIndex, resetBookingState]);
 
   useEffect(() => {
     if (!pathBookingRef) return;
@@ -346,7 +404,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       const propertyPayload = payload as Property;
       setSelectedProperty(propertyPayload);
       resetBookingState();
-      setView("property");
       setView("property");
       updateUrlState({ slug: propertyPayload.slug, view: null, post: null }, "push", { scroll: false });
     }
