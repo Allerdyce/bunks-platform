@@ -12,7 +12,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"),
   title: {
-    default: "Bunks | Unique Stays & Bunkhouses",
+    default: "Bunks | Repeat Stays & Savings",
     template: "%s | Bunks",
   },
   description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "Bunks",
     title: {
-      default: "Bunks | Unique Stays & Bunkhouses",
+      default: "Bunks | Repeat Stays & Savings",
       template: "%s | Bunks",
     },
     description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: {
-      default: "Bunks | Unique Stays & Bunkhouses",
+      default: "Bunks | Repeat Stays & Savings",
       template: "%s | Bunks",
     },
     description: "Book unique bunkhouses and boutique stays.",
