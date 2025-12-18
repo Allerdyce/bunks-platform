@@ -19,7 +19,12 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
   return (
     <Link
       href={`/property/${property.slug}`}
-      onClick={onClick}
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
