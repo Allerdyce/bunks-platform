@@ -1,0 +1,27 @@
+[2025-12-16T23:20:31.364Z] Incoming Sync Request
+[2025-12-16T23:20:31.365Z] Body received: 16 chars
+[2025-12-16T23:20:31.365Z] Auth Token: undefined... (Expected: ...yPmBY...)
+[2025-12-17T21:21:35.184Z] Incoming Sync Request
+[2025-12-17T21:21:35.185Z] Body received: 22 chars
+[2025-12-17T21:21:35.185Z] Auth Token: null
+[2025-12-17T21:21:35.185Z] All Headers: {"accept":"*/*","accept-encoding":"gzip","content-length":"22","content-type":"application/json","host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","user-agent":"curl/8.7.1","x-forwarded-for":"2600:1010:a022:64f8:25a7:307b:f0f7:ec7b","x-forwarded-host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","x-forwarded-port":"3000","x-forwarded-proto":"https"}
+[2025-12-17T21:21:35.185Z] Body Content: {"test":"ngrok_probe"}
+[2025-12-17T21:21:35.185Z] Auth failed but ALLOWING for debug
+[2025-12-17T21:21:49.284Z] Incoming Sync Request
+[2025-12-17T21:21:49.285Z] Body received: 15 chars
+[2025-12-17T21:21:49.285Z] Auth Token: null
+[2025-12-17T21:21:49.285Z] All Headers: {"accept":"application/json","accept-encoding":"gzip;q=1.0,deflate;q=0.6,identity;q=0.3","accept-language":"en","content-length":"15","content-type":"application/json","elastic-apm-traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","tracestate":"es=s:0.0","user-agent":"Ruby","x-forwarded-for":"192.241.167.137","x-forwarded-host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","x-forwarded-port":"3000","x-forwarded-proto":"https"}
+[2025-12-17T21:21:49.285Z] Body Content: {"verify":true}
+[2025-12-17T21:21:49.285Z] Auth failed but ALLOWING for debug
+[2025-12-17T21:21:49.533Z] Incoming Sync Request
+[2025-12-17T21:21:49.533Z] Body received: 15 chars
+[2025-12-17T21:21:49.533Z] Auth Token: null
+[2025-12-17T21:21:49.534Z] All Headers: {"accept":"application/json","accept-encoding":"gzip;q=1.0,deflate;q=0.6,identity;q=0.3","accept-language":"en","content-length":"15","content-type":"application/json","elastic-apm-traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","tracestate":"es=s:0.0","user-agent":"Ruby","x-forwarded-for":"192.241.167.137","x-forwarded-host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","x-forwarded-port":"3000","x-forwarded-proto":"https"}
+[2025-12-17T21:21:49.534Z] Body Content: {"verify":true}
+[2025-12-17T21:21:49.534Z] Auth failed but ALLOWING for debug
+[2025-12-17T21:21:49.815Z] Incoming Sync Request
+[2025-12-17T21:21:49.815Z] Body received: 15 chars
+[2025-12-17T21:21:49.816Z] Auth Token: null
+[2025-12-17T21:21:49.816Z] All Headers: {"accept":"application/json","accept-encoding":"gzip;q=1.0,deflate;q=0.6,identity;q=0.3","accept-language":"en","content-length":"15","content-type":"application/json","elastic-apm-traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","traceparent":"00-9509c64feb966d8b0969274491596f4c-f3b876c377591285-00","tracestate":"es=s:0.0","user-agent":"Ruby","x-forwarded-for":"192.241.167.137","x-forwarded-host":"filiberto-eriophyllous-unexcellently.ngrok-free.dev","x-forwarded-port":"3000","x-forwarded-proto":"https"}
+[2025-12-17T21:21:49.816Z] Body Content: {"verify":true}
+[2025-12-17T21:21:49.816Z] Auth failed but ALLOWING for debug
