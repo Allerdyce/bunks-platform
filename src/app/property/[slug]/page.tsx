@@ -3,6 +3,17 @@ import { Suspense } from "react";
 import { BunksApp } from "@/components/BunksApp";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 
+// Update static cache every 5 minutes
+export const revalidate = 300;
+
+// Pre-render all property paths at build time
+export async function generateStaticParams() {
+  const properties = await fetchMarketingProperties();
+  return properties.map((property) => ({
+    slug: property.slug,
+  }));
+}
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
@@ -45,7 +56,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PropertyPage({ params }: PageProps) {
   // Pre-fetch properties to ensure cache is primed or available
   const properties = await fetchMarketingProperties();
-  const { slug } = await params;
+  // We use params to ensure the slug is valid, although BunksApp reads from URL/props
+  await params;
 
   // Note: BunksApp (Client Component) handles the actual rendering and "selectedProperty" state.
   // We pass the properties array, but the specific selection happens via URL state in BunksApp.
