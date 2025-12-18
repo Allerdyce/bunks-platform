@@ -15,14 +15,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ok" });
     }
 
-    // 2. Authenticate payload requests
     const token = req.headers.get("x-integration-token");
-    if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
-        console.error("PriceLabs sync auth failed. Token mismatch.");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // DEBUG: Write payload to DB to inspect data structure
+    // DEBUG: Write payload to DB to inspect data structure AND Auth
     try {
         const debugProp = await prisma.property.findFirst();
         if (debugProp) {
@@ -30,23 +25,30 @@ export async function POST(req: NextRequest) {
                 where: {
                     propertyId_date: {
                         propertyId: debugProp.id,
-                        date: new Date("2099-12-31T00:00:00.000Z"),
+                        date: new Date("2099-12-31T00:00:00.000Z"), // Overwrite previous attempt
                     },
                 },
                 create: {
-                    propertyId: debugProp.id, // Assuming property ID 11 based on prev logs
+                    propertyId: debugProp.id,
                     date: new Date("2099-12-31T00:00:00.000Z"),
                     priceCents: 99999,
-                    source: `DEBUG: ${bodyText.substring(0, 1000)}`, // Log payload here
+                    source: `DEBUG: Token=${token} | Body=${bodyText.substring(0, 800)}`,
                     isBlocked: true,
                 },
                 update: {
-                    source: `DEBUG: ${bodyText.substring(0, 1000)}`,
+                    source: `DEBUG: Token=${token} | Body=${bodyText.substring(0, 800)}`,
                     updatedAt: new Date(),
                 }
             });
         }
     } catch (e) { console.error("Debug log failed", e); }
+
+
+    // 2. Authenticate payload requests
+    if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
+        console.error("PriceLabs sync auth failed. Token mismatch.");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // 3. Parse Body
     let body;
