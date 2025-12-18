@@ -1,5 +1,4 @@
-"use client";
-
+import Link from "next/link";
 import Image from "next/image";
 import { Bath, Bed, MapPin, Star, Users } from "lucide-react";
 import type { Property } from "@/types";
@@ -13,14 +12,15 @@ const nightlyRateFormatter = new Intl.NumberFormat("en-US", {
 
 interface PropertyCardProps {
   property: Property;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 export function PropertyCard({ property, onClick }: PropertyCardProps) {
   return (
-    <button
+    <Link
+      href={`/property/${property.slug}`}
       onClick={onClick}
-      className="group cursor-pointer bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left"
+      className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <Image
@@ -73,6 +73,6 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
           </span>
         </div>
       </div>
-    </button>
+    </Link>
   );
 }

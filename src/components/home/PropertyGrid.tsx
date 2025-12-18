@@ -5,14 +5,14 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 
 interface PropertyGridProps {
   properties: Property[];
-  onSelect: (property: Property) => void;
+  onSelect?: (property: Property) => void;
 }
 
-export function PropertyGrid({ properties, onSelect }: PropertyGridProps) {
+export function PropertyGrid({ properties }: PropertyGridProps) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-8">
       {properties.map((property) => (
-        <PropertyCard key={property.id} property={property} onClick={() => onSelect(property)} />
+        <PropertyCard key={property.id} property={property} />
       ))}
     </div>
   );
