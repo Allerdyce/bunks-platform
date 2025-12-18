@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import fs from 'fs';
+
+function logToTmp(message: string) {
+    try {
+        fs.appendFileSync('/tmp/pl-debug.log', `[${new Date().toISOString()}] ${message}\n`);
+    } catch (e) { console.error("Log failed", e); }
+}
 
 export async function POST(req: NextRequest) {
     let bodyText = "";
     try {
         bodyText = await req.text();
+        logToTmp(`Received Body: ${bodyText.substring(0, 5000)}`); // Log first 5000 chars
     } catch (e) {
+        logToTmp(`Read Error: ${e}`);
         console.error("Failed to read request body", e);
     }
 
