@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     // 1. Allow verification probes to bypass auth
     // PriceLabs sends empty body or {"verify":true} to check connectivity
     if (!bodyText || bodyText.includes('"verify":true') || bodyText.includes('"verify": true')) {
-        return NextResponse.json({ status: "ok" });
+        return NextResponse.json({ status: "ok", debug: debugSource, receivedToken });
     }
 
     // 2. Authenticate payload requests
