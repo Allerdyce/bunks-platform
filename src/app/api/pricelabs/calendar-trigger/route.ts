@@ -7,13 +7,20 @@ import { PriceLabsService } from "@/lib/pricelabs/service";
  */
 export async function POST(req: NextRequest) {
     try {
+        // 1. Probe Check
+        const clonedReq = req.clone();
+        const bodyText = await clonedReq.text();
+        if (!bodyText || bodyText.trim() === "" || bodyText.includes('"verify":true')) {
+            return NextResponse.json({ status: "ok", message: "PriceLabs Probe Received" });
+        }
+
         // Auth Check
         const token = req.headers.get("x-integration-token");
         if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const body = await req.json();
+        const body = JSON.parse(bodyText);
         const listingId = body.listing_id; // Can be a string or array? Guide says "list of listing_ids" but sometimes one.
 
         // Guide: "PriceLabs will call this URL (with a list of listing_ids)..."
