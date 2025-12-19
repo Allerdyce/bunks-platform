@@ -18,21 +18,16 @@ async function register() {
     const payload = {
         integration: {
             sync_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
-            // Optional triggers - verify if strictly needed. 
-            // User example had them. Pointing to sync if not implemented specific routes, 
-            // but cleaner to have stubs. For now, omitting or pointing to sync to pass verification.
-            // Documentation usually says optional.
-            // Let's rely on sync for all if verified.
             calendar_trigger_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
             hook_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
             regenerate_token: false,
             features: {
                 min_stay: true,
-                check_in: true,     // We support arrival blocked? We handle isBlocked.
-                check_out: true,    // We handle departure blocked?
-                monthly_weekly_discounts: false, // Not implemented yet
-                extra_person_fee: false, // Not implemented
-                los_pricing: false, // Length of stay pricing? We check min nights.
+                check_in: true,
+                check_out: true,
+                monthly_weekly_discounts: false,
+                extra_person_fee: false,
+                los_pricing: false,
                 delta_only: false
             }
         }
@@ -44,8 +39,8 @@ async function register() {
     const correctPayload = {
         integration: {
             sync_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
-            calendar_trigger_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
-            hook_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
+            calendar_trigger_url: `${BUNKS_BASE_URL}/api/pricelabs/calendar-trigger`,
+            hook_url: `${BUNKS_BASE_URL}/api/pricelabs/hook`,
             regenerate_token: false,
             features: {
                 min_stay: true,

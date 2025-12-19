@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripeClient } from '@/lib/stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
+import { PriceLabsService } from '@/lib/pricelabs/service';
 
 export const runtime = 'nodejs';
 
@@ -394,6 +395,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // PriceLabs Sync
+    try {
+      if (booking) {
+        // Sync reservation
+        await PriceLabsService.syncReservation(booking);
+        // Sync availability (blocks dates)
+        await PriceLabsService.syncCalendar(booking.propertyId);
+      }
+    } catch (plError) {
+      console.error('Failed to sync new booking to PriceLabs', plError);
+      // Do not fail the request
+    }
+
     return NextResponse.json({
       ok: true,
       bookingId: booking.id,
@@ -409,7 +423,6 @@ export async function POST(req: NextRequest) {
         taxCents,
         undiscountedNightlySubtotalCents,
         nightlyLineItems,
-
       },
     });
   } catch (error: any) {
@@ -421,5 +434,12 @@ export async function POST(req: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // PriceLabs Sync (Async, Fire-and-forget-ish but we are in serverless return 
+    // so we can't really await if we want speed, but Vercel might kill it. 
+    // Best practice: await it if critical.
+    // Also valid: It's inside the POST handler, so we can await before return or 
+    // use waitUntil if available (Next 15?). Here we just await inside the try block 
+    // BUT I put it in `finally`? No, `booking` might be null if failed.
   }
 }

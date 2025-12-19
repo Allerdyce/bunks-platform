@@ -11,6 +11,7 @@ import { sendHostRefundAdjustment } from '@/lib/email/sendHostRefundAdjustment';
 import { sendPaymentFailure } from '@/lib/email/sendPaymentFailure';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
+import { PriceLabsService } from '@/lib/pricelabs/service';
 
 export const runtime = 'nodejs';
 
@@ -139,6 +140,18 @@ export async function POST(req: NextRequest) {
       console.log(
         `✅ Booking ${booking.id} marked PAID and ${blockedDates.length} dates blocked`
       );
+
+      // PriceLabs Sync
+      try {
+        const updatedBooking = { ...booking, status: 'PAID' as const };
+        // Sync reservation (now PAID/Reserved status confirmed)
+        // @ts-ignore
+        await PriceLabsService.syncReservation(updatedBooking);
+        // Sync calendar (blocked dates)
+        await PriceLabsService.syncCalendar(booking.propertyId);
+      } catch (plError) {
+        console.error("Failed to sync Stripe payment to PriceLabs", plError);
+      }
 
       const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails');
 

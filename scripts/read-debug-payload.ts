@@ -1,22 +1,26 @@
 
-import { prisma } from '../src/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-async function main() {
-    const record = await prisma.propertyPricing.findFirst({
+async function check() {
+    const debugRecord = await prisma.propertyPricing.findUnique({
         where: {
-            date: new Date('2099-12-31T00:00:00.000Z')
-        },
-        select: {
-            source: true
+            propertyId_date: {
+                propertyId: 11,
+                date: new Date('2099-01-01T00:00:00Z')
+            }
         }
     });
 
-    if (record) {
-        console.log("PAYLOAD FOUND:");
-        console.log(record.source); // This contains "DEBUG: { ... }"
+    if (debugRecord) {
+        console.log("!!! TRAP ACTIVATED !!!");
+        console.log("Source Field:", debugRecord.source);
+        console.log("Updated At:", debugRecord.updatedAt.toISOString());
     } else {
-        console.log("No debug record found.");
+        console.log("... Trap Empty. No debug record found for 2099-01-01 ...");
     }
 }
 
-main().catch(console.error);
+check()
+    .catch(console.error)
+    .finally(() => prisma.$disconnect());
