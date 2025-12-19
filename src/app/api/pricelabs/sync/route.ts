@@ -28,8 +28,38 @@ export async function POST(req: NextRequest) {
         body = JSON.parse(bodyText);
     } catch (e) {
         console.error("PriceLabs sync error: Invalid JSON", e);
+        // Log JSON error to DB
+        // ...
         return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
+
+    // DEBUG LOGGING START
+    try {
+        const debugSource = `DEBUG_INCOMING: ${new Date().toISOString()} | TokenEnd=${token?.slice(-5)} | Bytes=${bodyText.length}`;
+        // Update the debug record (Upsert)
+        await prisma.propertyPricing.upsert({
+            where: {
+                propertyId_date: {
+                    propertyId: 11, // Steamboat
+                    date: new Date('2099-01-01T00:00:00Z')
+                }
+            },
+            create: {
+                propertyId: 11,
+                date: new Date('2099-01-01T00:00:00Z'),
+                priceCents: 0,
+                isBlocked: true,
+                source: debugSource
+            },
+            update: {
+                source: debugSource,
+                updatedAt: new Date()
+            }
+        });
+    } catch (err) {
+        console.error("Failed to write debug log", err);
+    }
+    // DEBUG LOGGING END
 
     try {
         const updates = Array.isArray(body) ? body : [body];
