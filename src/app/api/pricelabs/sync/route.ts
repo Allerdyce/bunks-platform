@@ -10,9 +10,12 @@ export async function POST(req: NextRequest) {
     }
 
     // DEBUG LOGGING START
+    let receivedToken = "null";
+    let debugSource = "";
+
     try {
-        const receivedToken = req.headers.get("x-integration-token") || "null";
-        const debugSource = `DEBUG_INCOMING: ${new Date().toISOString()} | RecvToken=${receivedToken.slice(-10)} | EnvToken=${process.env.PRICELABS_INTEGRATION_TOKEN?.slice(-10)} | Bytes=${bodyText.length}`;
+        receivedToken = req.headers.get("x-integration-token") || "null";
+        debugSource = `DEBUG_INCOMING: ${new Date().toISOString()} | RecvToken=${receivedToken.slice(-10)} | EnvToken=${process.env.PRICELABS_INTEGRATION_TOKEN?.slice(-10)} | Bytes=${bodyText.length}`;
         // Update the debug record (Upsert)
         await prisma.propertyPricing.upsert({
             where: {
