@@ -9,12 +9,6 @@ export async function POST(req: NextRequest) {
         console.error("Failed to read request body", e);
     }
 
-    // 1. Allow verification probes to bypass auth
-    // PriceLabs sends empty body or {"verify":true} to check connectivity
-    if (!bodyText || bodyText.includes('"verify":true') || bodyText.includes('"verify": true')) {
-        return NextResponse.json({ status: "ok" });
-    }
-
     // DEBUG LOGGING START
     try {
         const receivedToken = req.headers.get("x-integration-token") || "null";
@@ -43,6 +37,12 @@ export async function POST(req: NextRequest) {
         console.error("Failed to write debug log", err);
     }
     // DEBUG LOGGING END
+
+    // 1. Allow verification probes to bypass auth
+    // PriceLabs sends empty body or {"verify":true} to check connectivity
+    if (!bodyText || bodyText.includes('"verify":true') || bodyText.includes('"verify": true')) {
+        return NextResponse.json({ status: "ok" });
+    }
 
     // 2. Authenticate payload requests
     const token = req.headers.get("x-integration-token");
