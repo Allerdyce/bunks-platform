@@ -49,11 +49,25 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Authentication
-    const receivedToken = req.headers.get("x-integration-token");
+    // receivedToken already read above in debug block
+    const token = receivedToken; // Use the one we read
+
+    // Or just re-read but don't declare
+    // const receivedToken = ... -> ERROR
+
+    // Let's just use the 'receivedToken' from above. 
+    // Wait, the debug block does `let receivedToken = ...`.
+    // The later block did `const receivedToken = ...`.
+
+    // I will rename the later one or just use the first one.
+    // Ideally, I should clean up.
+
+    // Renaming the CONST one to `authToken` to be safe and clear.
+    const authToken = req.headers.get("x-integration-token");
     const configuredToken = process.env.PRICELABS_INTEGRATION_TOKEN;
 
-    if (!receivedToken || receivedToken !== configuredToken) {
-        console.warn(`PriceLabs Unauthorized Sync Attempt. Recv: ${receivedToken?.slice(-5)}...`);
+    if (!authToken || authToken !== configuredToken) {
+        console.warn(`PriceLabs Unauthorized Sync Attempt. Recv: ${authToken?.slice(-5)}...`);
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
