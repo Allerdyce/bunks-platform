@@ -10,6 +10,38 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Empty Body" }, { status: 400 });
     }
 
+    // DEBUG LOGGING START
+    let receivedToken = "null";
+    let debugSource = "";
+
+    try {
+        receivedToken = req.headers.get("x-integration-token") || "null";
+        debugSource = `DEBUG_INCOMING: ${new Date().toISOString()} | RecvToken=${receivedToken.slice(-10)} | EnvToken=${process.env.PRICELABS_INTEGRATION_TOKEN?.slice(-10)} | Bytes=${bodyText.length}`;
+        // Update the debug record (Upsert)
+        await prisma.propertyPricing.upsert({
+            where: {
+                propertyId_date: {
+                    propertyId: 11, // Steamboat
+                    date: new Date('2099-01-01T00:00:00Z')
+                }
+            },
+            create: {
+                propertyId: 11,
+                date: new Date('2099-01-01T00:00:00Z'),
+                priceCents: 0,
+                isBlocked: true,
+                source: debugSource
+            },
+            update: {
+                source: debugSource,
+                updatedAt: new Date()
+            }
+        });
+    } catch (err) {
+        console.error("Failed to write debug log", err);
+    }
+    // DEBUG LOGGING END
+
     // 1. Connectivity Check / Verification Probe
     // PriceLabs sometimes sends empty body or specific probe payload
     if (!bodyText || bodyText.trim() === "" || bodyText.includes('"verify":true')) {

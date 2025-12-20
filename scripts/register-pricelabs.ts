@@ -40,7 +40,8 @@ async function register() {
         integration: {
             sync_url: `${BUNKS_BASE_URL}/api/pricelabs/sync`,
             calendar_trigger_url: `${BUNKS_BASE_URL}/api/pricelabs/calendar-trigger`,
-            hook_url: `${BUNKS_BASE_URL}/api/pricelabs/hook`,
+            // Hook verification failing on prod (401). Skipping optional hook for now.
+            // hook_url: `${BUNKS_BASE_URL}/api/pricelabs/hook`,
             regenerate_token: false,
             features: {
                 min_stay: true,
