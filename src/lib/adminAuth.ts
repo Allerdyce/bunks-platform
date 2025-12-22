@@ -1,7 +1,12 @@
 import crypto from "crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
-const DEFAULT_ADMIN_EMAILS = ["ali@bunks.com", "matt@bunks.com"];
+const DEFAULT_ADMIN_EMAILS = [
+  "ali@bunks.com",
+  "matt@bunks.com",
+  "trumandavies7@gmail.com",
+  "alissa@bunks.com"
+];
 const parseAdminEmails = () => {
   const configured = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? DEFAULT_ADMIN_EMAILS.join(",");
   return Array.from(
