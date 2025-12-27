@@ -106,30 +106,15 @@ export function PropertyDetailView({
   const savingsCopy = "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
   const [quote, setQuote] = useState<PricingQuote | null>(null);
+  const [pendingQuote, setPendingQuote] = useState<PricingQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
+  // Fetch quote for confirmed dates (Booking Sidebar)
   useEffect(() => {
     let isMounted = true;
-    const fetchDates = async () => {
-      try {
-        const dates = await api.fetchBlockedDates(property.slug);
-        if (isMounted) {
-          setBlockedDates(dates);
-        }
-      } catch (error) {
-        console.error("Failed to load blocked dates", error);
-      }
-    };
-    fetchDates();
-    return () => {
-      isMounted = false;
-    };
-  }, [property.slug]);
-
-  useEffect(() => {
     const fetchQuote = async () => {
       if (!bookingDates.start || !bookingDates.end) {
-        setQuote(null);
+        if (isMounted) setQuote(null);
         return;
       }
       setIsLoadingQuote(true);
@@ -143,17 +128,62 @@ export function PropertyDetailView({
           })
         });
         const data = await res.json();
-        if (data.quote) {
+        if (isMounted && data.quote) {
           setQuote(data.quote);
+        } else if (isMounted) {
+          setQuote(null);
         }
       } catch (e) {
         console.error("Failed to fetch quote", e);
       } finally {
-        setIsLoadingQuote(false);
+        if (isMounted) setIsLoadingQuote(false);
       }
     };
     fetchQuote();
+    return () => { isMounted = false; };
   }, [bookingDates, property.slug, guestCount]);
+
+  // Fetch quote for pending dates (Calendar Overlay)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPendingQuote = async () => {
+      if (!pendingRange.start || !pendingRange.end) {
+        if (isMounted) setPendingQuote(null);
+        return;
+      }
+      // Simple debounce could be added here if needed, but for now direct fetch is okay
+      try {
+        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
+          method: 'POST',
+          body: JSON.stringify({
+            checkIn: pendingRange.start.toISOString(),
+            checkOut: pendingRange.end.toISOString(),
+            guests: guestCount
+          })
+        });
+        const data = await res.json();
+        if (isMounted && data.quote) {
+          setPendingQuote(data.quote);
+        } else if (isMounted) {
+          setPendingQuote(null);
+        }
+      } catch (e) {
+        // Silently fail or just clear quote
+        if (isMounted) setPendingQuote(null);
+      }
+    };
+
+    // reset pending quote when dates become invalid/incomplete
+    if (!pendingRange.start || !pendingRange.end) {
+      setPendingQuote(null);
+    } else {
+      const timer = setTimeout(fetchPendingQuote, 200); // 200ms debounce
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
+    }
+  }, [pendingRange, property.slug, guestCount]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -198,9 +228,14 @@ export function PropertyDetailView({
     ? (quote.undiscountedNightlySubtotalCents + quote.cleaningFeeCents + quote.serviceFeeCents + quote.taxCents) / 100
     : (confirmedNights * property.price);
 
-  // Pending total: Only static for now
-  const pendingTotal = pendingNights * property.price;
-  const pendingDisplayTotal = pendingTotal * 0.9;
+  // Pending total: Use pendingQuote if available, else static
+  const pendingDisplayTotal = pendingQuote
+    ? (pendingQuote.totalPriceCents / 100)
+    : (pendingNights * property.price * 0.9);
+
+  const pendingOriginalTotal = pendingQuote
+    ? (pendingQuote.undiscountedNightlySubtotalCents + pendingQuote.cleaningFeeCents + pendingQuote.serviceFeeCents + pendingQuote.taxCents) / 100
+    : (pendingNights * property.price);
 
   const confirmedRangeSummary = formatRangeSummary(bookingDates);
   const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
@@ -208,12 +243,16 @@ export function PropertyDetailView({
 
   const openCalendarOverlay = () => {
     setPendingRange({ start: bookingDates.start, end: bookingDates.end });
+    setPendingQuote(quote); // Initialize with existing quote if matches
     setCalendarOpen(true);
   };
 
   const closeCalendarOverlay = () => setCalendarOpen(false);
 
-  const clearPendingRange = () => setPendingRange({ start: null, end: null });
+  const clearPendingRange = () => {
+    setPendingRange({ start: null, end: null });
+    setPendingQuote(null);
+  };
 
   const handleSavePendingRange = () => {
     if (!pendingRange.start || !pendingRange.end) return;
@@ -226,7 +265,7 @@ export function PropertyDetailView({
 
   const hasPendingSelection = Boolean(pendingRange.start && pendingRange.end);
   const pendingSummary = pendingNights
-    ? `${formatCurrency(pendingTotal)} for ${pendingNights} night${pendingNights > 1 ? "s" : ""}`
+    ? `${formatCurrency(pendingDisplayTotal)} for ${pendingNights} night${pendingNights > 1 ? "s" : ""}`
     : "Add dates for prices";
 
   const checkInLabel = formatDateField(bookingDates.start);
@@ -712,7 +751,7 @@ export function PropertyDetailView({
                 {pendingNights ? (
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-stone-400 line-through decoration-stone-400">
-                      {formatCurrency(pendingTotal)}
+                      {formatCurrency(pendingOriginalTotal)}
                     </p>
                     <p className="text-base font-semibold text-gray-900">
                       {formatCurrency(pendingDisplayTotal)} for {pendingNights} night{pendingNights > 1 ? "s" : ""}
