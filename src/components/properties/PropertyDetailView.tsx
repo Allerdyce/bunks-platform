@@ -19,6 +19,7 @@ import {
   Layers,
   MapPin,
   Star,
+  Tag,
   Users,
   Wifi,
   X,
@@ -710,7 +711,7 @@ export function PropertyDetailView({
               </div>
             </div>
 
-            <p className="text-sm text-emerald-600 font-medium mb-3 text-center">{savingsCopy}</p>
+
 
             <Button
               onClick={() => (canBook ? onNavigate("booking") : openCalendarOverlay())}
@@ -718,7 +719,10 @@ export function PropertyDetailView({
             >
               {canBook ? "Reserve" : "Check availability"}
             </Button>
-            <p className="text-center text-xs text-gray-400">You won't be charged yet</p>
+            <div className="mt-4 bg-emerald-50 rounded-2xl p-4 flex items-center justify-center gap-2">
+              <Tag className="w-5 h-5 text-emerald-600 fill-emerald-600 rotate-90" />
+              <p className="text-emerald-800 font-medium">{savingsCopy}</p>
+            </div>
           </div>
         </div>
       </div>
