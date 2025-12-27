@@ -187,7 +187,7 @@ export function Calendar({
   };
 
   const baseLayoutClass = variant === "vertical" ? "max-h-[600px] overflow-y-auto" : "max-w-md mx-auto lg:mx-0";
-  const containerClasses = `bg-white p-6 rounded-2xl border border-gray-100 shadow-sm ${baseLayoutClass} ${className}`;
+  const containerClasses = `bg-white p-6 rounded-2xl border border-gray-200 shadow-sm ${baseLayoutClass} ${className}`;
 
   return (
     <div className={containerClasses}>

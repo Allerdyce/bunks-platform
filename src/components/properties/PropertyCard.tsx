@@ -25,7 +25,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
           onClick();
         }
       }}
-      className="group block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left"
+      className="group block bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full text-left"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <Image

@@ -46,7 +46,7 @@ export function BlogPostView({ post, relatedPosts, onBack, onOpenPost }: BlogPos
           </button>
           <div className="prose prose-lg prose-stone mx-auto">{post.content}</div>
 
-          <div className="border-t border-gray-100 mt-16 pt-12">
+          <div className="border-t border-gray-200 mt-16 pt-12">
             <h4 className="font-serif text-2xl text-gray-900 mb-6">Read Next</h4>
             <div className="grid sm:grid-cols-2 gap-6">
               {relatedPosts.map((related) => (

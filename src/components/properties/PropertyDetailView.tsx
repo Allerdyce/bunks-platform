@@ -433,7 +433,7 @@ export function PropertyDetailView({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-6 py-6 border-y border-gray-100 mb-8">
+          <div className="flex flex-wrap gap-6 py-6 border-y border-gray-200 mb-8">
             <span className="flex items-center gap-2 text-gray-600">
               <Users className="w-5 h-5" /> {property.guests} Guests
             </span>
@@ -463,7 +463,7 @@ export function PropertyDetailView({
               <h2 className="font-serif text-2xl text-gray-900 mb-4">Why you'll love it</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {property.highlights.map((highlight) => (
-                  <div key={highlight} className="flex items-start gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                  <div key={highlight} className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-2xl shadow-sm">
                     <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                     <p className="text-gray-600">{highlight}</p>
                   </div>
@@ -475,7 +475,7 @@ export function PropertyDetailView({
           {property.aboutSections?.length ? (
             <div className="mb-12 space-y-8">
               {property.aboutSections.map((section) => (
-                <div key={section.title} className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                <div key={section.title} className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
                   <h3 className="font-serif text-xl text-gray-900 mb-3">{section.title}</h3>
                   <div className="space-y-3 text-gray-600 leading-relaxed">
                     {section.body.map((paragraph) => (
@@ -492,7 +492,7 @@ export function PropertyDetailView({
               <h2 className="font-serif text-2xl text-gray-900 mb-6">Sleeping arrangements</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {property.sleepingArrangements.map((arrangement) => (
-                  <div key={arrangement.title} className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                  <div key={arrangement.title} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
                     <div className="flex items-start gap-3 mb-3">
                       <Layers className="w-5 h-5 text-gray-400" />
                       <div>
@@ -512,7 +512,7 @@ export function PropertyDetailView({
           {property.guestAccess?.length || property.otherNotes?.length ? (
             <div className="mb-12 grid lg:grid-cols-2 gap-6">
               {property.guestAccess?.length ? (
-                <div className="p-6 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl">
                   <div className="flex items-center gap-3 mb-4">
                     <DoorOpen className="w-5 h-5 text-gray-500" />
                     <h3 className="font-serif text-xl text-gray-900">Guest access</h3>
@@ -525,7 +525,7 @@ export function PropertyDetailView({
                 </div>
               ) : null}
               {property.otherNotes?.length ? (
-                <div className="p-6 bg-white border border-gray-100 rounded-2xl">
+                <div className="p-6 bg-white border border-gray-200 rounded-2xl">
                   <div className="flex items-center gap-3 mb-4">
                     <Info className="w-5 h-5 text-gray-500" />
                     <h3 className="font-serif text-xl text-gray-900">Good to know</h3>
@@ -562,7 +562,7 @@ export function PropertyDetailView({
             <div className="mb-12 space-y-8">
               <h2 className="font-serif text-2xl text-gray-900">Room-by-room gallery</h2>
               {property.photoGroups.map((group) => (
-                <div key={group.title} className="border border-gray-100 rounded-2xl p-6">
+                <div key={group.title} className="border border-gray-200 rounded-2xl p-6">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                     <div>
                       <h3 className="font-semibold text-gray-900">{group.title}</h3>
@@ -642,7 +642,7 @@ export function PropertyDetailView({
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/50 sticky top-24">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 sticky top-24">
             <div className="flex justify-between items-start gap-3 mb-6">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline gap-3">
@@ -732,7 +732,7 @@ export function PropertyDetailView({
             className={`bg-white w-full shadow-2xl flex flex-col ${isMobile ? "rounded-t-3xl max-h-[90vh] overflow-hidden" : "max-w-3xl rounded-3xl overflow-hidden"
               }`}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <div>
                 <p className="font-semibold text-gray-900">Choose your stay</p>
                 <p className="text-sm text-gray-500">Select check-in and check-out dates</p>
@@ -756,7 +756,7 @@ export function PropertyDetailView({
                 className="w-full"
               />
             </div>
-            <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {pendingNights ? (
                   <div className="flex items-center gap-2">
@@ -798,7 +798,7 @@ export function PropertyDetailView({
       {reviewsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 px-4">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>
                 <p className="font-serif text-xl text-gray-900">Guest reviews</p>
                 <p className="text-sm text-gray-500">{reviewCountLabel} · Rated {property.rating}</p>

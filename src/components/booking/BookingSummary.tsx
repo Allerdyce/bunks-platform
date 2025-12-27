@@ -78,7 +78,7 @@ export function BookingSummary({
   const grandTotal = total;
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 h-fit shadow-sm sticky top-24">
+    <div className="bg-white p-6 rounded-2xl border border-gray-200 h-fit shadow-sm sticky top-24">
       <div className="flex gap-4 mb-6">
         <Image
           src={property.image}
@@ -95,7 +95,7 @@ export function BookingSummary({
           </div>
         </div>
       </div>
-      <div className="border-t border-gray-100 py-4 space-y-3 text-sm">
+      <div className="border-t border-gray-200 py-4 space-y-3 text-sm">
         <div className="flex justify-between text-gray-600">
           <span>{perNightLabel}</span>
           <div className="flex flex-col items-end">
@@ -124,7 +124,7 @@ export function BookingSummary({
           </div>
         )}
       </div>
-      <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
+      <div className="border-t border-gray-200 pt-4 mt-2 space-y-4">
         <div className="flex justify-between font-medium text-lg text-gray-900">
           <span>Total</span>
           <div className="flex flex-col items-end">
