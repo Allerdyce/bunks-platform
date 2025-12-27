@@ -663,13 +663,24 @@ export function PropertyDetailView({
             <div className="flex justify-between items-start gap-3 mb-6">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-gray-400 line-through text-lg">{comparableRateLabel}</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-2xl font-semibold text-gray-900">{nightlyRateLabel}</span>
-                    <span className="text-gray-500">/ night</span>
-                  </div>
+                  {canBook ? (
+                    <>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-2xl font-semibold text-gray-900">
+                          {formatCurrency(displayTotal / confirmedNights)}
+                        </span>
+                        <span className="text-gray-500">/ night</span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-serif text-2xl font-semibold text-gray-900">
+                      Add dates for prices
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">Direct booking rate</p>
+                {canBook && (
+                  <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">Direct booking rate</p>
+                )}
               </div>
               <button
                 type="button"

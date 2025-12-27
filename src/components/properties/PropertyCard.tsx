@@ -69,9 +69,8 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
           <div className="flex items-baseline gap-1">
             <span className="font-serif text-lg font-semibold text-gray-900">
-              {nightlyRateFormatter.format(property.price)}
+              Add dates for prices
             </span>
-            <span className="text-gray-500 text-sm">/ night</span>
           </div>
           <span className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 group-hover:decoration-gray-900 transition-all">
             View details
