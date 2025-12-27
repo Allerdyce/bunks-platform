@@ -21,7 +21,6 @@ interface BookingContainerProps {
   onSuccess: (payload: { bookingReference: string; guestEmail: string }) => void;
 }
 
-const CLEANING_FEE = 85;
 const SERVICE_FEE = 20;
 
 const calculateNights = (range: DateRange) => {
@@ -53,7 +52,7 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
     const discountedNightlyRate = Math.round(undiscountedNightlyRate * 0.9);
 
     const subtotal = nights * discountedNightlyRate;
-    const cleaningFee = CLEANING_FEE;
+    const cleaningFee = property.cleaningFee ?? 0;
     const serviceFee = Math.round(subtotal * 0.15); // 15% Service Fee
     const total = subtotal + cleaningFee + serviceFee;
 
