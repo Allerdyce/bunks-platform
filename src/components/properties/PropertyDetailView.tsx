@@ -145,6 +145,23 @@ export function PropertyDetailView({
     return () => { isMounted = false; };
   }, [bookingDates, property.slug, guestCount]);
 
+  // Fetch blocked dates on mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadBlockedDates = async () => {
+      try {
+        const dates = await api.fetchBlockedDates(property.slug);
+        if (isMounted) {
+          setBlockedDates(dates);
+        }
+      } catch (e) {
+        console.error("Failed to fetch blocked dates", e);
+      }
+    };
+    loadBlockedDates();
+    return () => { isMounted = false; };
+  }, [property.slug]);
+
   // Fetch quote for pending dates (Calendar Overlay)
   useEffect(() => {
     let isMounted = true;

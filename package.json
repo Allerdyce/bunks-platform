@@ -16,6 +16,7 @@
     "@stripe/react-stripe-js": "^5.4.0",
     "@stripe/stripe-js": "^8.5.2",
     "@types/ol": "^7.0.0",
+    "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
     "ical": "^0.8.0",
     "lucide-react": "^0.453.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/date-fns": "^2.6.3",
     "@types/ical": "^0.8.3",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DateRange } from "@/types";
+import { isDateSelectable, isRangeValid } from "@/lib/availability";
 
 interface CalendarProps {
   blockedDates?: string[];
@@ -54,21 +55,16 @@ export function Calendar({
     );
   }, [monthsToShow, variant]);
 
-  const isDateBlocked = (date: Date) =>
-    blockedDates.some((blocked) => {
-      const blockedDate = parseISODateAsLocal(blocked);
-      return (
-        blockedDate.getDate() === date.getDate() &&
-        blockedDate.getMonth() === date.getMonth() &&
-        blockedDate.getFullYear() === date.getFullYear()
-      );
-    });
+  // Use centralized availability logic
+  // We can also add minStay checks here if passed in props in the future
+  const isBlocked = (date: Date) => !isDateSelectable(date, blockedDates);
 
   const handleDateClick = (day: number, contextDate: Date) => {
     const clickedDate = new Date(contextDate.getFullYear(), contextDate.getMonth(), day);
     clickedDate.setHours(0, 0, 0, 0);
 
-    if (isDateBlocked(clickedDate) || clickedDate < normalizeDate(new Date())) {
+    // Check if clicked date itself is available
+    if (isBlocked(clickedDate)) {
       return;
     }
 
@@ -82,17 +78,9 @@ export function Calendar({
       return;
     }
 
-    let hasBlocked = false;
-    const cursor = new Date(startDate);
-    while (cursor < clickedDate) {
-      cursor.setDate(cursor.getDate() + 1);
-      if (isDateBlocked(cursor)) {
-        hasBlocked = true;
-        break;
-      }
-    }
-
-    if (hasBlocked) {
+    // Check availability of the entire range
+    const proposedRange = { start: startDate, end: clickedDate };
+    if (!isRangeValid(proposedRange, blockedDates)) {
       alert("You cannot select a range that includes blocked dates.");
       return;
     }
@@ -145,15 +133,20 @@ export function Calendar({
             const day = idx + 1;
             const dateObj = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), day);
             const normalized = normalizeDate(dateObj);
-            const blocked = isDateBlocked(dateObj);
-            const isPast = normalized < normalizeDate(new Date());
+
+            // isBlocked checks centralized availability (defaults to checking 'isDateSelectable' -> false if blocked)
+            // Wait, isBlocked returns !isDateSelectable. 
+            // isDateSelectable returns TRUE if selectable (not past, not blocked).
+            // So isBlocked returns TRUE if NOT selectable (past or blocked).
+            const blocked = isBlocked(dateObj);
+
             const isStart = startDate && normalized.getTime() === startDate.getTime();
             const isEnd = endDate && normalized.getTime() === endDate.getTime();
             const inRange = startDate && endDate && normalized > startDate && normalized < endDate;
 
             let buttonClass = "h-10 w-full text-sm font-medium relative z-10 transition-all rounded-full";
 
-            if (blocked || isPast) {
+            if (blocked) {
               buttonClass += " text-gray-300 cursor-not-allowed decoration-gray-300 line-through decoration-1 rounded-full";
             } else {
               buttonClass += " cursor-pointer hover:bg-gray-100 text-gray-700";
@@ -173,7 +166,7 @@ export function Calendar({
                 {isEnd && startDate && <div className="absolute inset-y-0.5 left-0 w-1/2 bg-gray-100 -z-0" />}
                 <button
                   onClick={() => handleDateClick(day, referenceDate)}
-                  disabled={blocked || isPast}
+                  disabled={blocked}
                   className={buttonClass}
                 >
                   {day}
