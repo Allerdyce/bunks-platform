@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import type {
   BookingBreakdown,
@@ -59,6 +59,46 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
 
     return { subtotal, cleaningFee, serviceFee, total, undiscountedNightlyRate, discountedNightlyRate };
   }, [nights, property.price]);
+  // Fetch dynamic quote on mount to show correct pricing immediately
+  useEffect(() => {
+    let isMounted = true;
+    const fetchQuote = async () => {
+      if (!dates.start || !dates.end) return;
+      try {
+        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
+          method: 'POST',
+          body: JSON.stringify({
+            checkIn: dates.start.toISOString(),
+            checkOut: dates.end.toISOString(),
+            guests: guestCount
+          })
+        });
+        const data = await res.json();
+
+        if (isMounted && data.quote) {
+          const q = data.quote;
+          setPricingBreakdown({
+            nightlySubtotalCents: q.nightlySubtotalCents,
+            cleaningFeeCents: q.cleaningFeeCents,
+            serviceFeeCents: q.serviceFeeCents,
+            taxCents: q.taxCents,
+            undiscountedNightlySubtotalCents: q.undiscountedNightlySubtotalCents,
+            nightlyLineItems: q.nightlyLineItems
+          });
+          // Also update totals to ensure spinner/payment matches if possible? 
+          // Actually payment logic uses createBooking response, but for visual consistency this is good.
+          setQuoteTotals({
+            totalCents: q.totalPriceCents,
+            currency: "USD"
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to fetch initial quote:", err);
+      }
+    };
+    fetchQuote();
+    return () => { isMounted = false; };
+  }, [dates, property.slug, guestCount]);
 
   const handleDetailsSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
