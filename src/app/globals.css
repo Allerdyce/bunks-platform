@@ -27,7 +27,7 @@
   }
 
   body {
-    background: var(--color-surface-alt);
+    background: var(--color-surface);
     color: var(--color-text-primary);
     font-family: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif);
     letter-spacing: -0.015em;
