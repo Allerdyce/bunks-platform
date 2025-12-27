@@ -107,10 +107,12 @@ export function BookingSummary({
             <span>{formatCurrency(nightlySubtotal, currency)}</span>
           </div>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Cleaning fee</span>
-          <span>{formatCurrency(cleaningFee, currency)}</span>
-        </div>
+        {cleaningFee > 0 && (
+          <div className="flex justify-between text-gray-600">
+            <span>Cleaning fee</span>
+            <span>{formatCurrency(cleaningFee, currency)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-gray-600">
           <span>Service fee</span>
           <span>{formatCurrency(serviceFee, currency)}</span>
