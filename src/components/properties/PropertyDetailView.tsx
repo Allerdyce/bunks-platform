@@ -183,11 +183,24 @@ export function PropertyDetailView({
   const confirmedNights = calculateNights(bookingDates);
   const pendingNights = calculateNights(pendingRange);
 
-  // Use Quote if available, otherwise fallback to static calculation (but mostly rely on Quote for PriceLabs)
-  const confirmedTotal = quote ? (quote.totalPriceCents / 100) : (confirmedNights * property.price);
+  // Calculate Display Prices
+  // If Quote is available, it's already discounted. Use it directly.
+  // If static, apply 0.9 discount manually.
 
-  // Pending total: Only static for now as we don't quote pending range dynamically yet (could add later)
+  const displayTotal = quote
+    ? (quote.totalPriceCents / 100)
+    : (confirmedNights * property.price * 0.9);
+
+  // For the "Original" (strikethrough) price:
+  // If Quote: approximate original by using undiscounted nightly rates + current fees (conservative estimate)
+  // If Static: standard nightly rate * nights
+  const originalTotal = quote
+    ? (quote.undiscountedNightlySubtotalCents + quote.cleaningFeeCents + quote.serviceFeeCents + quote.taxCents) / 100
+    : (confirmedNights * property.price);
+
+  // Pending total: Only static for now
   const pendingTotal = pendingNights * property.price;
+  const pendingDisplayTotal = pendingTotal * 0.9;
 
   const confirmedRangeSummary = formatRangeSummary(bookingDates);
   const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
@@ -218,7 +231,7 @@ export function PropertyDetailView({
 
   const checkInLabel = formatDateField(bookingDates.start);
   const checkOutLabel = formatDateField(bookingDates.end);
-  const footerPrimaryText = canBook ? formatCurrency(confirmedTotal) : "Add dates for prices";
+  const footerPrimaryText = canBook ? formatCurrency(displayTotal) : "Add dates for prices";
   const footerSecondaryText = canBook && dateSummaryLabel ? dateSummaryLabel : "Select dates to unlock tailored pricing";
   const reviewCountLabel = `${reviewCount} review${reviewCount === 1 ? "" : "s"}`;
   const hasPropertyReviews = propertyReviews.length > 0;
@@ -702,7 +715,7 @@ export function PropertyDetailView({
                       {formatCurrency(pendingTotal)}
                     </p>
                     <p className="text-base font-semibold text-gray-900">
-                      {formatCurrency(pendingTotal * 0.9)} for {pendingNights} night{pendingNights > 1 ? "s" : ""}
+                      {formatCurrency(pendingDisplayTotal)} for {pendingNights} night{pendingNights > 1 ? "s" : ""}
                     </p>
                   </div>
                 ) : (
@@ -790,10 +803,10 @@ export function PropertyDetailView({
                   {canBook ? (
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-stone-400 line-through decoration-stone-400">
-                        {formatCurrency(confirmedTotal)}
+                        {formatCurrency(originalTotal)}
                       </p>
                       <p className="text-base font-semibold text-gray-900">
-                        {formatCurrency(confirmedTotal * 0.9)}
+                        {formatCurrency(displayTotal)}
                       </p>
                     </div>
                   ) : (
