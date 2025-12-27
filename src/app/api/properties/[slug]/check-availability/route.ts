@@ -16,24 +16,22 @@ function normalizeToMidnight(date: Date) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CheckAvailabilityBody;
-
-    if (!body.checkIn || !body.checkOut) {
-      return NextResponse.json(
-        { error: 'checkIn and checkOut are required' },
-        { status: 400 }
-      );
-    }
-
     // Derive slug from URL: /api/properties/[slug]/check-availability
     const url = new URL(req.url);
     const parts = url.pathname.split('/').filter(Boolean);
     // ["api", "properties", "<slug>", "check-availability"]
-    const slug = parts[2];
+    const slug = parts[2]; // e.g. "api"->0, "properties"->1, slug->2
+
+    const body = (await req.json()) as CheckAvailabilityBody;
+    console.log('[check-availability] Request:', { slug, body });
 
     if (!slug) {
+      return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
+    }
+
+    if (!body.checkIn || !body.checkOut) {
       return NextResponse.json(
-        { error: 'Missing slug in route' },
+        { error: 'checkIn and checkOut are required' },
         { status: 400 }
       );
     }
@@ -106,15 +104,10 @@ export async function POST(req: NextRequest) {
     // Calculate pricing quote
     let quote = null;
     try {
-      const guests = 1; // Default to 1 for generic quote, or read from body if available
-      // The body passed 'checkIn' and 'checkOut', check if 'guests' is there too
-      // type CheckAvailabilityBody usually just has dates, but let's check.
-      // We can update the type definition below or just assume 1 for now as the quote is "per night" mostly
-      // But service fees might depend on guests? No, usually flat or % of total.
-      // Except "Extra Guest Fee" if applicable. `calculator.ts` currently takes `guests` but doesn't use it yet (TODO).
+      const guests = body.guests || 1;
 
       const { calculatePricing } = await import('@/lib/pricing/calculator');
-      quote = await calculatePricing(property.slug, checkInDate, checkOutDate, 1);
+      quote = await calculatePricing(property.slug, checkInDate, checkOutDate, guests);
     } catch (e) {
       console.warn('Failed to calculate pricing quote:', e);
     }
