@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Bath,
   Bed,
+  BedDouble,
   Car,
   CheckCircle2,
   ChevronDown,
@@ -438,6 +439,11 @@ export function PropertyDetailView({
             <span className="flex items-center gap-2 text-gray-600">
               <Bed className="w-5 h-5" /> {property.bedrooms} Bedrooms
             </span>
+            {property.beds && (
+              <span className="flex items-center gap-2 text-gray-600">
+                <BedDouble className="w-5 h-5" /> {property.beds} Beds
+              </span>
+            )}
             <span className="flex items-center gap-2 text-gray-600">
               <Bath className="w-5 h-5" /> {property.bathrooms} Bathrooms
             </span>

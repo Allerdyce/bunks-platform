@@ -171,6 +171,7 @@ export const PROPERTIES: Property[] = [
     price: 550,
     guests: 6,
     bedrooms: 3,
+    beds: 5,
     bathrooms: 2.5,
     rating: 5.0,
     reviews: 42,

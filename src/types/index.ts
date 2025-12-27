@@ -36,6 +36,7 @@ export interface Property {
   price: number;
   guests: number;
   bedrooms: number;
+  beds?: number;
   bathrooms: number;
   rating: number;
   reviews: number;
