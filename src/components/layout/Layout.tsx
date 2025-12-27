@@ -23,9 +23,11 @@ export function Layout({
 }: LayoutProps) {
   const isBookingPortalView =
     currentView === "booking-details" || (typeof currentView === "string" && currentView.startsWith("booking-"));
+  const isBookingView = currentView === "booking";
   const mainClasses = ["pb-20", isBookingPortalView ? "pt-0" : "pt-6"].join(" ");
+
   return (
-    <div className="min-h-screen bg-[var(--color-surface-alt)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-brand-primary)] selection:text-white antialiased">
+    <div className={`min-h-screen ${isBookingView ? "bg-white" : "bg-[var(--color-surface-alt)]"} text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-brand-primary)] selection:text-white antialiased`}>
       <Navbar onNavigate={onNavigate} currentView={currentView} bookingSection={bookingSection} bookingRef={bookingRef} />
       <main className={mainClasses}>{children}</main>
       {!hideFooter && <Footer onNavigate={onNavigate} />}
