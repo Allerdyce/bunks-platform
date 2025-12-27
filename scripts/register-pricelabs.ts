@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' }); // or .env
 
 const PRICELABS_API_URL = 'https://api.pricelabs.co/v1/integration/api/integration';
-const BUNKS_BASE_URL = 'https://bunks-platform.vercel.app';
+const BUNKS_BASE_URL = 'https://www.bunks.com';
 
 const INTEGRATION_NAME = process.env.PRICELABS_INTEGRATION_NAME || 'bunks';
 const INTEGRATION_TOKEN = process.env.PRICELABS_INTEGRATION_TOKEN;

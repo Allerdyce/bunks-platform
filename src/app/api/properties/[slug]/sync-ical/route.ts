@@ -29,12 +29,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (property.pricelabsListingId) {
-      return NextResponse.json(
-        { message: 'Property is managed by PriceLabs; iCal sync skipped.', slug },
-        { status: 200 }
-      );
-    }
+    // CHECK REMOVED: We now allow PriceLabs ID (for pricing) + iCal (for availability)
+    // if (property.pricelabsListingId) { ... }
 
     if (!property.airbnbIcalUrl) {
       return NextResponse.json(

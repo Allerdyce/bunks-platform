@@ -9,13 +9,13 @@ export const PROPERTIES: Property[] = [
     location: "Summerland, California",
     address: "2211 Lillie Ave, Summerland, CA 93067",
     price: 325,
-    guests: 6,
+    guests: 8,
     bedrooms: 4,
-    bathrooms: 3.5,
+    bathrooms: 4.5,
     rating: 4.88,
     reviews: 94,
     description:
-      "Enjoy sweeping Pacific views from this sparkling 4-bed, 3.5-bath retreat just two blocks from downtown Summerland and a three-minute walk to the sand. Fresh interiors, sun decks, and furnished patios make it effortless to entertain between beach runs, wine tasting, or mountain adventures.",
+      "Enjoy sweeping Pacific views from this sparkling 4-bed, 4.5-bath retreat just two blocks from downtown Summerland and a three-minute walk to the sand. Fresh interiors, sun decks, and furnished patios make it effortless to entertain between beach runs, wine tasting, or mountain adventures.",
     image: "/2211-lillie-ave/exterior/exterior-1.webp",
     images: [
       "/2211-lillie-ave/exterior/exterior-1.webp",
