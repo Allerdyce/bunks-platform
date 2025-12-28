@@ -689,7 +689,7 @@ export function PropertyDetailView({
               >
                 <Star className="w-3 h-3 fill-current" />
                 {property.rating}
-                <span className="text-gray-400">({reviewCountLabel})</span>
+                <span className="text-gray-400">({reviewCount})</span>
               </button>
             </div>
 
