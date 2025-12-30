@@ -33,7 +33,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function WifiConnectPage({ params }: PageProps) {
-    const { slug } = await params;
+    const { slug: rawSlug } = await params;
+
+    const ALIAS_MAP: Record<string, string> = {
+        steamboat: "steamboat-downtown-townhome",
+        summerland: "summerland-ocean-view-beach-bungalow",
+    };
+
+    const slug = ALIAS_MAP[rawSlug] || rawSlug;
+
     const properties = await fetchMarketingProperties();
     const property = properties.find((p) => p.slug === slug);
 
