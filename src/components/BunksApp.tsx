@@ -390,15 +390,16 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
 
     if (!searchParams) return;
     if (view === "blog-post") return;
-    if (activePropertySlug && view !== "booking") {
-      // Optimization: if we are on a property slug, and view is 'booking', 
-      // we normally want to stay there unless params explicitly say otherwise.
-      // But the check below handles viewParams.
-      // Let's allow the viewParam check to run even if activePropertySlug is present.
-    }
-
     // Explicitly check param
     const viewParam = searchParams.get("view") as ViewState | null;
+
+    // If we have a property slug in the URL (activePropertySlug) and the user DID NOT
+    // explicitly ask for a specific view (via ?view=...), then we should STOP here.
+    // We do NOT want to fall through to the default logic below which resets to 'home'.
+    // The property-handling useEffect (above or below) will handle setting view='property'.
+    if (activePropertySlug && !viewParam) {
+      return;
+    }
     const allowedViews: ViewState[] = ["home", "about", "journal", "booking", "booking-details", "booking-essential", "booking-guide", "booking-messages"]; // Added "booking"
 
     if (viewParam && allowedViews.includes(viewParam)) {
