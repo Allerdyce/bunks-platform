@@ -12,23 +12,27 @@ export const metadata: Metadata = {
     }
 };
 
+import { TotToolLayout } from "./TotToolLayout";
+
 export default function TotHelperPage() {
     return (
-        <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 sm:px-6 lg:px-8 font-sans">
-            <div className="max-w-3xl mx-auto space-y-8">
-                <div className="text-center space-y-4">
-                    {/* Bunks Logo / Branding could go here */}
-                    <h1 className="text-4xl font-serif text-gray-900 tracking-tight">Tax Helper</h1>
-                    <p className="text-lg text-gray-600">Simplifying tax compliance for Santa Barbara hosts.</p>
-                </div>
+        <TotToolLayout>
+            <div className="bg-[#FDFBF7] py-12 px-4 sm:px-6 lg:px-8 font-sans min-h-[calc(100vh-200px)]">
+                <div className="max-w-3xl mx-auto space-y-8">
+                    <div className="text-center space-y-4">
+                        {/* Bunks Logo / Branding could go here */}
+                        <h1 className="text-4xl font-serif text-gray-900 tracking-tight">Tax Helper</h1>
+                        <p className="text-lg text-gray-600">Simplifying tax compliance for Santa Barbara hosts.</p>
+                    </div>
 
-                <TotWizard />
+                    <TotWizard />
 
-                <div className="text-center text-gray-400 text-xs mt-12">
-                    <p>Not affiliated with the County of Santa Barbara.</p>
-                    <p>Use at your own risk. Consult a tax professional for advice.</p>
+                    <div className="text-center text-gray-400 text-xs mt-12">
+                        <p>Not affiliated with the County of Santa Barbara.</p>
+                        <p>Use at your own risk. Consult a tax professional for advice.</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </TotToolLayout>
     );
 }
