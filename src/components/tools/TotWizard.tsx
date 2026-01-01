@@ -546,7 +546,7 @@ export default function TotWizard() {
                             <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
                                 <li>Print the downloaded PDF.</li>
                                 <li>Complete the signature section (Sign, Print Name, Title, Date, Phone).</li>
-                                <li>Write a check for the <strong>Total Due: ${result?.line8_totalDue.toFixed(2)}</strong>.</li>
+                                <li>Make check payable to <strong>Treasurer-Tax Collector</strong> for the <strong>Total Due: ${result?.line8_totalDue.toFixed(2)}</strong>.</li>
                                 <li>
                                     Mail to:<br />
                                     <span className="font-medium text-gray-800 ml-4 block mt-1">
