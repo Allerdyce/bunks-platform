@@ -47,9 +47,94 @@ export async function POST() {
     hostPrepSameDay: await handleHostPrepSameDay(now, opsDetails),
     midStayCheckIn: await handleMidStayCheckIn(now),
     doorCodeDelivery: await handleDoorCodeDelivery(now),
+    wifiBookDirect: await handleWiFiBookDirect(now),
   };
 
   return NextResponse.json({ ok: true, ranAt: now.toISOString(), summary });
+}
+
+const WIFI_CAMPAIGN_DELAY_DAYS = 14;
+
+async function handleWiFiBookDirect(now: Date): Promise<BatchSummary> {
+  // Target: Users created exactly 14 days ago (start to end of that day)
+  // We run daily, so we just grab the window for T-14 days.
+
+  // e.g. If today is Dec 20, we want users from Dec 6.
+  // Window: Dec 6 00:00:00 to Dec 6 23:59:59.
+
+  const targetDate = new Date(now);
+  targetDate.setDate(targetDate.getDate() - WIFI_CAMPAIGN_DELAY_DAYS);
+
+  const startOfDay = new Date(targetDate);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(targetDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  // Find users
+  const candidates = await prisma.user.findMany({
+    where: {
+      role: 'GUEST',
+      createdAt: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+    select: { id: true, email: true, name: true },
+  });
+
+  const summary: BatchSummary = { total: candidates.length, sent: 0, skipped: 0, errors: 0 };
+
+  if (candidates.length === 0) {
+    return summary;
+  }
+
+  // Deduplication: Check EmailLog by helper function
+  // fetchSentMap uses bookingId, so we check "email" type logs manually here or adapt.
+  // Since we don't have bookingIds for wifi leads, we check by (type + to:email).
+
+  const alreadySentLogs = await prisma.emailLog.findMany({
+    where: {
+      type: 'CAMPAIGN_BOOK_DIRECT_WIFI',
+      status: 'SENT',
+      to: { in: candidates.map(c => c.email) },
+    },
+    select: { to: true },
+  });
+
+  const sentSet = new Set(alreadySentLogs.map(l => l.to));
+
+  // Import sender dynamically to avoid circular deps if any, or just import at top if fine.
+  // Note: We need to update imports at the top of the file separately, but for now assuming we added it.
+  const { sendWifiLeadCampaign } = await import('@/lib/email/sendWifiLeadCampaign');
+
+  for (const user of candidates) {
+    if (sentSet.has(user.email)) {
+      summary.skipped += 1;
+      continue;
+    }
+
+    try {
+      await sendWifiLeadCampaign({ email: user.email, name: user.name || undefined });
+
+      // Log it
+      await prisma.emailLog.create({
+        data: {
+          to: user.email,
+          type: 'CAMPAIGN_BOOK_DIRECT_WIFI',
+          status: 'SENT',
+          sentAt: new Date(),
+        },
+      });
+
+      summary.sent += 1;
+    } catch (error) {
+      summary.errors += 1;
+      console.error('[cron][wifi-campaign] Failed to send', { email: user.email, error });
+    }
+  }
+
+  return summary;
 }
 
 type BatchSummary = {

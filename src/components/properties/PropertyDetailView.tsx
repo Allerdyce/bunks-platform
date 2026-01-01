@@ -145,14 +145,17 @@ export function PropertyDetailView({
     return () => { isMounted = false; };
   }, [bookingDates, property.slug, guestCount]);
 
+  const [minStay, setMinStay] = useState<Record<string, number>>({});
+
   // Fetch blocked dates on mount
   useEffect(() => {
     let isMounted = true;
     const loadBlockedDates = async () => {
       try {
-        const dates = await api.fetchBlockedDates(property.slug);
+        const { blockedDates: dates, minStay: minStayData } = await api.fetchBlockedDates(property.slug);
         if (isMounted) {
           setBlockedDates(dates);
+          setMinStay(minStayData);
         }
       } catch (e) {
         console.error("Failed to fetch blocked dates", e);
@@ -643,6 +646,7 @@ export function PropertyDetailView({
               <Calendar
                 selectedRange={bookingDates}
                 blockedDates={blockedDates}
+                minStay={minStay}
                 onSelectDates={noopSelectDates}
                 variant="vertical"
                 monthsToShow={8}
@@ -778,6 +782,7 @@ export function PropertyDetailView({
               <Calendar
                 selectedRange={pendingRange}
                 blockedDates={blockedDates}
+                minStay={minStay}
                 onSelectDates={setPendingRange}
                 variant="vertical"
                 monthsToShow={10}

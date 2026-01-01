@@ -250,6 +250,9 @@ enum EmailType {
   SYSTEM_MAJOR_ISSUE
   SYSTEM_PAYMENT_EXCEPTION
   SYSTEM_STRIPE_WEBHOOK_FAILED
+  
+  // Marketing Campaigns
+  CAMPAIGN_BOOK_DIRECT_WIFI
 }
 
 enum EmailStatus {

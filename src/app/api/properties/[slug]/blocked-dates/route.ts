@@ -83,6 +83,19 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'asc' },
     });
 
+    // Fetch PropertyPricing for minNights and additional blocks
+    const pricing = await prisma.propertyPricing.findMany({
+      where: {
+        propertyId: property.id,
+        date: { gte: new Date() },
+      },
+      select: {
+        date: true,
+        isBlocked: true,
+        minNights: true,
+      },
+    });
+
     const specialDelegate = (prisma as unknown as {
       specialRate?: {
         findMany: (...args: any[]) => Promise<any>;
@@ -96,23 +109,50 @@ export async function GET(req: NextRequest) {
       })) as { date: Date }[])
       : [];
 
-    // If no blocked dates found, return empty list (property is fully available)
-    if (!blocked.length && !specialBlocks.length) {
-      return NextResponse.json({ property: slug, blockedDates: [] });
-    }
+    const minStayMap: Record<string, number> = {};
+    const pricingBlockedDates: BlockedDatePayload[] = [];
 
-    const dates = [
-      ...blocked.map((b) => ({
-        date: toISODate(b.date),
-        source: b.source,
-      })),
-      ...specialBlocks.map((rate) => ({
-        date: toISODate(rate.date),
-        source: 'SPECIAL' as const,
-      })),
-    ];
+    pricing.forEach((p) => {
+      const dateStr = toISODate(p.date);
+      if (p.minNights && p.minNights > 1) {
+        minStayMap[dateStr] = p.minNights;
+      }
+      if (p.isBlocked) {
+        pricingBlockedDates.push({ date: dateStr, source: 'PRICELABS' });
+      }
+    });
 
-    return NextResponse.json({ property: slug, blockedDates: dates });
+    // Combine all blocked dates
+    // Priority: BlockedDate > SpecialRate > PropertyPricing
+    // Actually, we just want to merge them.
+    const uniqueBlockedDates = new Map<string, BlockedDatePayload>();
+
+    // 1. Base blocked dates
+    blocked.forEach((b) => {
+      const dateStr = toISODate(b.date);
+      uniqueBlockedDates.set(dateStr, { date: dateStr, source: b.source });
+    });
+
+    // 2. Special blocks
+    specialBlocks.forEach((s) => {
+      const dateStr = toISODate(s.date);
+      uniqueBlockedDates.set(dateStr, { date: dateStr, source: 'SPECIAL' });
+    });
+
+    // 3. Pricing blocks (if not already blocked)
+    pricingBlockedDates.forEach((p) => {
+      if (!uniqueBlockedDates.has(p.date)) {
+        uniqueBlockedDates.set(p.date, p);
+      }
+    });
+
+    const dates = Array.from(uniqueBlockedDates.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    return NextResponse.json({
+      property: slug,
+      blockedDates: dates,
+      minStay: minStayMap
+    });
   } catch (error: any) {
     console.error('Error fetching blocked dates:', error);
     return respondWithFallback(slug);

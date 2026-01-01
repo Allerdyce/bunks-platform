@@ -86,12 +86,7 @@ export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFor
                         </div>
                     </div>
 
-                    <Link
-                        href={`/property/${propertySlug}`}
-                        className="block w-full text-center py-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition-colors"
-                    >
-                        Explore Property Guide
-                    </Link>
+
                 </div>
             </div>
         );

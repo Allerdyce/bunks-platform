@@ -83,7 +83,7 @@ const mockApi = {
       },
     };
   },
-  async fetchBlockedDates(slug: Property["slug"]): Promise<string[]> {
+  async fetchBlockedDates(slug: Property["slug"]): Promise<{ blockedDates: string[]; minStay: Record<string, number> }> {
     await delay(300);
     void slug;
     const today = new Date();
@@ -93,7 +93,7 @@ const mockApi = {
       d.setDate(today.getDate() + offset);
       blocked.push(d.toISOString());
     });
-    return blocked;
+    return { blockedDates: blocked, minStay: {} };
   },
 
   async fetchBookingConversation(
@@ -193,13 +193,16 @@ const realApi = {
 
     return data as BookingResponse;
   },
-  async fetchBlockedDates(slug: Property["slug"]): Promise<string[]> {
+  async fetchBlockedDates(slug: Property["slug"]): Promise<{ blockedDates: string[]; minStay: Record<string, number> }> {
     const res = await fetch(`/api/properties/${slug}/blocked-dates`);
     if (!res.ok) {
       throw new Error("Failed to fetch blocked dates");
     }
     const data = await res.json();
-    return data.blockedDates?.map((entry: { date: string }) => entry.date) ?? [];
+    return {
+      blockedDates: data.blockedDates?.map((entry: { date: string }) => entry.date) ?? [],
+      minStay: data.minStay ?? {}
+    };
   },
 
   async fetchBookingConversation(
