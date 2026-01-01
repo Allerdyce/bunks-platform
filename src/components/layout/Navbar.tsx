@@ -56,6 +56,7 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
       { label: "Properties", type: "route", target: "listings", href: "/#listings" },
       { label: "About", type: "route", target: "about", href: "/?view=about" },
       { label: "Journal", type: "route", target: "journal", href: "/?view=journal" },
+      { label: "SB Tax Tool", type: "route", target: "about", href: "/tools/sb-tot" }, // Re-using valid target or adding new one if needed, but 'about' or generic string works for type 'route'
       { label: "Trips", type: "route", target: "booking-details", href: "/my-trips" },
     ];
     // If we have a bookingRef, the 'Trips' link could go to that specific trip. 
