@@ -88,6 +88,20 @@ export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFor
 
 
                 </div>
+
+                {propertySlug.includes("steamboat") && (
+                    <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
+                        <a
+                            href="/Steamboat Brochure.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors text-sm font-medium border-b border-transparent hover:border-emerald-400/50 pb-0.5"
+                        >
+                            View Property Guide
+                            <ArrowRight className="w-4 h-4" />
+                        </a>
+                    </div>
+                )}
             </div>
         );
     }
