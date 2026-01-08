@@ -20,6 +20,7 @@ type TotData = {
     deductions31Plus: number;
     deductionsFederal: number;
     roomRevenueOnlyForTBID: number;
+    totRate: number;
 };
 
 type CalculationResult = {
@@ -31,6 +32,7 @@ type CalculationResult = {
     line6_tot: number;
     line7_tbid: number;
     line8_totalDue: number;
+    totRate: number;
 };
 
 const InputGroup = ({ label, id, helperText, children }: { label: string; id: string; helperText?: string; children: React.ReactNode }) => (
@@ -119,6 +121,7 @@ export default function TotWizard() {
         deductions31Plus: 0,
         deductionsFederal: 0,
         roomRevenueOnlyForTBID: 0,
+        totRate: 14,
     });
     const [result, setResult] = useState<CalculationResult | null>(null);
     const [showFederalDeduction, setShowFederalDeduction] = useState(false);
@@ -152,6 +155,7 @@ export default function TotWizard() {
                     deductions31Plus: Number(data.deductions31Plus),
                     deductionsFederal: Number(data.deductionsFederal),
                     roomRevenueOnlyForTBID: tbidBase,
+                    totRate: Number(data.totRate) / 100, // Convert percentage to decimal
                 }),
             });
             if (!res.ok) throw new Error("Calculation failed");
@@ -302,6 +306,49 @@ export default function TotWizard() {
                                     </select>
                                 </div>
                             </InputGroup>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <InputGroup label="Zip Code" id="zip">
+                                    <input
+                                        type="text"
+                                        id="zip"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        placeholder="93101"
+                                        value={data.zip}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            let city = data.city;
+                                            let state = data.state;
+
+                                            // Simple auto-fill logic
+                                            if (val === "93067") { city = "Summerland"; state = "CA"; }
+                                            else if (val === "93108" || val === "93103") { city = "Montecito"; state = "CA"; }
+                                            else if (val.startsWith("931")) { city = "Santa Barbara"; state = "CA"; }
+
+                                            setData({ ...data, zip: val, city, state });
+                                        }}
+                                    />
+                                </InputGroup>
+                                <InputGroup label="City" id="city">
+                                    <input
+                                        type="text"
+                                        id="city"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        value={data.city}
+                                        onChange={(e) => setData({ ...data, city: e.target.value })}
+                                    />
+                                </InputGroup>
+                                <InputGroup label="State" id="state">
+                                    <input
+                                        type="text"
+                                        id="state"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        value={data.state}
+                                        onChange={(e) => setData({ ...data, state: e.target.value })}
+                                    />
+                                </InputGroup>
+                            </div>
+
                             <InputGroup
                                 label="Operator Name"
                                 id="operatorName"
@@ -340,36 +387,6 @@ export default function TotWizard() {
                                     onChange={(e) => setData({ ...data, situsAddress: e.target.value })}
                                 />
                             </InputGroup>
-                            <div className="grid grid-cols-3 gap-3">
-                                <InputGroup label="City" id="city">
-                                    <input
-                                        type="text"
-                                        id="city"
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500"
-                                        value={data.city}
-                                        readOnly
-                                    />
-                                </InputGroup>
-                                <InputGroup label="State" id="state">
-                                    <input
-                                        type="text"
-                                        id="state"
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500"
-                                        value={data.state}
-                                        readOnly
-                                    />
-                                </InputGroup>
-                                <InputGroup label="Zip" id="zip">
-                                    <input
-                                        type="text"
-                                        id="zip"
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="93108"
-                                        value={data.zip}
-                                        onChange={(e) => setData({ ...data, zip: e.target.value })}
-                                    />
-                                </InputGroup>
-                            </div>
                         </div>
                         <button
                             onClick={() => setStep("FINANCIALS")}
@@ -378,195 +395,219 @@ export default function TotWizard() {
                         >
                             Next step <ArrowRight className="w-5 h-5" />
                         </button>
-                    </div>
-                )}
+                    </div >
+                )
+                }
 
-                {step === "FINANCIALS" && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h3 className="text-xl font-semibold text-gray-900">Revenue & Deductions</h3>
-                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 text-sm text-amber-800">
-                            Enter full amounts. The tool will handle the math.
-                        </div>
-                        <div className="space-y-4">
-                            <InputGroup
-                                label="Gross Rent Collected (Line 1)"
-                                id="grossRent"
-                                helperText="Total rent collected for the month including mandatory fees such as cleaning fees. Do not subtract deductions here."
-                            >
-                                <CurrencyInput
+                {
+                    step === "FINANCIALS" && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <h3 className="text-xl font-semibold text-gray-900">Revenue & Deductions</h3>
+                            <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 text-sm text-amber-800">
+                                Enter full amounts. The tool will handle the math.
+                            </div>
+                            <div className="space-y-4">
+                                <InputGroup
+                                    label="Gross Rent Collected (Line 1)"
                                     id="grossRent"
-                                    value={data.grossRent}
-                                    onChange={(val) => setData({ ...data, grossRent: val })}
-                                />
-                            </InputGroup>
-
-                            <InputGroup
-                                label="Deductions: 31+ Day Stays (Line 2)"
-                                id="deductions31Plus"
-                                helperText="Enter rent collected from stays of 31 consecutive days or longer during this month. These amounts are not subject to Santa Barbara TOT."
-                            >
-                                <CurrencyInput
-                                    id="deductions31Plus"
-                                    value={data.deductions31Plus}
-                                    onChange={(val) => setData({ ...data, deductions31Plus: val })}
-                                />
-                            </InputGroup>
-
-                            <div className="pt-2">
-                                <button
-                                    onClick={() => setShowFederalDeduction(!showFederalDeduction)}
-                                    className="text-sm text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-1"
+                                    helperText="Total rent collected for the month including mandatory fees such as cleaning fees. Do not subtract deductions here."
                                 >
-                                    {showFederalDeduction ? "Hide" : "+ Add"} Federal Government Deduction (Line 3 – Optional)
-                                </button>
+                                    <CurrencyInput
+                                        id="grossRent"
+                                        value={data.grossRent}
+                                        onChange={(val) => setData({ ...data, grossRent: val })}
+                                    />
+                                </InputGroup>
 
-                                {showFederalDeduction && (
-                                    <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <InputGroup
-                                            label="Deductions: Federal Government (Line 3)"
-                                            id="deductionsFederal"
-                                            helperText="Only include if the U.S. Federal Government paid directly and you have exemption documentation."
-                                        >
-                                            <CurrencyInput
+                                <InputGroup
+                                    label="TOT Rate (%)"
+                                    id="totRate"
+                                    helperText="The current Transient Occupancy Tax rate for your jurisdiction."
+                                >
+                                    <div className="relative">
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                        <input
+                                            type="number"
+                                            id="totRate"
+                                            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono"
+                                            value={data.totRate}
+                                            onChange={(e) => setData({ ...data, totRate: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                </InputGroup>
+
+                                <InputGroup
+                                    label="Deductions: 31+ Day Stays (Line 2)"
+                                    id="deductions31Plus"
+                                    helperText="Enter rent collected from stays of 31 consecutive days or longer during this month. These amounts are not subject to Santa Barbara TOT."
+                                >
+                                    <CurrencyInput
+                                        id="deductions31Plus"
+                                        value={data.deductions31Plus}
+                                        onChange={(val) => setData({ ...data, deductions31Plus: val })}
+                                    />
+                                </InputGroup>
+
+                                <div className="pt-2">
+                                    <button
+                                        onClick={() => setShowFederalDeduction(!showFederalDeduction)}
+                                        className="text-sm text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-1"
+                                    >
+                                        {showFederalDeduction ? "Hide" : "+ Add"} Federal Government Deduction (Line 3 – Optional)
+                                    </button>
+
+                                    {showFederalDeduction && (
+                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <InputGroup
+                                                label="Deductions: Federal Government (Line 3)"
                                                 id="deductionsFederal"
-                                                value={data.deductionsFederal}
-                                                onChange={(val) => setData({ ...data, deductionsFederal: val })}
-                                            />
-                                        </InputGroup>
+                                                helperText="Only include if the U.S. Federal Government paid directly and you have exemption documentation."
+                                            >
+                                                <CurrencyInput
+                                                    id="deductionsFederal"
+                                                    value={data.deductionsFederal}
+                                                    onChange={(val) => setData({ ...data, deductionsFederal: val })}
+                                                />
+                                            </InputGroup>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <InputGroup
+                                    label="Revenue for TBID Calculation"
+                                    id="roomRevenueOnlyForTBID"
+                                    helperText="Enter room revenue only for the month. Exclude cleaning fees, extra fees, and taxes. This amount is used to calculate the 2% Tourism Business Improvement District (TBID) fee."
+                                >
+                                    <CurrencyInput
+                                        id="roomRevenueOnlyForTBID"
+                                        value={data.roomRevenueOnlyForTBID}
+                                        onChange={(val) => setData({ ...data, roomRevenueOnlyForTBID: val })}
+                                    />
+                                </InputGroup>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setStep("INFO")}
+                                    className="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium transition-all"
+                                >
+                                    Back
+                                </button>
+                                <button
+                                    onClick={calculate}
+                                    disabled={loading}
+                                    className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70"
+                                >
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Calculate <Calculator className="w-5 h-5" /></>}
+                                </button>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    step === "REVIEW" && result && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="text-center">
+                                <h3 className="text-xl font-semibold text-gray-900">Review & Generate</h3>
+                                <p className="text-gray-500 text-sm">Review the calculated figures below.</p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-xl p-6 space-y-3 font-mono text-sm border border-gray-100">
+                                <div className="flex justify-between items-center text-gray-500">
+                                    <span>Line 1: Gross Rent (incl. mandatory fees)</span>
+                                    <span>${result.line1_grossRent.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500">
+                                    <span>Line 4: Allowable Deductions</span>
+                                    <span>- ${result.line4_totalDeductions.toFixed(2)}</span>
+                                </div>
+                                {result.line3_deductionsFederal > 0 && (
+                                    <div className="flex justify-between items-center text-xs text-gray-400 pl-4 border-l-2 border-gray-200 ml-1">
+                                        <span>(Incl. Line 3 Federal: ${result.line3_deductionsFederal.toFixed(2)})</span>
                                     </div>
                                 )}
-                            </div>
-
-                            <InputGroup
-                                label="Revenue for TBID Calculation"
-                                id="roomRevenueOnlyForTBID"
-                                helperText="Enter room revenue only for the month. Exclude cleaning fees, extra fees, and taxes. This amount is used to calculate the 2% Tourism Business Improvement District (TBID) fee."
-                            >
-                                <CurrencyInput
-                                    id="roomRevenueOnlyForTBID"
-                                    value={data.roomRevenueOnlyForTBID}
-                                    onChange={(val) => setData({ ...data, roomRevenueOnlyForTBID: val })}
-                                />
-                            </InputGroup>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setStep("INFO")}
-                                className="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium transition-all"
-                            >
-                                Back
-                            </button>
-                            <button
-                                onClick={calculate}
-                                disabled={loading}
-                                className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70"
-                            >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Calculate <Calculator className="w-5 h-5" /></>}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {step === "REVIEW" && result && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="text-center">
-                            <h3 className="text-xl font-semibold text-gray-900">Review & Generate</h3>
-                            <p className="text-gray-500 text-sm">Review the calculated figures below.</p>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-xl p-6 space-y-3 font-mono text-sm border border-gray-100">
-                            <div className="flex justify-between items-center text-gray-500">
-                                <span>Line 1: Gross Rent (incl. mandatory fees)</span>
-                                <span>${result.line1_grossRent.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-gray-500">
-                                <span>Line 4: Allowable Deductions</span>
-                                <span>- ${result.line4_totalDeductions.toFixed(2)}</span>
-                            </div>
-                            {result.line3_deductionsFederal > 0 && (
-                                <div className="flex justify-between items-center text-xs text-gray-400 pl-4 border-l-2 border-gray-200 ml-1">
-                                    <span>(Incl. Line 3 Federal: ${result.line3_deductionsFederal.toFixed(2)})</span>
+                                <div className="border-t border-gray-200 my-2"></div>
+                                <div className="flex justify-between items-center font-semibold text-gray-700">
+                                    <span>Line 5: Taxable Rents</span>
+                                    <span>${result.line5_taxableRents.toFixed(2)}</span>
                                 </div>
-                            )}
-                            <div className="border-t border-gray-200 my-2"></div>
-                            <div className="flex justify-between items-center font-semibold text-gray-700">
-                                <span>Line 5: Taxable Rents</span>
-                                <span>${result.line5_taxableRents.toFixed(2)}</span>
+                                <div className="py-2"></div>
+                                <div className="flex justify-between items-center text-gray-700">
+                                    <span>Line 6: TOT — {result.totRate ? (result.totRate * 100).toFixed(0) : "14"}% of taxable rents (Line 5)</span>
+                                    <span>${result.line6_tot.toFixed(2)}</span>
+                                </div>
+                                <div className="py-2"></div>
+                                <div className="flex justify-between items-center text-gray-500">
+                                    <span>TBID Base: Room revenue only (used for Line 7)</span>
+                                    <span>${Number(data.roomRevenueOnlyForTBID).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-700">
+                                    <span>Line 7: TBID (2% of room revenue only)</span>
+                                    <span>${result.line7_tbid.toFixed(2)}</span>
+                                </div>
+                                <div className="border-t border-gray-300 my-2"></div>
+                                <div className="flex justify-between items-center font-bold text-lg text-emerald-600">
+                                    <span>Total Due (Line 8)</span>
+                                    <span>${result.line8_totalDue.toFixed(2)}</span>
+                                </div>
                             </div>
-                            <div className="py-2"></div>
-                            <div className="flex justify-between items-center text-gray-700">
-                                <span>Line 6: TOT — 12% of taxable rents (Line 5)</span>
-                                <span>${result.line6_tot.toFixed(2)}</span>
-                            </div>
-                            <div className="py-2"></div>
-                            <div className="flex justify-between items-center text-gray-500">
-                                <span>TBID Base: Room revenue only (used for Line 7)</span>
-                                <span>${Number(data.roomRevenueOnlyForTBID).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-gray-700">
-                                <span>Line 7: TBID (2% of room revenue only)</span>
-                                <span>${result.line7_tbid.toFixed(2)}</span>
-                            </div>
-                            <div className="border-t border-gray-300 my-2"></div>
-                            <div className="flex justify-between items-center font-bold text-lg text-emerald-600">
-                                <span>Total Due (Line 8)</span>
-                                <span>${result.line8_totalDue.toFixed(2)}</span>
-                            </div>
+
+                            <button
+                                onClick={generatePdf}
+                                disabled={loading}
+                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl shadow-emerald-500/20"
+                            >
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Download PDF Return <Download className="w-5 h-5" /></>}
+                            </button>
+                            <button
+                                onClick={() => setStep("FINANCIALS")}
+                                className="w-full py-3 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
+                            >
+                                Edit Financials
+                            </button>
                         </div>
+                    )
+                }
 
-                        <button
-                            onClick={generatePdf}
-                            disabled={loading}
-                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl shadow-emerald-500/20"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Download PDF Return <Download className="w-5 h-5" /></>}
-                        </button>
-                        <button
-                            onClick={() => setStep("FINANCIALS")}
-                            className="w-full py-3 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
-                        >
-                            Edit Financials
-                        </button>
-                    </div>
-                )}
+                {
+                    step === "SUCCESS" && (
+                        <div className="space-y-6 text-center py-8 animate-in zoom-in-95 duration-300">
+                            <div className="mx-auto w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-6">
+                                <Check className="w-10 h-10" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900">Success!</h2>
+                            <p className="text-gray-600 max-w-sm mx-auto">
+                                Your PDF has been generated and downloaded.
+                            </p>
 
-                {step === "SUCCESS" && (
-                    <div className="space-y-6 text-center py-8 animate-in zoom-in-95 duration-300">
-                        <div className="mx-auto w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-6">
-                            <Check className="w-10 h-10" />
+                            <div className="bg-gray-50 rounded-xl p-6 text-left space-y-4">
+                                <h4 className="font-semibold text-gray-900">Next Steps:</h4>
+                                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                                    <li>Print the downloaded PDF.</li>
+                                    <li>Complete the signature section (Sign, Print Name, Title, Date, Phone).</li>
+                                    <li>Make check payable to <strong>Treasurer-Tax Collector</strong> for the <strong>Total Due: ${result?.line8_totalDue.toFixed(2)}</strong>.</li>
+                                    <li>
+                                        Mail to:<br />
+                                        <span className="font-medium text-gray-800 ml-4 block mt-1">
+                                            Treasurer-Tax Collector<br />
+                                            PO Box 579<br />
+                                            Santa Barbara, CA 93102
+                                        </span>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                            >
+                                Start Another Return
+                            </button>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900">Success!</h2>
-                        <p className="text-gray-600 max-w-sm mx-auto">
-                            Your PDF has been generated and downloaded.
-                        </p>
-
-                        <div className="bg-gray-50 rounded-xl p-6 text-left space-y-4">
-                            <h4 className="font-semibold text-gray-900">Next Steps:</h4>
-                            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-                                <li>Print the downloaded PDF.</li>
-                                <li>Complete the signature section (Sign, Print Name, Title, Date, Phone).</li>
-                                <li>Make check payable to <strong>Treasurer-Tax Collector</strong> for the <strong>Total Due: ${result?.line8_totalDue.toFixed(2)}</strong>.</li>
-                                <li>
-                                    Mail to:<br />
-                                    <span className="font-medium text-gray-800 ml-4 block mt-1">
-                                        Treasurer-Tax Collector<br />
-                                        PO Box 579<br />
-                                        Santa Barbara, CA 93102
-                                    </span>
-                                </li>
-                            </ol>
-                        </div>
-
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                        >
-                            Start Another Return
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }

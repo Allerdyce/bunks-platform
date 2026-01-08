@@ -2,20 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
+
 type CalculationRequest = {
     grossRent: number;
     deductions31Plus: number;
     deductionsFederal: number;
     roomRevenueOnlyForTBID: number;
+    totRate?: number;
 };
 
-const TOT_RATE = 0.12; // 12%
+const DEFAULT_TOT_RATE = 0.14; // Default 14%
 const TBID_RATE = 0.02; // 2%
 
 export async function POST(req: NextRequest) {
     try {
         const body: CalculationRequest = await req.json();
-        const { grossRent, deductions31Plus, deductionsFederal, roomRevenueOnlyForTBID } = body;
+        const { grossRent, deductions31Plus, deductionsFederal, roomRevenueOnlyForTBID, totRate } = body;
+
+        const effectiveTotRate = totRate !== undefined ? totRate : DEFAULT_TOT_RATE;
 
         const line1_grossRent = grossRent;
         const line2_deductions31Plus = deductions31Plus || 0;
@@ -43,14 +47,13 @@ export async function POST(req: NextRequest) {
         // Line 5: Taxable Rents (1 - 4)
         const line5_taxableRents = Math.max(0, line1_grossRent - line4_totalDeductions);
 
-        // Line 6: TOT (12% of Line 5)
+        // Line 6: TOT (Variable Rate * Line 5)
         // Rounding to 2 decimal places properly
-        const line6_tot = Math.round(line5_taxableRents * TOT_RATE * 100) / 100;
+        const line6_tot = Math.round(line5_taxableRents * effectiveTotRate * 100) / 100;
 
         // Line 7: TBID (2% of room revenue only)
         const line7_tbid = Math.round(roomRevenueOnlyForTBID * TBID_RATE * 100) / 100;
 
-        // Line 8: Total Due
         const line8_totalDue = Math.round((line6_tot + line7_tbid) * 100) / 100;
 
         return NextResponse.json({
@@ -61,7 +64,8 @@ export async function POST(req: NextRequest) {
             line5_taxableRents,
             line6_tot,
             line7_tbid,
-            line8_totalDue
+            line8_totalDue,
+            totRate: effectiveTotRate
         });
     } catch (error) {
         console.error('TOT Calculation error:', error);
