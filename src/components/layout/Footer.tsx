@@ -50,7 +50,7 @@ export function Footer({ onNavigate }: FooterProps) {
             <li>Safety</li>
             <li>
               <Link
-                href="/messages"
+                href="/my-trips"
                 onClick={() => onNavigate("booking-details")}
                 className="transition hover:text-[var(--color-text-primary)]"
               >
