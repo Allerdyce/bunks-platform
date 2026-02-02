@@ -72,6 +72,11 @@ export function Footer({ onNavigate }: FooterProps) {
                 Cleaner Portal
               </Link>
             </li>
+            <li>
+              <Link href="/tools/sb-tot" className="transition hover:text-[var(--color-text-primary)]">
+                Taxes
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

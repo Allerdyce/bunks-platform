@@ -1,7 +1,7 @@
 
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Wifi, ArrowRight, ShieldCheck } from "lucide-react";
+import { Wifi, ArrowRight, ShieldCheck, FileText } from "lucide-react";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 import { WifiConnectForm } from "@/components/wifi/WifiConnectForm";
 
@@ -89,6 +89,20 @@ export default async function WifiConnectPage({ params }: PageProps) {
                         password={property.wifiPassword}
                         propertySlug={property.slug}
                     />
+
+                    {slug.includes("steamboat") && (
+                        <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                            <a
+                                href="/Steamboat Welcome Guide.pdf"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                            >
+                                <FileText className="w-4 h-4" />
+                                <span className="underline underline-offset-4">Download Welcome Guide</span>
+                            </a>
+                        </div>
+                    )}
 
                     <div className="mt-6 flex items-center justify-center gap-2 text-xs text-zinc-500">
                         <ShieldCheck className="w-3 h-3" />
