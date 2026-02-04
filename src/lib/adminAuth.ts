@@ -8,7 +8,11 @@ const DEFAULT_ADMIN_EMAILS = [
   "alissa@bunks.com"
 ];
 const parseAdminEmails = () => {
-  const configured = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? DEFAULT_ADMIN_EMAILS.join(",");
+  const envEmails = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL;
+  const configured = envEmails
+    ? `${envEmails},${DEFAULT_ADMIN_EMAILS.join(",")}`
+    : DEFAULT_ADMIN_EMAILS.join(",");
+
   return Array.from(
     new Set(
       configured
