@@ -161,6 +161,8 @@ export const PROPERTIES: Property[] = [
         ],
       },
     ],
+    wifiSsid: "Lillie Ave Guest",
+    wifiPassword: "Welcome!",
   },
   {
     id: 3,

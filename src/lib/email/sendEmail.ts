@@ -17,7 +17,15 @@ function normalizeRecipients(value?: string | string[]) {
   return Array.isArray(value) ? value.join(',') : value;
 }
 
+// Temporary kill switch: all outbound email is paused. Set EMAIL_SENDING_PAUSED=false to resume.
+const EMAIL_SENDING_PAUSED = process.env.EMAIL_SENDING_PAUSED !== 'false';
+
 export async function sendEmail(options: SendEmailOptions) {
+  if (EMAIL_SENDING_PAUSED) {
+    console.info(`[email] Sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
+    throw new Error('Email sending is paused (EMAIL_SENDING_PAUSED).');
+  }
+
   if (!postmarkClient) {
     throw new Error('Postmark client is not configured. Missing POSTMARK_API_KEY.');
   }

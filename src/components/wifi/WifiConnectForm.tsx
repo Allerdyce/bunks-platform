@@ -5,13 +5,42 @@ import { useState, FormEvent } from "react";
 import { ArrowRight, Check, Copy, Loader2, Wifi } from "lucide-react";
 import Link from "next/link";
 
+export type WifiTheme = "light" | "dark";
+
+const THEMES = {
+    light: {
+        successCard: "bg-emerald-50 border-emerald-200",
+        successTitle: "text-emerald-700",
+        successText: "text-emerald-800/80",
+        passwordCard: "bg-zinc-50 border-zinc-200",
+        passwordValue: "text-zinc-900",
+        copyButton: "hover:bg-zinc-200/70 text-zinc-500 hover:text-zinc-900",
+        copiedIcon: "text-emerald-600",
+        guideLink: "text-emerald-700 hover:text-emerald-600 hover:border-emerald-600/50",
+        input: "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400",
+    },
+    dark: {
+        successCard: "bg-emerald-500/10 border-emerald-500/20",
+        successTitle: "text-emerald-400",
+        successText: "text-emerald-200/80",
+        passwordCard: "bg-black/40 border-white/5",
+        passwordValue: "text-white",
+        copyButton: "hover:bg-white/10 text-zinc-400 hover:text-white",
+        copiedIcon: "text-emerald-400",
+        guideLink: "text-emerald-400 hover:text-emerald-300 hover:border-emerald-400/50",
+        input: "bg-white/5 border-white/10 text-white placeholder:text-zinc-600",
+    },
+} satisfies Record<WifiTheme, Record<string, string>>;
+
 interface WifiConnectFormProps {
     ssid: string;
     password?: string;
     propertySlug: string;
+    theme?: WifiTheme;
 }
 
-export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFormProps) {
+export function WifiConnectForm({ ssid, password, propertySlug, theme = "dark" }: WifiConnectFormProps) {
+    const t = THEMES[theme];
     const [email, setEmail] = useState("");
     const [isConnected, setIsConnected] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -64,24 +93,24 @@ export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFor
     if (isConnected) {
         return (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center mb-6">
+                <div className={`border rounded-2xl p-6 text-center mb-6 ${t.successCard}`}>
                     <div className="mx-auto w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-3">
                         <Wifi className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-emerald-400 font-medium mb-1">You're unlocked!</h3>
-                    <p className="text-sm text-emerald-200/80">Connect to <strong>{ssid}</strong></p>
+                    <h3 className={`font-medium mb-1 ${t.successTitle}`}>You're unlocked!</h3>
+                    <p className={`text-sm ${t.successText}`}>Connect to <strong>{ssid}</strong></p>
                 </div>
 
                 <div className="space-y-4">
-                    <div className="bg-black/40 rounded-xl p-4 border border-white/5">
+                    <div className={`rounded-xl p-4 border ${t.passwordCard}`}>
                         <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-2">Network Password</label>
                         <div className="flex items-center gap-3">
-                            <code className="flex-1 font-mono text-lg text-white">{password}</code>
+                            <code className={`flex-1 font-mono text-lg ${t.passwordValue}`}>{password}</code>
                             <button
                                 onClick={copyPassword}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
+                                className={`p-2 rounded-lg transition-colors ${t.copyButton}`}
                             >
-                                {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+                                {copied ? <Check className={`w-5 h-5 ${t.copiedIcon}`} /> : <Copy className="w-5 h-5" />}
                             </button>
                         </div>
                     </div>
@@ -95,7 +124,7 @@ export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFor
                             href="/Steamboat Brochure.pdf"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors text-sm font-medium border-b border-transparent hover:border-emerald-400/50 pb-0.5"
+                            className={`inline-flex items-center gap-2 transition-colors text-sm font-medium border-b border-transparent pb-0.5 ${t.guideLink}`}
                         >
                             View Property Guide
                             <ArrowRight className="w-4 h-4" />
@@ -117,7 +146,7 @@ export function WifiConnectForm({ ssid, password, propertySlug }: WifiConnectFor
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                    className={`w-full border rounded-xl px-5 py-4 ${t.input} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all`}
                 />
             </div>
 
