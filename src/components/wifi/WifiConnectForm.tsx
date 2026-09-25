@@ -35,11 +35,11 @@ const THEMES = {
 interface WifiConnectFormProps {
     ssid: string;
     password?: string;
-    propertySlug: string;
+    guideUrl?: string;
     theme?: WifiTheme;
 }
 
-export function WifiConnectForm({ ssid, password, propertySlug, theme = "dark" }: WifiConnectFormProps) {
+export function WifiConnectForm({ ssid, password, guideUrl, theme = "dark" }: WifiConnectFormProps) {
     const t = THEMES[theme];
     const [email, setEmail] = useState("");
     const [isConnected, setIsConnected] = useState(false);
@@ -118,10 +118,10 @@ export function WifiConnectForm({ ssid, password, propertySlug, theme = "dark" }
 
                 </div>
 
-                {propertySlug.includes("steamboat") && (
+                {guideUrl && (
                     <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
                         <a
-                            href="/Steamboat Brochure.pdf"
+                            href={guideUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`inline-flex items-center gap-2 transition-colors text-sm font-medium border-b border-transparent pb-0.5 ${t.guideLink}`}

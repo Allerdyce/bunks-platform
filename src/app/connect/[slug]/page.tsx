@@ -75,6 +75,19 @@ export default async function WifiConnectPage({ params, searchParams }: PageProp
 
     const slug = ALIAS_MAP[rawSlug] || rawSlug;
 
+    // Guide shown on the page, and the one linked from the success screen after unlocking.
+    const GUIDES: Record<string, { page: string; success: string }> = {
+        "steamboat-downtown-townhome": {
+            page: "/Steamboat Welcome Guide.pdf",
+            success: "/Steamboat Brochure.pdf",
+        },
+        "summerland-ocean-view-beach-bungalow": {
+            page: "/Lillie Guidebook.pdf",
+            success: "/Lillie Guidebook.pdf",
+        },
+    };
+    const guide = GUIDES[slug];
+
     const properties = await fetchMarketingProperties();
     const property = properties.find((p) => p.slug === slug);
 
@@ -120,14 +133,14 @@ export default async function WifiConnectPage({ params, searchParams }: PageProp
                     <WifiConnectForm
                         ssid={property.wifiSsid}
                         password={property.wifiPassword}
-                        propertySlug={property.slug}
+                        guideUrl={guide?.success}
                         theme={theme}
                     />
 
-                    {slug.includes("steamboat") && (
+                    {guide && (
                         <div className={`mt-8 pt-6 border-t text-center ${t.divider}`}>
                             <a
-                                href="/Steamboat Welcome Guide.pdf"
+                                href={guide.page}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={`inline-flex items-center gap-2 text-sm transition-colors ${t.link}`}
