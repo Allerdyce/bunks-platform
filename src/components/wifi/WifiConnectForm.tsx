@@ -3,7 +3,6 @@
 
 import { useState, FormEvent } from "react";
 import { ArrowRight, Check, Copy, Loader2, Wifi } from "lucide-react";
-import Link from "next/link";
 
 export type WifiTheme = "light" | "dark";
 
@@ -18,6 +17,11 @@ const THEMES = {
         copiedIcon: "text-emerald-600",
         guideLink: "text-emerald-700 hover:text-emerald-600 hover:border-emerald-600/50",
         input: "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400",
+        steps: "text-zinc-600",
+        offerCard: "bg-stone-100 border-stone-200",
+        offerTitle: "text-zinc-900",
+        offerText: "text-zinc-600",
+        fineprint: "text-zinc-500",
     },
     dark: {
         successCard: "bg-emerald-500/10 border-emerald-500/20",
@@ -29,27 +33,50 @@ const THEMES = {
         copiedIcon: "text-emerald-400",
         guideLink: "text-emerald-400 hover:text-emerald-300 hover:border-emerald-400/50",
         input: "bg-white/5 border-white/10 text-white placeholder:text-zinc-600",
+        steps: "text-zinc-400",
+        offerCard: "bg-white/5 border-white/10",
+        offerTitle: "text-white",
+        offerText: "text-zinc-400",
+        fineprint: "text-zinc-500",
     },
 } satisfies Record<WifiTheme, Record<string, string>>;
 
 interface WifiConnectFormProps {
     ssid: string;
     password?: string;
+    propertySlug?: string;
     guideUrl?: string;
+    bookDirectUrl?: string;
     theme?: WifiTheme;
 }
 
-export function WifiConnectForm({ ssid, password, guideUrl, theme = "dark" }: WifiConnectFormProps) {
+type CopyField = "ssid" | "password";
+
+async function copyText(value: string) {
+    try {
+        await navigator.clipboard.writeText(value);
+        return true;
+    } catch {
+        // Older iOS / non-secure contexts: fall back to a hidden textarea.
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        return ok;
+    }
+}
+
+export function WifiConnectForm({ ssid, password, propertySlug, guideUrl, bookDirectUrl, theme = "dark" }: WifiConnectFormProps) {
     const t = THEMES[theme];
     const [email, setEmail] = useState("");
     const [isConnected, setIsConnected] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [copied, setCopied] = useState(false);
-
-    // Generate the Android/iOS WiFi connection string (QR code content format)
-    // Format: WIFI:T:WPA;S:mynetwork;P:mypass;;
-    // Using WPA as standard, could be WEP but unlikely for Bunks.
-    const wifiString = `WIFI:T:WPA;S:${ssid};P:${password};;`;
+    const [copied, setCopied] = useState<CopyField | null>(null);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -57,38 +84,53 @@ export function WifiConnectForm({ ssid, password, guideUrl, theme = "dark" }: Wi
 
         setLoading(true);
         try {
-            // 1. Capture Lead
             await fetch("/api/wifi-lead", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, propertySlug }),
             });
-
-            // 2. Transition to Success
-            setIsConnected(true);
-
-            // 3. Attempt Native Deep Link (iOS/Android will parse this scheme if supported, mostly via QR reader context but web works sometimes)
-            // Actually, browsers don't universally support `WIFI:` scheme as a deep link from href.
-            // BUT, we can try.
-            // If it fails, the UI below is the fallback.
-            if (typeof window !== "undefined") {
-                window.location.href = wifiString;
-            }
         } catch (err) {
-            console.error("Connection failed", err);
-            // Even if API fails, let them connect (fail open)
-            setIsConnected(true);
+            // Fail open: never block a guest from getting online.
+            console.error("Failed to save wifi lead", err);
         } finally {
+            // Browsers can't join Wi-Fi from a web page (navigating to a WIFI: URI makes
+            // Safari show "address is invalid"), so we show copyable details instead.
+            setIsConnected(true);
             setLoading(false);
         }
     };
 
-    const copyPassword = () => {
-        if (!password) return;
-        navigator.clipboard.writeText(password);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const handleCopy = async (field: CopyField, value?: string) => {
+        if (!value) return;
+        if (await copyText(value)) {
+            setCopied(field);
+            setTimeout(() => setCopied((current) => (current === field ? null : current)), 2000);
+        }
     };
+
+    const renderCopyRow = (field: CopyField, label: string, value?: string) => (
+        <button
+            type="button"
+            onClick={() => void handleCopy(field, value)}
+            className={`w-full text-left rounded-xl p-4 border transition-colors ${t.passwordCard}`}
+        >
+            <span className="text-xs text-zinc-500 uppercase tracking-wider block mb-2">{label}</span>
+            <span className="flex items-center gap-3">
+                <code className={`flex-1 font-mono text-lg break-all ${t.passwordValue}`}>{value}</code>
+                <span className={`flex items-center gap-1 p-2 rounded-lg text-xs font-medium transition-colors ${t.copyButton}`}>
+                    {copied === field ? (
+                        <>
+                            <Check className={`w-5 h-5 ${t.copiedIcon}`} /> Copied
+                        </>
+                    ) : (
+                        <>
+                            <Copy className="w-5 h-5" /> Copy
+                        </>
+                    )}
+                </span>
+            </span>
+        </button>
+    );
 
     if (isConnected) {
         return (
@@ -97,26 +139,36 @@ export function WifiConnectForm({ ssid, password, guideUrl, theme = "dark" }: Wi
                     <div className="mx-auto w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-3">
                         <Wifi className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className={`font-medium mb-1 ${t.successTitle}`}>You're unlocked!</h3>
+                    <h3 className={`font-medium mb-1 ${t.successTitle}`}>You&apos;re unlocked!</h3>
                     <p className={`text-sm ${t.successText}`}>Connect to <strong>{ssid}</strong></p>
                 </div>
 
-                <div className="space-y-4">
-                    <div className={`rounded-xl p-4 border ${t.passwordCard}`}>
-                        <label className="text-xs text-zinc-500 uppercase tracking-wider block mb-2">Network Password</label>
-                        <div className="flex items-center gap-3">
-                            <code className={`flex-1 font-mono text-lg ${t.passwordValue}`}>{password}</code>
-                            <button
-                                onClick={copyPassword}
-                                className={`p-2 rounded-lg transition-colors ${t.copyButton}`}
-                            >
-                                {copied ? <Check className={`w-5 h-5 ${t.copiedIcon}`} /> : <Copy className="w-5 h-5" />}
-                            </button>
-                        </div>
-                    </div>
-
-
+                <div className="space-y-3">
+                    {renderCopyRow("ssid", "Network", ssid)}
+                    {password && renderCopyRow("password", "Password", password)}
                 </div>
+
+                <ol className={`mt-5 space-y-1 text-sm list-decimal list-inside ${t.steps}`}>
+                    <li>Tap <strong>Copy</strong> next to the password</li>
+                    <li>Open <strong>Settings → Wi-Fi</strong> and choose <strong>{ssid}</strong></li>
+                    <li>Paste the password and tap <strong>Join</strong></li>
+                </ol>
+
+                {bookDirectUrl && (
+                    <div className={`mt-6 border rounded-2xl p-5 ${t.offerCard}`}>
+                        <p className={`font-medium mb-1 ${t.offerTitle}`}>Come back for 10% less</p>
+                        <p className={`text-sm mb-3 ${t.offerText}`}>
+                            Book your next stay directly with Bunks and save 10% versus booking through Airbnb or VRBO.
+                        </p>
+                        <a
+                            href={bookDirectUrl}
+                            className={`inline-flex items-center gap-2 text-sm font-medium ${t.guideLink}`}
+                        >
+                            See dates & direct rates
+                            <ArrowRight className="w-4 h-4" />
+                        </a>
+                    </div>
+                )}
 
                 {guideUrl && (
                     <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
@@ -163,6 +215,10 @@ export function WifiConnectForm({ ssid, password, guideUrl, theme = "dark" }: Wi
                     </>
                 )}
             </button>
+
+            <p className={`text-xs text-center ${t.fineprint}`}>
+                We&apos;ll occasionally send you direct-booking offers. Unsubscribe anytime.
+            </p>
         </form>
     );
 }

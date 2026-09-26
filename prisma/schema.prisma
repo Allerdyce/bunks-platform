@@ -123,6 +123,22 @@ model User {
   messages  Message[]
 }
 
+// Guest contacts captured outside of a booking (e.g. the /connect Wi-Fi page).
+// The table is created on demand by src/lib/guestLeads.ts.
+model GuestLead {
+  id           Int      @id @default(autoincrement())
+  email        String
+  name         String?
+  source       String   @default("wifi")
+  propertySlug String   @default("")
+  captureCount Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@unique([email, source, propertySlug])
+  @@index([createdAt])
+}
+
 model BlockedDate {
   id         Int         @id @default(autoincrement())
   propertyId Int

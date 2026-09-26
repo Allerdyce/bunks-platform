@@ -21,7 +21,7 @@ export const BookDirectCampaignEmail = ({
     ctaUrl = 'https://bunks.com',
     baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunks.com',
 }: BookDirectCampaignEmailProps & { baseUrl?: string }) => {
-    const previewText = 'Save 10-20% on your next stay by booking direct.';
+    const previewText = 'Save 10% on your next stay when you book direct.';
 
     return (
         <EmailLayout previewText={previewText} footerText="Sent with 🧡 from Bunks hospitality.">
@@ -38,17 +38,17 @@ export const BookDirectCampaignEmail = ({
             </Section>
 
             <Heading className="text-[#101828] text-2xl font-semibold text-center mb-4">
-                Until Next Time 🏔️
+                Until Next Time
             </Heading>
 
             <Text className="text-[#475467] text-base mb-4">
                 Hi {guestName},
             </Text>
             <Text className="text-[#475467] text-base mb-4">
-                Thanks for choosing to stay with Bunks! We hope you made some amazing mountain memories.
+                Thanks for staying with Bunks! We hope you made some great memories.
             </Text>
             <Text className="text-[#475467] text-base mb-6">
-                When the mountains call you back, skip the third-party fees and book with us directly to unlock VIP perks.
+                Next time, skip the third-party fees and book with us directly for our best rate.
             </Text>
 
             {/* Value Props Card */}
@@ -60,7 +60,7 @@ export const BookDirectCampaignEmail = ({
                 <div className="space-y-3">
                     <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
                         <span style={{ fontSize: '18px' }}>💰</span>
-                        <span><strong>Save 15% instantly</strong> (no service fees)</span>
+                        <span><strong>Save 10%</strong> versus Airbnb and VRBO</span>
                     </Text>
                     <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
                         <span style={{ fontSize: '18px' }}>📅</span>
@@ -82,12 +82,12 @@ export const BookDirectCampaignEmail = ({
                     Book Your Next Stay
                 </Button>
                 <Text className="text-[#98A2B3] text-xs mt-3">
-                    Check availability for Steamboat & Summerland
+                    Steamboat Springs, CO & Summerland, CA
                 </Text>
             </Section>
 
             <Text className="text-[#475467] text-sm text-center">
-                We&apos;d love to host you again whenever the mountains call.<br />
+                We&apos;d love to host you again.<br />
                 <Link href={ctaUrl} className="text-[#7F56D9]">Visit Bunks.com</Link>
             </Text>
 
