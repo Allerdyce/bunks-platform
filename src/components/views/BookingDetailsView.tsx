@@ -3,7 +3,13 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, MapPin, RefreshCw, X } from "lucide-react";
-import type { BookingDetailsData, BookingLookupPayload, BookingPortalSection, NavigateHandler } from "@/types";
+import type {
+  BookingDetailsData,
+  BookingLookupPayload,
+  BookingPortalSection,
+  NavigateHandler,
+  TripAccessResponse,
+} from "@/types";
 import { Button } from "@/components/shared/Button";
 import { SteamboatGuestGuide } from "@/components/guides/SteamboatGuestGuide";
 import { BookingMessages } from "@/components/messaging/BookingMessages";
@@ -240,6 +246,32 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
   );
 
 
+  // Door/lock codes are fetched per booking from the server (never bundled) and only for PAID stays.
+  const [accessCodes, setAccessCodes] = useState<TripAccessResponse | null>(null);
+  const isPaidBooking = booking?.status === "PAID";
+  const accessLookupRef = booking?.referenceCode ?? lastLookup?.bookingReference ?? null;
+  const accessLookupEmail = lastLookup?.guestEmail ?? null;
+
+  useEffect(() => {
+    setAccessCodes(null);
+    if (!isPaidBooking || !accessLookupRef || !accessLookupEmail) {
+      return;
+    }
+    let cancelled = false;
+    api
+      .fetchTripAccessCodes(accessLookupRef, accessLookupEmail)
+      .then((result) => {
+        if (!cancelled) setAccessCodes(result);
+      })
+      .catch((accessError) => {
+        console.error("Failed to load access codes", accessError);
+        if (!cancelled) setAccessCodes({ available: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPaidBooking, accessLookupRef, accessLookupEmail]);
+
   const propertyDetails = useMemo(() => {
     if (!booking) return null;
     return getPropertyBySlug(booking.property.slug) ?? null;
@@ -310,29 +342,35 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
       helper: wifiValue ? "Townhouse network & password" : "Full details emailed before arrival",
     });
 
-    items.push({
-      label: "Garage",
-      value: propertyDetails?.garageCode ?? securePlaceholder,
-      helper: propertyDetails?.garageCode ? "Code + press enter" : "Code released 24h before check-in",
-    });
-
-    items.push({
-      label: "Lockbox",
-      value: propertyDetails?.lockboxCode ?? securePlaceholder,
-      helper: propertyDetails?.lockboxCode ? "Backup key by garage entry" : undefined,
-    });
-
-    if (propertyDetails?.skiLockerDoorCode || propertyDetails?.skiLockerNumber || propertyDetails?.skiLockerCode) {
+    const codes = isPaidBooking && accessCodes?.available ? accessCodes.codes : null;
+    if (!codes) {
       items.push({
-        label: "Ski locker",
-        value: [
-          propertyDetails?.skiLockerDoorCode ? `Door ${propertyDetails.skiLockerDoorCode}` : null,
-          propertyDetails?.skiLockerNumber ? `Locker #${propertyDetails.skiLockerNumber}` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ") || securePlaceholder,
-        helper: propertyDetails?.skiLockerCode ? `Locker code ${propertyDetails.skiLockerCode}` : undefined,
+        label: "Door codes",
+        value: isPaidBooking ? "Released 24h before check-in" : "Available once your booking is confirmed",
+        helper: isPaidBooking ? "Your access codes appear here 24 hours before check-in." : undefined,
       });
+    } else {
+      if (codes.garageCode) {
+        items.push({ label: "Garage", value: codes.garageCode, helper: "Code + press enter" });
+      }
+      if (codes.lockboxCode) {
+        items.push({ label: "Lockbox", value: codes.lockboxCode, helper: "Backup key by garage entry" });
+      }
+      if (codes.skiLockerDoorCode || codes.skiLockerNumber || codes.skiLockerCode) {
+        items.push({
+          label: "Ski locker",
+          value: [
+            codes.skiLockerDoorCode ? `Door ${codes.skiLockerDoorCode}` : null,
+            codes.skiLockerNumber ? `Locker #${codes.skiLockerNumber}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || securePlaceholder,
+          helper: codes.skiLockerCode ? `Locker code ${codes.skiLockerCode}` : undefined,
+        });
+      }
+      if (!codes.garageCode && !codes.lockboxCode && !codes.skiLockerDoorCode && !codes.skiLockerCode) {
+        items.push({ label: "Door codes", value: securePlaceholder, helper: "Message your host if you need them" });
+      }
     }
 
     if (hostContacts.length) {
@@ -352,7 +390,7 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
     }
 
     return items;
-  }, [booking, propertyDetails, hostContacts]);
+  }, [booking, propertyDetails, hostContacts, isPaidBooking, accessCodes]);
 
   const guideUrl =
     booking?.property.checkInGuideUrl ??

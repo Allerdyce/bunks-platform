@@ -65,8 +65,8 @@ const sanitizeProfile = (profile: ChecklistProfile): ChecklistProfile => ({
 export default function AdminResourcesPage() {
   const [profiles, setProfiles] = useState<Record<string, ChecklistProfile>>(() => buildProfileMap(CLEANING_PROFILES));
   const [authState, setAuthState] = useState<"checking" | "unauthenticated" | "authenticated">("checking");
-  const [email, setEmail] = useState("ali@bunks.com");
-  const [password, setPassword] = useState("PMbunks101!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);

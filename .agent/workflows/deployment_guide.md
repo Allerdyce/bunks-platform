@@ -42,6 +42,10 @@ git commit -m "Deployment release candidate"
     *   `STRIPE_WEBHOOK_SECRET`
     *   `RESEND_API_KEY`
     *   `ADMIN_EMAIL`
+    *   `ADMIN_PASSWORD` (Required; admin login is disabled without it)
+    *   `ADMIN_SESSION_SECRET` (Required; random string of 32+ characters)
+    *   `CLEANER_EMAILS`, `CLEANER_PASSWORD` (Required for the cleaner portal)
+    *   `CLEANER_SESSION_SECRET` (Optional; derived from `ADMIN_SESSION_SECRET` if unset)
     *   `CRON_SECRET` (Generate a strong random string)
     
 7.  Click **Deploy**.

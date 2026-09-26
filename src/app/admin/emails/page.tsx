@@ -1,3 +1,6 @@
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { ADMIN_SESSION_COOKIE, verifySessionToken } from '@/lib/adminAuth';
 import { EMAIL_TEMPLATES, type EmailTemplateSpec } from '@/lib/email/catalog';
 import { TEMPLATE_RENDERERS } from '@/lib/email/templateRenderers';
 import { renderSubjectWithSample, buildSampleSubject } from '@/lib/email/subjectHelpers';
@@ -29,7 +32,15 @@ async function buildPreviews(): Promise<TemplatePreview[]> {
   );
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function EmailPreviewGallery() {
+  const cookieStore = await cookies();
+  const session = verifySessionToken(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+  if (!session) {
+    // /admin/details renders the admin login form.
+    redirect('/admin/details');
+  }
 
   const previews = await buildPreviews();
   const templateControls = EMAIL_TEMPLATES.map(({ slug, name, audience, status, trigger, category }) => ({

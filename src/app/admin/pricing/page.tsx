@@ -10,8 +10,8 @@ export default function AdminPricingPage() {
   const [authState, setAuthState] = useState<"checking" | "unauthenticated" | "authenticated">("checking");
   const [properties, setProperties] = useState<AdminProperty[]>([]);
   const [featureFlags, setFeatureFlags] = useState<AdminFeatureToggle[]>([]);
-  const [email, setEmail] = useState("ali@bunks.com");
-  const [password, setPassword] = useState("PMbunks101!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [featureError, setFeatureError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

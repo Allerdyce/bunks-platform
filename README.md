@@ -3,7 +3,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Admin Pricing Console
 
 - Visit `/admin` (or click **Admin Login** in the footer) to reach the internal dashboard.
-- Sign in with the seeded credentials (`ali@bunks.com` or `matt@bunks.com`, both using `PMbunks101!`). Configure the allowed addresses via the comma-separated `ADMIN_EMAILS` (or legacy `ADMIN_EMAIL`) and override the password with `ADMIN_PASSWORD` in `.env.local`.
+- Sign in with an allowed admin email and the password from `ADMIN_PASSWORD`. Configure additional allowed addresses via the comma-separated `ADMIN_EMAILS` (or legacy `ADMIN_EMAIL`) in `.env.local`. In production, `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` (32+ characters) are required; admin login is disabled until both are set.
 - From the console you can:
 	- Set weekday/weekend nightly rates, plus cleaning ($85) and service ($20) fees for every property in the database.
 	- Add date-level overrides for special pricing or block dates entirely when needed.
