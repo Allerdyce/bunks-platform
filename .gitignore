@@ -44,3 +44,4 @@ next-env.d.ts
 
 # local debug artifacts (may contain secrets / PII)
 *.log
+.claude/
