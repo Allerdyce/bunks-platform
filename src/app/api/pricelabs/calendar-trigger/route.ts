@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PriceLabsService } from "@/lib/pricelabs/service";
+import { isValidPriceLabsIntegrationToken } from "@/lib/pricelabs/integrationToken";
 
 /**
  * Handle PriceLabs "Calendar Trigger" to refresh availability.
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
 
         // Auth Check
         const token = req.headers.get("x-integration-token");
-        if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
+        if (!isValidPriceLabsIntegrationToken(token)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

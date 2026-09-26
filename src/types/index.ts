@@ -60,11 +60,6 @@ export interface Property {
   checkOutTime?: string;
   wifiSsid?: string;
   wifiPassword?: string;
-  garageCode?: string;
-  lockboxCode?: string;
-  skiLockerDoorCode?: string;
-  skiLockerNumber?: string;
-  skiLockerCode?: string;
   quietHours?: string;
   parkingNotes?: string;
   houseRules?: string[];
@@ -152,6 +147,19 @@ export interface BookingDetailsData {
 export interface BookingDetailsResponse {
   booking: BookingDetailsData;
 }
+
+/** Door/lock codes, only ever returned by /api/trip-access/[ref] to verified, paid guests. */
+export interface TripAccessCodes {
+  garageCode: string | null;
+  lockboxCode: string | null;
+  skiLockerDoorCode: string | null;
+  skiLockerNumber: string | null;
+  skiLockerCode: string | null;
+}
+
+export type TripAccessResponse =
+  | { available: true; codes: TripAccessCodes }
+  | { available: false; releasesAt?: string };
 
 export interface ConversationMessage {
   id: number;

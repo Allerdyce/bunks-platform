@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isValidPriceLabsIntegrationToken } from "@/lib/pricelabs/integrationToken";
 
 export async function POST(req: NextRequest) {
+    // 1. Authentication (before touching the body or the database)
+    if (!isValidPriceLabsIntegrationToken(req.headers.get("x-integration-token"))) {
+        console.warn("PriceLabs unauthorized sync attempt");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     let bodyText = "";
     try {
         bodyText = await req.text();
@@ -10,65 +17,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Empty Body" }, { status: 400 });
     }
 
-    // DEBUG LOGGING START
-    let receivedToken = "null";
-    let debugSource = "";
-
-    try {
-        receivedToken = req.headers.get("x-integration-token") || "null";
-        debugSource = `DEBUG_INCOMING: ${new Date().toISOString()} | RecvToken=${receivedToken.slice(-10)} | EnvToken=${process.env.PRICELABS_INTEGRATION_TOKEN?.slice(-10)} | Bytes=${bodyText.length}`;
-        // Update the debug record (Upsert)
-        await prisma.propertyPricing.upsert({
-            where: {
-                propertyId_date: {
-                    propertyId: 11, // Steamboat
-                    date: new Date('2099-01-01T00:00:00Z')
-                }
-            },
-            create: {
-                propertyId: 11,
-                date: new Date('2099-01-01T00:00:00Z'),
-                priceCents: 0,
-                isBlocked: true,
-                source: debugSource
-            },
-            update: {
-                source: debugSource,
-                updatedAt: new Date()
-            }
-        });
-    } catch (err) {
-        console.error("Failed to write debug log", err);
-    }
-    // DEBUG LOGGING END
-
-    // 1. Connectivity Check / Verification Probe
+    // 2. Connectivity Check / Verification Probe
     // PriceLabs sometimes sends empty body or specific probe payload
     if (!bodyText || bodyText.trim() === "" || bodyText.includes('"verify":true')) {
         return NextResponse.json({ status: "ok", message: "PriceLabs Probe Received" });
-    }
-
-    // 2. Authentication
-    // receivedToken already read above in debug block
-    const token = receivedToken; // Use the one we read
-
-    // Or just re-read but don't declare
-    // const receivedToken = ... -> ERROR
-
-    // Let's just use the 'receivedToken' from above. 
-    // Wait, the debug block does `let receivedToken = ...`.
-    // The later block did `const receivedToken = ...`.
-
-    // I will rename the later one or just use the first one.
-    // Ideally, I should clean up.
-
-    // Renaming the CONST one to `authToken` to be safe and clear.
-    const authToken = req.headers.get("x-integration-token");
-    const configuredToken = process.env.PRICELABS_INTEGRATION_TOKEN;
-
-    if (!authToken || authToken !== configuredToken) {
-        console.warn(`PriceLabs Unauthorized Sync Attempt. Recv: ${authToken?.slice(-5)}...`);
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 3. Parse Body
@@ -118,13 +70,10 @@ export async function POST(req: NextRequest) {
                     const priceCents = Math.round(Number(item.price) * 100);
                     const minNights = item.min_stay ? Number(item.min_stay) : undefined;
 
-                    // is_blocked behavior:
-                    // If PL says blocked, we mark it blocked.
-                    // If PL says NOT blocked, we might unblock ONLY if the source was pricelabs?
-                    // Actually, usually pricing sync shouldn't override manual blocks if handled elsewhere,
-                    // but here we are storing in PropertyPricing table which is dedicated to automated rules/prices usually.
-                    // The schema has `isBlocked` on `PropertyPricing`.
-                    const isBlocked = 'is_blocked' in item ? Boolean(item.is_blocked) : false;
+                    // is_blocked: only touch the flag when PriceLabs actually sends it.
+                    // Items without the field must not clear blocks (e.g. Airbnb-booked nights).
+                    const hasBlockedField = 'is_blocked' in item;
+                    const isBlocked = hasBlockedField ? Boolean(item.is_blocked) : undefined;
 
                     await prisma.propertyPricing.upsert({
                         where: {
@@ -138,13 +87,13 @@ export async function POST(req: NextRequest) {
                             date: date,
                             priceCents,
                             minNights,
-                            isBlocked,
+                            isBlocked: isBlocked ?? false,
                             source: "pricelabs",
                         },
                         update: {
                             priceCents,
                             minNights,
-                            isBlocked,
+                            ...(isBlocked !== undefined ? { isBlocked } : {}),
                             source: "pricelabs",
                             updatedAt: new Date(),
                         },
