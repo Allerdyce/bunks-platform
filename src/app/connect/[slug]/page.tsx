@@ -1,7 +1,7 @@
 
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Wifi, ArrowRight, ShieldCheck, FileText } from "lucide-react";
+import { Wifi, ShieldCheck, FileText } from "lucide-react";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 import { WifiConnectForm, type WifiTheme } from "@/components/wifi/WifiConnectForm";
 
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     return {
         title: `Connect to ${property.name} Wi-Fi`,
-        description: "Secure, high-speed internet access.",
+        description: "Secure guest Wi-Fi access.",
     };
 }
 
@@ -127,13 +127,15 @@ export default async function WifiConnectPage({ params, searchParams }: PageProp
                         Welcome to {property.name}
                     </h1>
                     <p className={`mb-8 ${t.subtitle}`}>
-                        Enter your email to unlock high-speed Wi-Fi access.
+                        Enter your email to get the Wi-Fi network and password.
                     </p>
 
                     <WifiConnectForm
                         ssid={property.wifiSsid}
                         password={property.wifiPassword}
+                        propertySlug={property.slug}
                         guideUrl={guide?.success}
+                        bookDirectUrl={`/property/${property.slug}`}
                         theme={theme}
                     />
 
@@ -153,7 +155,7 @@ export default async function WifiConnectPage({ params, searchParams }: PageProp
 
                     <div className={`mt-6 flex items-center justify-center gap-2 text-xs ${t.footer}`}>
                         <ShieldCheck className="w-3 h-3" />
-                        <span>Secure network • 1Gbps Fiber</span>
+                        <span>Secure Wi-Fi</span>
                     </div>
                 </div>
             </main>

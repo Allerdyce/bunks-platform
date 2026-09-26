@@ -1,10 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { sendBookDirectCampaign } from '@/lib/email/sendBookDirectCampaign';
+import { withAdminAuth } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
+    if (!withAdminAuth(req)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const { email, name } = await req.json();
 

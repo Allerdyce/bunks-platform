@@ -13,7 +13,7 @@ export async function sendWifiLeadCampaign({ email, name }: WifiLeadCampaignOpti
 
     return sendEmail({
         to: email,
-        subject: "Until Next Time 🏔️ (A special invite)",
+        subject: "Until next time: 10% off when you book direct",
         html: emailHtml,
     });
 }

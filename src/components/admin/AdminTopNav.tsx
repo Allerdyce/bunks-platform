@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { id: "emails" as const, label: "Emails", href: "/admin/emails" },
   { id: "resources" as const, label: "Resources", href: "/admin/resources" },
   { id: "messages" as const, label: "Messages", href: "/admin/messages" },
-  { id: "marketing" as const, label: "Campaigns", href: "/admin/marketing" },
+  { id: "marketing" as const, label: "Guests", href: "/admin/marketing" },
 ];
 
 export function AdminTopNav({ active, actions }: AdminTopNavProps) {

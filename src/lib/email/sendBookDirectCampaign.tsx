@@ -20,7 +20,7 @@ export async function sendBookDirectCampaign(
     try {
         const response = await sendEmail({
             to: toEmail,
-            subject: `Save 15% on your next stay with Bunks 🏔️`,
+            subject: `Save 10% on your next stay with Bunks`,
             html,
             // Optional: Tag this for analytics if your provider supports it
             // headers: { 'X-Campaign-Id': 'book-direct-v1' } 
