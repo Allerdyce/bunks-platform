@@ -48,7 +48,7 @@ export function NewMessageGuestEmail({
             Email <a href={`mailto:${supportEmail}`} className="text-[#7F56D9]">{supportEmail}</a> for urgent arrivals.
           </>
         ) : (
-          <>Our concierge team is on standby 24/7.</>
+          <>Reply to this email and our team will get back to you.</>
         )}
       </Text>
     </EmailLayout>

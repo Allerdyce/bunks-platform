@@ -6,25 +6,25 @@ import { CalendarCheck2, MessageCircleHeart, Sparkles } from "lucide-react";
 const HIGHLIGHTS = [
   {
     icon: CalendarCheck2,
-    title: "Itineraries built for you",
-    description: "Pre-stocked fridges, ski shuttles, and chef dinners arranged before you arrive.",
+    title: "Hand-picked local recommendations",
+    description: "Our guidebooks share the restaurants, trails, and hidden gems we actually love near each home.",
   },
   {
     icon: MessageCircleHeart,
-    title: "Concierge on speed dial",
-    description: "Real humans with local knowledge, replying in under five minutes day or night.",
+    title: "Local hosts who know the area",
+    description: "Questions before or during your stay? Email us and a real person on our team will get back to you.",
   },
   {
     icon: Sparkles,
     title: "Verified comfort",
-    description: "Designer-grade linens, pro housekeeping, and tech-enabled entry on every stay.",
+    description: "Professional housekeeping between every stay and self check-in with a smart lock.",
   },
 ];
 
 const STATS = [
-  { label: "Avg. response time", value: "< 5 min" },
-  { label: "Curated partners", value: "50+" },
-  { label: "Guest rating", value: "4.9 / 5" },
+  { label: "Book direct", value: "Save 10%" },
+  { label: "Hosted by", value: "Local hosts" },
+  { label: "Guidebooks", value: "Hand-picked picks" },
 ];
 
 export function ExperienceBanner() {
@@ -40,9 +40,8 @@ export function ExperienceBanner() {
               White-glove hospitality with the soul of the mountains.
             </h2>
             <p className="text-lg text-stone-500 max-w-2xl">
-              We obsess over every touchpoint—so your group arrives to a home staged like your favorite boutique hotel, layered
-              with concierge-level service, curated local rituals, and humans who reply when inspiration strikes at
-              midnight.
+              We obsess over every touchpoint—so your group arrives to a thoughtfully prepared home, with local
+              recommendations from hosts who know the area and a real team to email whenever you need a hand.
             </p>
 
             <div className="flex flex-wrap gap-6">
@@ -68,7 +67,7 @@ export function ExperienceBanner() {
                 href="mailto:stay@bunks.com"
                 className="inline-flex items-center justify-center rounded-full border border-stone-900 px-6 py-3 text-sm font-semibold text-stone-900 hover:bg-stone-900/5"
               >
-                Talk to our concierge
+                Email us
               </a>
             </div>
           </div>

@@ -77,7 +77,7 @@ export async function sendBookingWelcomeEmail(
       {
         label: 'Contact support',
         href: `mailto:${supportEmail}`,
-        description: 'We reply quickly – 7 days a week',
+        description: 'Email us with any questions about your stay',
       },
     ];
   }
@@ -108,8 +108,8 @@ export async function sendBookingWelcomeEmail(
       houseRules={houseRules}
       hostContact={{
         email: supportEmail,
-        phone: options.hostPhone ?? opsDetails.supportSmsNumber,
-        note: opsDetails.conciergeNotes ?? 'Reach us any time – average response under 5 minutes.',
+        phone: options.hostPhone || opsDetails.supportSmsNumber || undefined,
+        note: opsDetails.conciergeNotes ?? 'Reply to this email with any questions about your stay.',
       }}
       supportDirectory={supportDirectory}
     />,

@@ -196,6 +196,8 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
         <BookingSummary
           property={property}
           nights={nights}
+          dates={dates}
+          guests={guestDetails.guests}
           breakdown={pricingBreakdown}
           fallbackPricing={{
             nightlyRate: fallbackTotals.discountedNightlyRate,

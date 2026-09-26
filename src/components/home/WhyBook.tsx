@@ -5,8 +5,8 @@ import { Coffee, ShieldCheck, Star } from "lucide-react";
 const FEATURES = [
   {
     icon: ShieldCheck,
-    title: "Best Rate Guarantee",
-    desc: "Save on service fees when you book directly with us.",
+    title: "Book Direct & Save",
+    desc: "Direct bookings are 10% less than the nightly rate, with no Bunks service fee.",
     accentBg: "bg-[#F3ECEC]",
     accentText: "text-[#B34747]",
   },

@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { renderEmail, sendEmail } from '@/lib/email';
 import { BookDirectCampaignEmail } from '@/emails/BookDirectCampaignEmail';
+import { MessageStream } from '@/lib/email/postmark';
 
 const EMAIL_TYPE = 'CAMPAIGN_BOOK_DIRECT_V1';
 
@@ -22,6 +23,8 @@ export async function sendBookDirectCampaign(
             to: toEmail,
             subject: `Save 10% on your next stay with Bunks`,
             html,
+            category: 'marketing',
+            messageStream: MessageStream.broadcast,
             // Optional: Tag this for analytics if your provider supports it
             // headers: { 'X-Campaign-Id': 'book-direct-v1' } 
         });

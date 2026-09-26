@@ -31,6 +31,14 @@ type SendPaymentFailureOptions = {
   replyToOverride?: string;
 };
 
+// Guest trip pages live at /my-trips/[ref]/essential; rewrite legacy /trips/[ref] links so emails never 404.
+function normalizePaymentLink(link: string) {
+  return link.replace(
+    /^(https?:\/\/[^/]+)?\/trips\/([^/?#]+)\/?/,
+    (_match, origin: string | undefined, ref: string) => `${origin ?? ''}/my-trips/${ref}/essential`,
+  );
+}
+
 function ensureRequired(options: SendPaymentFailureOptions) {
   const requiredFields: Array<keyof SendPaymentFailureOptions> = ['amountDue', 'dueBy', 'failureReason', 'paymentLink'];
   requiredFields.forEach((field) => {
@@ -77,7 +85,7 @@ export async function sendPaymentFailure(
       dueBy={options.dueBy}
       failureReason={options.failureReason}
       lastAttempt={lastAttemptLabel}
-      paymentLink={options.paymentLink}
+      paymentLink={normalizePaymentLink(options.paymentLink)}
       alternateMethods={options.alternateMethods}
       actionItems={options.actionItems}
       support={support}
