@@ -15,33 +15,20 @@ import {
   resolveHostSupportEmail,
   sendEmail,
 } from '@/lib/email';
+import { CANCELLATION_POLICY } from '@/data/policies';
 
 const EMAIL_TYPE = 'CANCELLATION_CONFIRMATION' as const;
 
-function defaultPolicyHighlights(propertyName: string): CancellationPolicyHighlight[] {
-  return [
-    {
-      title: 'Flexible window',
-      detail: 'Full refund minus service fees when cancelling at least 30 days prior to arrival.',
-    },
-    {
-      title: 'Inside 30 days',
-      detail: 'Service fees and partner costs may be retained to cover prep already underway.',
-    },
-    {
-      title: `${propertyName} rebooking credit`,
-      detail: 'We drop loyalty credit to your account when you reschedule the same property within 6 months.',
-    },
-  ];
+function defaultPolicyHighlights(): CancellationPolicyHighlight[] {
+  return [{ title: 'Cancellation policy', detail: CANCELLATION_POLICY.summary }];
 }
 
 function defaultRebookingOffer(propertyName: string): CancellationRebookingOffer {
   return {
     headline: 'Ready when you are',
-    description: `Use your loyalty credit toward a future stay at ${propertyName} or any other Bunks home.`,
-    ctaLabel: 'Browse new dates',
-    ctaUrl: 'https://bunks.com/properties',
-    note: 'Credit automatically appears at checkout when signed into your Bunks account.',
+    description: `When you're ready to plan another trip to ${propertyName} or any Bunks home, book direct and save 10%.`,
+    ctaLabel: 'Browse dates',
+    ctaUrl: 'https://bunks.com',
   };
 }
 
@@ -110,7 +97,7 @@ export async function sendCancellationConfirmation(
     note: options.supportOverrides?.note,
   } satisfies CancellationConfirmationEmailProps['support'];
 
-  const policyHighlights = options.policyHighlights ?? defaultPolicyHighlights(booking.property.name);
+  const policyHighlights = options.policyHighlights ?? defaultPolicyHighlights();
   const rebookingOffer = options.rebookingOffer === null ? undefined : options.rebookingOffer ?? defaultRebookingOffer(booking.property.name);
 
   const html = await renderEmail(
