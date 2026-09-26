@@ -30,6 +30,7 @@ import { Button } from "@/components/shared/Button";
 import { ImageLightbox } from "@/components/shared/ImageLightbox";
 import { PROPERTY_REVIEWS } from "@/data/reviews";
 import { api } from "@/lib/api";
+import { formatStayDate } from "@/lib/availability";
 
 interface PropertyDetailViewProps {
   property: Property;
@@ -124,8 +125,8 @@ export function PropertyDetailView({
         const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
           method: 'POST',
           body: JSON.stringify({
-            checkIn: bookingDates.start.toISOString(),
-            checkOut: bookingDates.end.toISOString(),
+            checkIn: formatStayDate(bookingDates.start),
+            checkOut: formatStayDate(bookingDates.end),
             guests: guestCount
           })
         });
@@ -178,8 +179,8 @@ export function PropertyDetailView({
         const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
           method: 'POST',
           body: JSON.stringify({
-            checkIn: pendingRange.start.toISOString(),
-            checkOut: pendingRange.end.toISOString(),
+            checkIn: formatStayDate(pendingRange.start),
+            checkOut: formatStayDate(pendingRange.end),
             guests: guestCount
           })
         });

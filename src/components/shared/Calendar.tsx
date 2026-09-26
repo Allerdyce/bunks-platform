@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DateRange } from "@/types";
-import { isDateSelectable, isRangeValid } from "@/lib/availability";
+import { formatStayDate, isDateSelectable, isRangeValid } from "@/lib/availability";
 
 interface CalendarProps {
   blockedDates?: string[];
@@ -23,14 +23,7 @@ const normalizeDate = (value: Date) => {
   return next;
 };
 
-// Helper to format date as YYYY-MM-DD
-const toISODate = (d: Date) => {
-  const parts = d.toLocaleDateString('en-CA').split('-'); // YYYY-MM-DD in most locales, but safer:
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+const toISODate = formatStayDate;
 
 export function Calendar({
   blockedDates = [],
@@ -59,6 +52,10 @@ export function Calendar({
   // Use centralized availability logic
   const isBlocked = (date: Date) => !isDateSelectable(date, blockedDates);
 
+  // A blocked night can still be the checkout day (same-day turnover) if the stay before it is free.
+  const isSelectableAsEnd = (date: Date) =>
+    Boolean(startDate && !endDate && date > startDate && isRangeValid({ start: startDate, end: date }, blockedDates));
+
   const getMinStayForDate = (date: Date) => {
     return minStay[toISODate(date)] || 1;
   };
@@ -76,8 +73,8 @@ export function Calendar({
     const clickedDate = new Date(contextDate.getFullYear(), contextDate.getMonth(), day);
     clickedDate.setHours(0, 0, 0, 0);
 
-    // Check if clicked date itself is available
-    if (isBlocked(clickedDate)) {
+    // Check if clicked date itself is available (or is a valid checkout day)
+    if (isBlocked(clickedDate) && !isSelectableAsEnd(clickedDate)) {
       return;
     }
 
@@ -155,7 +152,7 @@ export function Calendar({
             const dateObj = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), day);
             const normalized = normalizeDate(dateObj);
 
-            const blocked = isBlocked(dateObj);
+            const blocked = isBlocked(dateObj) && !isSelectableAsEnd(normalized);
             const invalidEnd = isDateInvalidForEnd(dateObj);
 
             // Determine min stay for tooltip

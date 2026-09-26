@@ -5,6 +5,8 @@ import { readSessionFromRequest } from "@/lib/adminAuth";
 import { sendCancellationConfirmation } from "@/lib/email/sendCancellationConfirmation";
 import { sendHostGuestCancelled } from "@/lib/email/sendHostGuestCancelled";
 import { PriceLabsService } from "@/lib/pricelabs/service";
+import { getStripeClient } from "@/lib/stripe";
+import { releaseBookingNights } from "@/lib/bookingAvailability";
 
 export const runtime = "nodejs";
 
@@ -39,6 +41,30 @@ export async function POST(
             return NextResponse.json({ error: "Booking already cancelled" }, { status: 400 });
         }
 
+        // Refund: "full" (default, e.g. host cancels), "none", or an amount in cents.
+        const body = (await request.json().catch(() => ({}))) as { refund?: "full" | "none" | number };
+        const refundRequest = body.refund ?? "full";
+        let refundCents = 0;
+        if (booking.status === "PAID" && booking.stripePaymentIntentId.startsWith("pi_")) {
+            refundCents =
+                refundRequest === "full"
+                    ? booking.totalPriceCents
+                    : refundRequest === "none"
+                        ? 0
+                        : Math.max(0, Math.min(Math.round(Number(refundRequest)), booking.totalPriceCents));
+        }
+
+        if (refundCents > 0) {
+            // Refund before cancelling so a Stripe failure leaves the booking untouched.
+            await getStripeClient().refunds.create(
+                { payment_intent: booking.stripePaymentIntentId, amount: refundCents },
+                { idempotencyKey: `cancel-refund-${booking.id}-${refundCents}` }
+            );
+        } else if (booking.status === "PENDING" && booking.stripePaymentIntentId.startsWith("pi_")) {
+            await getStripeClient().paymentIntents.cancel(booking.stripePaymentIntentId).catch(() => undefined);
+        }
+        const refundLabel = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(refundCents / 100);
+
         // 2. Cancellation Logic
         /*
            - Update Status
@@ -53,27 +79,7 @@ export async function POST(
                 data: { status: "CANCELLED" },
             });
 
-            // Clear blocked dates
-            // Source: DIRECT (since Airbnb blocks are managed by sync, usually we only clear DIRECT ones for our bookings)
-            // Logic: Find BlockedDate entries for this property in range
-            // But BlockedDate doesn't link to Booking explicitly (only by loose range).
-            // However, our `api / stripe / route.ts` creates them with source 'DIRECT'.
-            // We should remove them.
-            // Range: checkIn to checkOut.
-
-            const checkIn = booking.checkInDate;
-            const checkOut = booking.checkOutDate;
-
-            await tx.blockedDate.deleteMany({
-                where: {
-                    propertyId: booking.propertyId,
-                    source: "DIRECT",
-                    date: {
-                        gte: checkIn,
-                        lt: checkOut,
-                    },
-                },
-            });
+            await releaseBookingNights(booking, tx);
         });
 
         // PriceLabs Sync
@@ -86,7 +92,6 @@ export async function POST(
             // Let's manually set status on the object we pass.
 
             const updatedBooking = { ...booking, status: "CANCELLED" as const };
-            // @ts-ignore - Booking type mismatch or partial? Service takes Booking.
             await PriceLabsService.syncReservation(updatedBooking);
 
             // Update calendar availability (dates open up)
@@ -103,10 +108,10 @@ export async function POST(
         try {
             await sendCancellationConfirmation(booking.id, {
                 cancellationInitiator: "Host/Admin",
-                refundTotal: "See Refund Policy",
+                refundTotal: refundLabel,
                 refundMethod: "Original Payment Method",
-                refundTimeline: "5-10 business days",
-                refundLineItems: [{ label: "Refund", amount: "See Policy" }],
+                refundTimeline: refundCents > 0 ? "5-10 business days" : "No refund issued",
+                refundLineItems: [{ label: "Refund", amount: refundLabel }],
             });
         } catch (e) {
             console.error("Failed to send guest cancellation email", e);
@@ -123,7 +128,7 @@ export async function POST(
                 cancelledAt: new Date().toLocaleString(),
                 policyApplied: "Host Cancelled",
                 refundSummary: {
-                    guestRefund: "Pending",
+                    guestRefund: refundLabel,
                     hostPayoutChange: "Pending",
                     retention: "Pending"
                 },
@@ -133,13 +138,10 @@ export async function POST(
             console.error("Failed to send host cancellation email", e);
         }
 
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, refundCents });
 
     } catch (error) {
         console.error("Cancellation error:", error);
-        return NextResponse.json(
-            { error: "Internal server error", details: String(error) },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Cancellation failed" }, { status: 500 });
     }
 }

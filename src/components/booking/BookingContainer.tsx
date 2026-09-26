@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { GuestDetailsForm } from "./GuestDetailsForm";
 import { PaymentSection } from "./PaymentSection";
 import { BookingSummary } from "./BookingSummary";
+import { formatStayDate } from "@/lib/availability";
 
 interface BookingContainerProps {
   property: Property;
@@ -53,7 +54,7 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
 
     const subtotal = nights * discountedNightlyRate;
     const cleaningFee = property.cleaningFee ?? 0;
-    const serviceFee = Math.round(subtotal * 0.15); // 15% Service Fee
+    const serviceFee = 0; // No service fee on direct bookings
     const total = subtotal + cleaningFee + serviceFee;
 
     return { subtotal, cleaningFee, serviceFee, total, undiscountedNightlyRate, discountedNightlyRate };
@@ -67,8 +68,8 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
         const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
           method: 'POST',
           body: JSON.stringify({
-            checkIn: dates.start.toISOString(),
-            checkOut: dates.end.toISOString(),
+            checkIn: formatStayDate(dates.start),
+            checkOut: formatStayDate(dates.end),
             guests: guestCount
           })
         });
@@ -109,8 +110,8 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
       const normalizedEmail = guestDetails.email.trim();
       const payload = {
         propertySlug: property.slug,
-        checkIn: dates.start.toISOString(),
-        checkOut: dates.end.toISOString(),
+        checkIn: formatStayDate(dates.start),
+        checkOut: formatStayDate(dates.end),
         guestName: `${guestDetails.firstName} ${guestDetails.lastName}`.trim(),
         guestEmail: normalizedEmail,
         guests: guestDetails.guests,

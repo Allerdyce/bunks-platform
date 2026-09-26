@@ -1,160 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getUnavailableNights, toISODate } from '@/lib/bookingAvailability';
+import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-type BlockedDatePayload = {
-  date: string;
-  source: string;
-};
+const WINDOW_DAYS = 550;
 
-const DEFAULT_OFFSETS = [5, 6, 20, 21, 22];
-const SLUG_SPECIFIC_OFFSETS: Record<string, number[]> = {
-  'summerland-ocean-view-beach-bungalow': [3, 4, 10, 11, 17, 18],
-  'steamboat-downtown-townhome': [2, 3, 12, 13, 25, 26],
-};
-
-const toISODate = (date: Date) => date.toISOString().split('T')[0];
-
-const buildFallbackBlockedDates = (slug: string): BlockedDatePayload[] => {
-  const today = new Date();
-  const offsets = SLUG_SPECIFIC_OFFSETS[slug] ?? DEFAULT_OFFSETS;
-  return offsets.map((offset) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + offset);
-    return {
-      date: toISODate(date),
-      source: 'FALLBACK',
-    };
-  });
-};
-
-const respondWithFallback = (slug: string) =>
-  NextResponse.json({
-    property: slug,
-    blockedDates: buildFallbackBlockedDates(slug),
-    fallback: true,
-  });
-
-async function getPrismaClient() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   try {
-    const { prisma } = await import('@/lib/prisma');
-    return prisma;
-  } catch (error) {
-    console.error('Prisma client unavailable for blocked dates:', error);
-    return null;
-  }
-}
-
-export async function GET(req: NextRequest) {
-  // Derive slug from URL path: /api/properties/[slug]/blocked-dates
-  const url = new URL(req.url);
-  const parts = url.pathname.split('/').filter(Boolean);
-  // ["api", "properties", "<slug>", "blocked-dates"]
-  const slug = parts[2];
-
-  if (!slug) {
-    return NextResponse.json(
-      { error: 'Missing slug in route' },
-      { status: 400 }
-    );
-  }
-
-  const prisma = await getPrismaClient();
-
-  if (!prisma) {
-    return respondWithFallback(slug);
-  }
-
-  try {
-    const property = await prisma.property.findUnique({
-      where: { slug },
-    });
+    const property = await prisma.property.findUnique({ where: { slug } });
 
     if (!property) {
-      return respondWithFallback(slug);
+      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    const blocked = await prisma.blockedDate.findMany({
-      where: { propertyId: property.id },
-      orderBy: { date: 'asc' },
-    });
+    await syncAirbnbCalendarIfStale(property);
 
-    // Fetch PropertyPricing for minNights and additional blocks
-    const pricing = await prisma.propertyPricing.findMany({
-      where: {
-        propertyId: property.id,
-        date: { gte: new Date() },
-      },
-      select: {
-        date: true,
-        isBlocked: true,
-        minNights: true,
-      },
-    });
+    const today = new Date();
+    const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1));
+    const to = new Date(from.getTime() + WINDOW_DAYS * 86_400_000);
 
-    const specialDelegate = (prisma as unknown as {
-      specialRate?: {
-        findMany: (...args: any[]) => Promise<any>;
-      };
-    }).specialRate;
+    const [unavailable, pricing] = await Promise.all([
+      getUnavailableNights(property.id, from, to, { includePendingHolds: false }),
+      prisma.propertyPricing.findMany({
+        where: { propertyId: property.id, date: { gte: from }, minNights: { gt: 1 } },
+        select: { date: true, minNights: true },
+      }),
+    ]);
 
-    const specialBlocks = specialDelegate
-      ? ((await specialDelegate.findMany({
-        where: { propertyId: property.id, isBlocked: true },
-        orderBy: { date: 'asc' },
-      })) as { date: Date }[])
-      : [];
-
-    const minStayMap: Record<string, number> = {};
-    const pricingBlockedDates: BlockedDatePayload[] = [];
-
-    pricing.forEach((p) => {
-      const dateStr = toISODate(p.date);
-      if (p.minNights && p.minNights > 1) {
-        minStayMap[dateStr] = p.minNights;
-      }
-      if (p.isBlocked) {
-        pricingBlockedDates.push({ date: dateStr, source: 'PRICELABS' });
-      }
-    });
-
-    // Combine all blocked dates
-    // Priority: BlockedDate > SpecialRate > PropertyPricing
-    // Actually, we just want to merge them.
-    const uniqueBlockedDates = new Map<string, BlockedDatePayload>();
-
-    // 1. Base blocked dates
-    blocked.forEach((b) => {
-      const dateStr = toISODate(b.date);
-      uniqueBlockedDates.set(dateStr, { date: dateStr, source: b.source });
-    });
-
-    // 2. Special blocks
-    specialBlocks.forEach((s) => {
-      const dateStr = toISODate(s.date);
-      uniqueBlockedDates.set(dateStr, { date: dateStr, source: 'SPECIAL' });
-    });
-
-    // 3. Pricing blocks (if not already blocked)
-    pricingBlockedDates.forEach((p) => {
-      if (!uniqueBlockedDates.has(p.date)) {
-        uniqueBlockedDates.set(p.date, p);
-      }
-    });
-
-    const dates = Array.from(uniqueBlockedDates.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const minStay: Record<string, number> = {};
+    for (const row of pricing) {
+      if (row.minNights) minStay[toISODate(row.date)] = row.minNights;
+    }
 
     return NextResponse.json({
       property: slug,
-      blockedDates: dates,
-      minStay: minStayMap
+      blockedDates: Array.from(unavailable).sort().map((date) => ({ date })),
+      minStay,
     });
-  } catch (error: any) {
+  } catch (error) {
+    // Never invent availability: the calendar shows an error instead.
     console.error('Error fetching blocked dates:', error);
-    return respondWithFallback(slug);
+    return NextResponse.json({ error: 'Availability is temporarily unavailable' }, { status: 503 });
   }
 }
