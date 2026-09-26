@@ -81,7 +81,7 @@ export function AboutView({ onNavigate }: AboutViewProps) {
               {[
                 {
                   title: "Fair Pricing",
-                  desc: "No 15% service fees. No hidden booking costs. Your money goes to the stay, not the software.",
+                  desc: "Direct bookings are 10% less than the nightly rate on other platforms, with no Bunks service fee.",
                 },
                 {
                   title: "Priority Access",

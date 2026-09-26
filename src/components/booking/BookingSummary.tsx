@@ -2,12 +2,15 @@
 
 import Image from "next/image";
 import { Star } from "lucide-react";
-import type { BookingBreakdown, Property } from "@/types";
+import type { BookingBreakdown, DateRange, Property } from "@/types";
 import { Button } from "@/components/shared/Button";
+import { CANCELLATION_POLICY } from "@/data/policies";
 
 interface BookingSummaryProps {
   property: Property;
   nights: number;
+  dates?: DateRange;
+  guests?: number;
   breakdown?: BookingBreakdown | null;
   fallbackPricing: {
     nightlyRate: number;
@@ -31,9 +34,14 @@ const formatCurrency = (amount: number, currency = "USD") =>
 
 const centsToMajor = (cents: number) => cents / 100;
 
+const formatStayDate = (date: Date) =>
+  date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
 export function BookingSummary({
   property,
   nights,
+  dates,
+  guests,
   breakdown,
   fallbackPricing,
   currency = "USD",
@@ -74,7 +82,7 @@ export function BookingSummary({
 
   const perNightLabel = hasBreakdown
     ? "Nightly subtotal"
-    : `${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} nights`;
+    : `${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} ${nights === 1 ? "night" : "nights"}`;
   const grandTotal = total;
 
   return (
@@ -90,11 +98,33 @@ export function BookingSummary({
         <div>
           <h4 className="font-serif text-gray-900">{property.name}</h4>
           <p className="text-sm text-gray-500">{property.location}</p>
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <Star className="w-3 h-3 fill-current" /> {property.rating} ({property.reviews})
-          </div>
+          {property.reviews > 0 && property.rating > 0 && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+              <Star className="w-3 h-3 fill-current" /> {property.rating} ({property.reviews})
+            </div>
+          )}
         </div>
       </div>
+      {dates?.start && dates?.end && (
+        <div className="border-t border-gray-200 py-4 space-y-2 text-sm">
+          <div className="flex justify-between text-gray-600">
+            <span>Check-in</span>
+            <span className="text-gray-900">{formatStayDate(dates.start)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>Check-out</span>
+            <span className="text-gray-900">{formatStayDate(dates.end)}</span>
+          </div>
+          {guests ? (
+            <div className="flex justify-between text-gray-600">
+              <span>Guests</span>
+              <span className="text-gray-900">
+                {guests} {guests === 1 ? "guest" : "guests"}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      )}
       <div className="border-t border-gray-200 py-4 space-y-3 text-sm">
         <div className="flex justify-between text-gray-600">
           <span>{perNightLabel}</span>
@@ -136,6 +166,13 @@ export function BookingSummary({
             <span>{formatCurrency(grandTotal, currency)}</span>
           </div>
         </div>
+        <div className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p className="font-medium text-gray-900 mb-1">Cancellation policy</p>
+          <p>{CANCELLATION_POLICY.summary}</p>
+        </div>
+        <p className="text-xs text-gray-500">
+          By continuing you agree to the house rules and cancellation policy.
+        </p>
         {onContinue && (
           <Button
             type="button"

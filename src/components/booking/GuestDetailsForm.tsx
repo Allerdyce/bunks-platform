@@ -30,8 +30,11 @@ export function GuestDetailsForm({
     <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <label htmlFor="guest-first-name" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
           <input
+            id="guest-first-name"
+            name="firstName"
+            autoComplete="given-name"
             required
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
@@ -40,8 +43,11 @@ export function GuestDetailsForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <label htmlFor="guest-last-name" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
           <input
+            id="guest-last-name"
+            name="lastName"
+            autoComplete="family-name"
             required
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
@@ -51,8 +57,11 @@ export function GuestDetailsForm({
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+        <label htmlFor="guest-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
         <input
+          id="guest-email"
+          name="email"
+          autoComplete="email"
           required
           type="email"
           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
@@ -61,9 +70,11 @@ export function GuestDetailsForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+        <label htmlFor="guest-count" className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
         <div className="relative">
           <select
+            id="guest-count"
+            name="guests"
             className="w-full appearance-none px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none pr-10 bg-white"
             value={value.guests}
             onChange={(event) =>
@@ -72,7 +83,7 @@ export function GuestDetailsForm({
           >
             {[...Array(maxGuests)].map((_, idx) => (
               <option key={idx + 1} value={idx + 1}>
-                {idx + 1} Guests
+                {idx + 1} {idx === 0 ? "Guest" : "Guests"}
               </option>
             ))}
           </select>

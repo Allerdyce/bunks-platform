@@ -19,6 +19,9 @@ interface PaymentSectionProps {
   onSuccess: () => void;
 }
 
+// Only show the test-card hint when Stripe is running with a test publishable key.
+const IS_STRIPE_TEST_MODE = (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "").startsWith("pk_test");
+
 const formatAmount = (amountCents: number, currency: string) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -49,6 +52,9 @@ function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: numbe
       const { error } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
+        confirmParams: {
+          return_url: `${window.location.origin}/my-trips`,
+        },
       });
 
       if (error) {
@@ -73,15 +79,17 @@ function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: numbe
         options={paymentElementOptions}
         onReady={() => setIsElementReady(true)}
       />
-      <div className="p-4 bg-slate-50 text-slate-700 rounded-xl text-sm flex flex-col gap-1">
-        <div className="flex items-center gap-2 font-medium">
-          <Info className="w-4 h-4 text-slate-500" /> Stripe sandbox mode
+      {IS_STRIPE_TEST_MODE && (
+        <div className="p-4 bg-slate-50 text-slate-700 rounded-xl text-sm flex flex-col gap-1">
+          <div className="flex items-center gap-2 font-medium">
+            <Info className="w-4 h-4 text-slate-500" /> Stripe sandbox mode
+          </div>
+          <p className="text-slate-500">
+            Use test card <span className="font-semibold">4242 4242 4242 4242</span>, any future expiry, and any CVC
+            to simulate a successful charge.
+          </p>
         </div>
-        <p className="text-slate-500">
-          Use test card <span className="font-semibold">4242 4242 4242 4242</span>, any future expiry, and any CVC
-          to simulate a successful charge.
-        </p>
-      </div>
+      )}
       {message && (
         <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4" /> {message}

@@ -91,6 +91,12 @@ export const BookDirectCampaignEmail = ({
                 <Link href={ctaUrl} className="text-[#7F56D9]">Visit Bunks.com</Link>
             </Text>
 
+            {/* Postmark broadcast streams replace this placeholder with the recipient's unsubscribe URL. */}
+            <Text className="text-[#98A2B3] text-xs text-center mt-6">
+                Don&apos;t want these emails?{' '}
+                <Link href="{{{ pm:unsubscribe }}}" className="text-[#98A2B3] underline">Unsubscribe</Link>
+            </Text>
+
         </EmailLayout>
     );
 };

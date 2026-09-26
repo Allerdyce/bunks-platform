@@ -1375,7 +1375,7 @@ export function samplePostStayThankYouProps(): PostStayThankYouEmailProps {
         date: 'Apr 7 – 14',
         description: 'Private soak reservations + wildflower hikes in the valley.',
         ctaLabel: 'Hold dates',
-        ctaUrl: 'https://bunks.com/trips/hotsprings',
+        ctaUrl: 'https://bunks.com/my-trips',
       },
       {
         title: 'Fourth of July fireworks from the ridge',
