@@ -38,14 +38,14 @@ export function MessageThreadList({ threads, activeThreadId, onSelect, emptyStat
             key={thread.id}
             type="button"
             onClick={() => onSelect?.(thread)}
-            className={`group flex w-full items-start gap-3 border-b border-slate-100 px-4 py-4 text-left transition hover:bg-slate-50 last:border-0 ${isActive ? "bg-slate-50" : "bg-white"
+            className={`group flex w-full items-start gap-3 border-b border-gray-100 px-4 py-4 text-left transition hover:bg-gray-50 last:border-0 ${isActive ? "bg-gray-50" : "bg-white"
               }`}
           >
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-100">
+            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-gray-100">
               {thread.mediaUrl ? (
                 <Image src={thread.mediaUrl} alt={thread.title} fill className="object-cover" sizes="48px" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-slate-400">
+                <div className="flex h-full w-full items-center justify-center text-gray-400">
                   <MessageCircle className="h-5 w-5" />
                 </div>
               )}
@@ -53,21 +53,21 @@ export function MessageThreadList({ threads, activeThreadId, onSelect, emptyStat
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className={`truncate text-sm font-semibold ${isActive ? "text-slate-900" : "text-slate-700"}`}>{thread.title}</p>
-                  <p className="truncate text-xs uppercase tracking-[0.2em] text-slate-400">{thread.subtitle}</p>
+                  <p className={`truncate text-sm font-semibold ${isActive ? "text-gray-900" : "text-gray-700"}`}>{thread.title}</p>
+                  <p className="truncate text-xs uppercase tracking-[0.2em] text-gray-400">{thread.subtitle}</p>
                 </div>
                 {thread.badge && (
-                  <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
                     {thread.badge}
                   </span>
                 )}
               </div>
-              {thread.meta && <p className="mt-1 truncate text-xs text-slate-500">{thread.meta}</p>}
-              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+              {thread.meta && <p className="mt-1 truncate text-xs text-gray-500">{thread.meta}</p>}
+              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
                 {thread.lastMessageSnippet ? (
-                  <p className="truncate pr-2 text-slate-500">{thread.lastMessageSnippet}</p>
+                  <p className="truncate pr-2 text-gray-500">{thread.lastMessageSnippet}</p>
                 ) : (
-                  <p className="truncate pr-2 text-slate-400">No messages yet</p>
+                  <p className="truncate pr-2 text-gray-400">No messages yet</p>
                 )}
                 {thread.lastMessageAtLabel && (
                   <span className="inline-flex items-center gap-1">
@@ -106,7 +106,7 @@ export function MessagesLayout({ sidebar, conversation, reservation, variant = "
         <div className="flex-1 flex flex-col min-w-0 lg:overflow-hidden bg-white">
           {conversation}
         </div>
-        <div className="hidden lg:flex lg:w-[400px] lg:flex-shrink-0 lg:flex-col lg:overflow-y-auto bg-slate-50/50">
+        <div className="hidden lg:flex lg:w-[400px] lg:flex-shrink-0 lg:flex-col lg:overflow-y-auto bg-gray-50/50">
           {reservation}
         </div>
       </div>

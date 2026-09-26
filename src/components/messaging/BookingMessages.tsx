@@ -140,8 +140,8 @@ export function BookingMessages({
   };
 
   const containerClasses = {
-    card: "rounded-3xl border border-slate-100 bg-white p-6 shadow-sm",
-    panel: "flex h-full flex-col rounded-3xl border border-slate-200 bg-white shadow-sm",
+    card: "rounded-3xl border border-gray-100 bg-white p-6 shadow-sm",
+    panel: "flex h-full flex-col rounded-3xl border border-gray-200 bg-white shadow-sm",
     clean: "flex h-full flex-col bg-white",
   }[variant];
 
@@ -153,21 +153,21 @@ export function BookingMessages({
     <div className={containerClasses}>
       <div className={innerPaddingClass}>
         <div className="flex items-center gap-3">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900/5 text-slate-900">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900/5 text-gray-900">
             <MessageSquare className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Messages</p>
-            <h3 className="text-xl font-serif text-slate-900">
+            <p className="text-sm uppercase tracking-[0.12em] text-gray-400">Messages</p>
+            <h3 className="text-xl font-serif text-gray-900">
               {isHostView ? "Guest conversation" : "Chat with your host"}
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gray-500">
               {isHostView
                 ? "Respond to guest questions and keep everything tied to this booking."
                 : "Ask arrival questions, confirm add-ons, or flag issues. Replies come back to this thread and your email."}
             </p>
             {isHostView && (
-              <div className="mt-3 space-y-1 text-xs text-slate-500">
+              <div className="mt-3 space-y-1 text-xs text-gray-500">
                 {propertyName && <p>Property: {propertyName}</p>}
                 {guestEmail && (
                   <p>
@@ -188,11 +188,11 @@ export function BookingMessages({
 
         <div className={messagesContainerClass} ref={scrollRef}>
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading messages...
             </div>
           ) : messages.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
               {isHostView
                 ? "No messages yet. Send a welcome note to kick off the conversation."
                 : `Hey ${friendlyGuestName}, you're the first to message. Say hello to your host to start the thread.`}
@@ -201,7 +201,7 @@ export function BookingMessages({
             <div className="space-y-3">
               {messages.map((message) => (
                 <div key={message.id} className={`flex flex-col ${message.isMine ? "items-end" : "items-start"}`}>
-                  <span className="mb-1 block text-[11px] text-slate-400">
+                  <span className="mb-1 block text-[11px] text-gray-400">
                     {formatTimestamp(message.sentAt)}
                   </span>
                   <div
@@ -221,20 +221,20 @@ export function BookingMessages({
             rows={3}
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
             placeholder={isHostView ? "Type a message to your guest" : "Type a message to your host"}
             disabled={!canSend || isSending}
           />
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             {isHostView ? (
               guestEmail ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-gray-500">
                   Need to reach them directly? Email <a href={`mailto:${guestEmail}`} className="underline">{guestEmail}</a>.
                 </p>
               ) : null
             ) : (
               hostSupportEmail && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-gray-500">
                   Prefer email? Contact <a href={`mailto:${hostSupportEmail}`} className="underline">{hostSupportEmail}</a>.
                 </p>
               )
@@ -249,7 +249,7 @@ export function BookingMessages({
             </Button>
           </div>
           {!isHostView && !canSend && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-gray-500">
               Messaging unlocks once you look up your booking with the reference code and email on file.
             </p>
           )}

@@ -36,7 +36,7 @@ type BookingLink = {
 
 type NavbarLink = RouteLink | AnchorLink | BookingLink;
 
-export function Navbar({ onNavigate, currentView = "home", bookingSection = null, bookingRef = null }: NavbarProps) {
+export function Navbar({ currentView = "home", bookingSection = null, bookingRef = null }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isBookingView = currentView?.startsWith?.("booking-") ?? currentView === "booking-details";
 
@@ -53,22 +53,17 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
     }
 
     return [
-      { label: "Properties", type: "route", target: "listings", href: "/#listings" },
+      { label: "Explore homes", type: "route", target: "listings", href: "/#listings" },
       { label: "About", type: "route", target: "about", href: "/?view=about" },
       { label: "Journal", type: "route", target: "journal", href: "/?view=journal" },
       // { label: "SB Tax Tool", type: "route", target: "about", href: "/tools/sb-tot" }, // Moved to Footer
-      { label: "Trips", type: "route", target: "booking-details", href: "/my-trips" },
+      { label: "My trips", type: "route", target: "booking-details", href: "/my-trips" },
     ];
     // If we have a bookingRef, the 'Trips' link could go to that specific trip. 
     // But typically 'Trips' implies a list or lookup if not currently in a trip view. 
     // We'll keep it as the generic lookup page for now, or the specific trip if known? 
     // Let's stick to generic lookup entry point.
   }, [isBookingView, bookingRef]);
-
-  const handleNavigate = (target: Parameters<NavigateHandler>[0]) => {
-    onNavigate(target);
-    setIsOpen(false);
-  };
 
   const handleLinkClick = () => {
     setIsOpen(false);
@@ -79,19 +74,19 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
 
   const navContainerClass = isBookingView
     ? "sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur"
-    : "sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-overlay)] backdrop-blur-lg";
+    : "sticky top-0 z-50 bg-[var(--color-overlay)] backdrop-blur-lg";
 
   return (
     <nav className={navContainerClass}>
       <div className={isBookingView ? "w-full px-4 sm:px-12 lg:px-12" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
-        <div className="flex justify-between h-20 items-center">
+        <div className="flex justify-between h-20 lg:h-24 items-center">
           <Link
             href="/"
             className="flex-shrink-0 cursor-pointer flex items-center"
             aria-label="Bunks home"
             onClick={handleLinkClick}
           >
-            <Image src="/bunks-logo.svg" alt="Bunks" width={140} height={40} priority className="h-10 w-auto" />
+            <Image src="/bunks-logo.svg" alt="Bunks" width={140} height={40} priority className="h-8 w-auto grayscale" />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -116,7 +111,7 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
                     href={link.href}
                     onClick={handleLinkClick}
                     className={`text-sm font-semibold transition-colors ${isActive
-                      ? "text-[var(--color-text-primary)]"
+                      ? "rounded-full bg-[var(--color-surface-alt)] px-4 py-2 text-[var(--color-text-primary)]"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       }`}
                   >
@@ -137,7 +132,7 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
             })}
             {!isBookingView && (
               <Link href="/#listings" onClick={handleLinkClick} className={ctaClasses}>
-                Book Now
+                Find a stay
               </Link>
             )}
           </div>
@@ -146,7 +141,9 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="rounded-full border border-[var(--color-border)] p-2 text-[var(--color-text-primary)] shadow-sm"
-              aria-label="Toggle menu"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
+              aria-controls="mobile-navigation"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -155,7 +152,7 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
       </div>
 
       {isOpen && (
-        <div className="md:hidden absolute w-full border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+        <div id="mobile-navigation" className="md:hidden absolute w-full border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
           <div className="px-4 pt-2 pb-6 space-y-1">
             {navLinks.map((link) => {
               if (link.type === "anchor") {
@@ -199,7 +196,7 @@ export function Navbar({ onNavigate, currentView = "home", bookingSection = null
                 onClick={handleLinkClick}
                 className="mt-4 block rounded-full bg-[var(--color-brand-primary)] px-3 py-4 text-center text-base font-semibold text-white shadow-[var(--shadow-brand)]"
               >
-                Book Now
+                Find a stay
               </Link>
             )}
           </div>

@@ -78,7 +78,7 @@ export function BookingSummary({
   const grandTotal = total;
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-200 h-fit shadow-sm sticky top-24">
+    <div className="soft-panel p-6 lg:p-8 h-fit sticky top-28">
       <div className="flex gap-4 mb-6">
         <Image
           src={property.image}

@@ -17,12 +17,12 @@ export function Button({
   ...props
 }: PropsWithChildren<ButtonProps>) {
   const baseStyle =
-    "px-6 py-3 rounded-full font-semibold tracking-tight transition-all duration-200 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+    "min-h-12 px-6 py-3 rounded-full text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
   const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
     primary:
       "bg-[var(--color-brand-primary)] text-white shadow-[var(--shadow-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:ring-[var(--color-brand-light)]",
     secondary:
-      "bg-white text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface)] focus-visible:ring-[var(--color-brand-light)]",
+      "bg-[var(--color-surface-alt)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface)] focus-visible:ring-[var(--color-brand-light)]",
     outline:
       "bg-transparent border border-white/60 text-white hover:bg-white/10 focus-visible:ring-white/60",
     ghost:

@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { DM_Sans, Lora } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-poppins",
-  display: "swap",
-});
+const bodyFont = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const editorialFont = Lora({ subsets: ["latin"], weight: ["400", "500"], style: ["normal", "italic"], variable: "--font-editorial", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"),
@@ -77,8 +73,8 @@ export default function RootLayout({
   const devBodyClassName = process.env.NODE_ENV === "development" ? "__text_mode_READY__" : undefined;
 
   return (
-    <html lang="en" className={poppins.variable} suppressHydrationWarning>
-      <body className={`${poppins.className} ${devBodyClassName ?? ""}`} suppressHydrationWarning>
+    <html lang="en" className={`${bodyFont.variable} ${editorialFont.variable}`} suppressHydrationWarning>
+      <body className={`${bodyFont.className} ${devBodyClassName ?? ""}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

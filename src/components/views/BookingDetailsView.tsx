@@ -401,44 +401,44 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
       return null;
     }
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-8 backdrop-blur">
-        <div className="relative w-full max-w-lg rounded-[32px] border border-slate-100 bg-white p-8 shadow-[0_45px_140px_rgba(15,23,42,0.45)]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-8 backdrop-blur">
+        <div className="relative w-full max-w-lg rounded-xl border border-gray-200 bg-[var(--color-surface)] p-6 sm:p-10 shadow-[var(--shadow-floating)]">
           {canDismissLookupModal && (
             <button
               type="button"
               onClick={() => setIsLookupModalOpen(false)}
-              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 hover:text-slate-900"
+              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 text-gray-500 hover:text-gray-900"
               aria-label="Close booking lookup"
             >
               <X className="h-4 w-4" />
             </button>
           )}
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Booking lookup</p>
-          <h2 className="mt-2 font-serif text-3xl text-slate-900">Enter your reference + email</h2>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-400">Booking lookup</p>
+          <h2 className="mt-2 font-serif text-3xl text-gray-900">Your next stay starts here.</h2>
+          <p className="mt-2 text-sm text-gray-500">
             We&apos;ll fetch your stay in a few seconds. Saved details will stay on this device until you clear them.
           </p>
           <form onSubmit={submitLookup} className="mt-6 space-y-4">
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-600">Booking reference</span>
+              <span className="text-sm font-medium text-gray-600">Booking reference</span>
               <input
                 type="text"
                 value={lookupReference}
                 onChange={(event) =>
                   setLookupReference(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 5))}
-                className="rounded-2xl border border-slate-200 px-4 py-3 text-lg font-semibold uppercase tracking-[0.3em] outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                className="rounded-2xl border border-gray-200 px-4 py-3 text-lg font-semibold uppercase tracking-[0.12em] outline-none focus:border-gray-900 focus:ring-2 focus:ring-slate-200"
                 placeholder="e.g. R57KF"
                 inputMode="text"
                 autoComplete="off"
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-600">Email used on booking</span>
+              <span className="text-sm font-medium text-gray-600">Email used on booking</span>
               <input
                 type="email"
                 value={lookupEmail}
                 onChange={(event) => setLookupEmail(event.target.value)}
-                className="rounded-2xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                className="rounded-2xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-gray-900 focus:ring-2 focus:ring-slate-200"
                 placeholder="you@example.com"
                 autoComplete="email"
               />
@@ -473,7 +473,7 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
             <button
               type="button"
               onClick={handleClearLookup}
-              className="mt-4 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 underline"
+              className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-gray-400 underline"
             >
               Clear saved booking
             </button>
@@ -484,8 +484,8 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
   };
 
   const renderNoBookingState = () => (
-    <div className="rounded-[32px] border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center text-slate-500">
-      <p className="text-base font-semibold text-slate-700">Look up your stay to see {sectionCopy[section].eyebrow.toLowerCase()}.</p>
+    <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 px-6 py-10 text-center text-gray-500">
+      <p className="text-base font-semibold text-gray-700">Look up your stay to see {sectionCopy[section].eyebrow.toLowerCase()}.</p>
       <p className="mt-2 text-sm">
         Your booking reference is in the confirmation email. We keep it on this device only.
       </p>
@@ -514,9 +514,9 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
           )}
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Essential info</p>
-              <h2 className="mt-2 font-serif text-4xl text-slate-900">{booking.property.name}</h2>
-              {stayRangeLabel && <p className="text-sm text-slate-500">{stayRangeLabel}</p>}
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Essential info</p>
+              <h2 className="mt-2 font-serif text-4xl text-gray-900">{booking.property.name}</h2>
+              {stayRangeLabel && <p className="text-sm text-gray-500">{stayRangeLabel}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
               {lastLookup && (
@@ -550,35 +550,35 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
               </div>
             )}
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Booking #{referenceCode ?? booking.id}</p>
-              <p className="text-2xl font-semibold text-slate-900">{booking.property.name}</p>
-              <p className="text-sm text-slate-500">{propertyDetails?.location ?? booking.property.slug}</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Booking #{referenceCode ?? booking.id}</p>
+              <p className="text-2xl font-semibold text-gray-900">{booking.property.name}</p>
+              <p className="text-sm text-gray-500">{propertyDetails?.location ?? booking.property.slug}</p>
             </div>
-            <div className="flex flex-wrap gap-10 text-sm text-slate-600">
+            <div className="flex flex-wrap gap-10 text-sm text-gray-600">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Stay</p>
-                <p className="text-base font-semibold text-slate-900">{stayRangeLabel}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Stay</p>
+                <p className="text-base font-semibold text-gray-900">{stayRangeLabel}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Guest</p>
-                <p className="text-base font-semibold text-slate-900">{booking.guestName}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Guest</p>
+                <p className="text-base font-semibold text-gray-900">{booking.guestName}</p>
               </div>
             </div>
-            <div className="border-t border-[var(--color-border)] pt-4 text-sm text-slate-600">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Total</p>
-              <p className="text-2xl font-semibold text-slate-900">
+            <div className="border-t border-[var(--color-border)] pt-4 text-sm text-gray-600">
+              <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Total</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {currencyFormatter.format(booking.totalPriceCents / 100)}
               </p>
 
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Arrival tips</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Arrival tips</p>
               <div className="mt-3 space-y-5">
                 {essentialItems.map((item) => (
                   <div key={item.label} className="border-t border-[var(--color-border)] pt-4 first:border-0 first:pt-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
-                    <p className="text-lg font-semibold text-slate-900">{item.value}</p>
-                    {item.helper && <p className="text-sm text-slate-500">{item.helper}</p>}
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-400">{item.label}</p>
+                    <p className="text-lg font-semibold text-gray-900">{item.value}</p>
+                    {item.helper && <p className="text-sm text-gray-500">{item.helper}</p>}
                   </div>
                 ))}
               </div>
@@ -588,7 +588,7 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
                 href={guideUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center text-sm font-semibold text-slate-900 underline"
+                className="inline-flex items-center text-sm font-semibold text-gray-900 underline"
               >
                 Download your guidebook
               </a>
@@ -614,15 +614,15 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
     return (
       <section className="max-w-7xl mx-auto w-full space-y-8">
         <div className="px-6 pt-8 lg:px-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Guide book</p>
-          <h3 className="mt-2 font-serif text-4xl text-slate-900">Plan every moment in town</h3>
-          <p className="text-sm text-slate-500">Hand-curated recommendations, arrival notes, and concierge contacts.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-400">Guide book</p>
+          <h3 className="mt-2 font-serif text-4xl text-gray-900">Plan every moment in town</h3>
+          <p className="text-sm text-gray-500">Hand-curated recommendations, arrival notes, and concierge contacts.</p>
           {guideUrl && (
             <a
               href={guideUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-900 underline"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-900 underline"
             >
               Download the PDF guidebook
             </a>
@@ -633,12 +633,12 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
             <SteamboatGuestGuide showSecureDetails />
           </div>
         ) : (
-          <div className="mx-6 lg:mx-12 rounded-[32px] border border-slate-200 bg-white/90 p-8 text-slate-600">
+          <div className="mx-6 lg:mx-12 rounded-xl border border-gray-200 bg-white/90 p-8 text-gray-600">
             <p>
               We&apos;re finalizing the digital guidebook for this property. In the meantime, the PDF linked above covers
               check-in instructions, our favorite restaurants, and concierge contacts.
             </p>
-            <p className="mt-4 font-semibold text-slate-900">
+            <p className="mt-4 font-semibold text-gray-900">
               Need help? Text or email us anytime.
             </p>
           </div>
@@ -655,10 +655,10 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
           variant="full-bleed"
           sidebar={(
             <div className="flex h-full flex-col">
-              <div className="flex flex-col gap-4 border-b border-slate-100 p-6">
+              <div className="flex flex-col gap-4 border-b border-gray-100 p-6">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Inbox</p>
-                  <h3 className="mt-2 font-serif text-2xl text-slate-900">Your stays</h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-400">Inbox</p>
+                  <h3 className="mt-2 font-serif text-2xl text-gray-900">Your stays</h3>
                 </div>
                 {!isLookupModalOpen && error && (
                   <div className="flex items-start gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -717,33 +717,33 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
               )}
               <div className="p-8 space-y-8">
                 <div>
-                  <p className="flex items-center gap-2 text-sm text-slate-500">
+                  <p className="flex items-center gap-2 text-sm text-gray-500">
                     <MapPin className="h-4 w-4" /> {propertyDetails?.location ?? booking.property.slug}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-6 text-sm text-slate-600">
+                <div className="rounded-2xl bg-gray-50 p-6 text-sm text-gray-600">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-in</p>
-                      <p className="text-base font-semibold text-slate-900">{dateFormatter.format(new Date(booking.checkInDate))}</p>
-                      <p className="text-xs text-slate-500">After {booking.property.checkInTime ?? "3:00 PM"}</p>
+                      <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Check-in</p>
+                      <p className="text-base font-semibold text-gray-900">{dateFormatter.format(new Date(booking.checkInDate))}</p>
+                      <p className="text-xs text-gray-500">After {booking.property.checkInTime ?? "3:00 PM"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-out</p>
-                      <p className="text-base font-semibold text-slate-900">{dateFormatter.format(new Date(booking.checkOutDate))}</p>
-                      <p className="text-xs text-slate-500">By {booking.property.checkOutTime ?? "11:00 AM"}</p>
+                      <p className="text-xs uppercase tracking-[0.12em] text-gray-400">Check-out</p>
+                      <p className="text-base font-semibold text-gray-900">{dateFormatter.format(new Date(booking.checkOutDate))}</p>
+                      <p className="text-xs text-gray-500">By {booking.property.checkOutTime ?? "11:00 AM"}</p>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Need help?</p>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-400">Need help?</p>
+                  <p className="text-sm text-gray-600">
                     Your host team is available via this chat or email.
                   </p>
-                  <a href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`} className="block text-sm font-medium text-slate-900 underline">
+                  <a href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`} className="block text-sm font-medium text-gray-900 underline">
                     {booking.property.hostSupportEmail ?? supportFallback}
                   </a>
-                  {referenceCode && <p className="text-xs text-slate-400">Ref: {referenceCode}</p>}
+                  {referenceCode && <p className="text-xs text-gray-400">Ref: {referenceCode}</p>}
                 </div>
               </div>
             </div>
@@ -754,13 +754,13 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
   };
 
   const loadingBanner = isLoading ? (
-    <div className="pointer-events-none fixed right-4 top-4 z-40 rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 shadow-xl">
+    <div className="pointer-events-none fixed right-4 top-4 z-40 rounded-2xl border border-gray-200 bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 shadow-xl">
       Updating stay…
     </div>
   ) : null;
 
   return (
-    <div className={`relative ${booking ? "bg-white" : "bg-slate-50 pb-16"}`}>
+    <div className={`relative ${booking ? "bg-white" : "bg-gray-50 pb-16"}`}>
       {renderLookupModal()}
       {loadingBanner}
       {booking ? (
@@ -778,7 +778,7 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
             </div>
           )}
           {isLoading ? (
-            <div className="rounded-[32px] border border-slate-200 bg-white px-6 py-8 text-center text-slate-500">
+            <div className="rounded-xl border border-gray-200 bg-white px-6 py-8 text-center text-gray-500">
               Fetching your booking details...
             </div>
           ) : (

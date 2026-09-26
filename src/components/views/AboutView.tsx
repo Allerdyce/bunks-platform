@@ -14,19 +14,19 @@ export function AboutView({ onNavigate }: AboutViewProps) {
   return (
     <div className="animate-fade-in">
       <div className="grid lg:grid-cols-2 min-h-[80vh]">
-        <div className="bg-stone-900 text-white flex items-center justify-center p-12 lg:p-24">
+        <div className="bg-[#e9e9df] text-gray-900 flex items-center justify-center px-6 py-12 sm:p-12 lg:p-20">
           <div className="max-w-xl">
-            <h1 className="font-serif text-5xl sm:text-7xl mb-8 leading-tight text-white">
+            <h1 className="font-serif text-5xl sm:text-7xl mb-8 leading-tight text-gray-900">
               Less platform.
               <br />
-              <span className="text-stone-400">More hospitality.</span>
+              <span className="text-gray-600">More hospitality.</span>
             </h1>
-            <p className="text-xl text-stone-300 font-light leading-relaxed mb-12">
+            <p className="text-xl text-gray-600 font-light leading-relaxed mb-12">
               We stripped away the algorithms and the upsell noise. What’s left is a simple, honest way to stay somewhere special.
             </p>
             <Button
-              variant="outline"
-              className="border-stone-500 text-white hover:bg-white/10 mb-12"
+              variant="primary"
+              className="mb-12"
               onClick={() => onNavigate("home")}
             >
               View Collection

@@ -2,75 +2,67 @@
 
 @layer base {
   :root {
-    --color-brand-primary: #03363d;
-    --color-brand-hover: #022a30;
-    --color-brand-light: #0a4e57;
-    --color-text-primary: #222222;
-    --color-text-secondary: #717171;
+    --color-brand-primary: #252723;
+    --color-brand-hover: #454940;
+    --color-brand-light: #64705b;
+    --color-text-primary: #252723;
+    --color-text-secondary: #686a63;
     --color-text-inverted: #ffffff;
-    --color-border: #dddddd;
-    --color-border-strong: #222222;
-    --color-surface: #ffffff;
-    --color-surface-alt: #f7f7f7;
-    --color-overlay: rgba(255, 255, 255, 0.85);
-    --shadow-brand: 0 6px 16px rgba(3, 54, 61, 0.15);
-    --shadow-floating: 0 4px 10px rgba(3, 54, 61, 0.2);
-    --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --color-border: #deded5;
+    --color-border-strong: #72786b;
+    --color-surface: #f8f7f4;
+    --color-surface-alt: #eeede7;
+    --color-overlay: rgba(248, 247, 244, 0.96);
+    --shadow-brand: 0 2px 4px rgba(37, 39, 35, 0.04);
+    --shadow-floating: 0 12px 40px rgba(37, 39, 35, 0.12);
+    --shadow-card: 0 2px 8px rgba(37, 39, 35, 0.04);
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
-    --radius-2xl: 32px;
+    --radius-2xl: 24px;
   }
-
-  * {
-    border-color: var(--color-border);
-  }
-
+  * { border-color: var(--color-border); }
+  html { scroll-padding-top: 112px; }
   body {
     background: var(--color-surface);
     color: var(--color-text-primary);
-    font-family: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif);
-    letter-spacing: -0.015em;
+    font-family: var(--font-body), Arial, sans-serif;
     font-weight: 400;
     min-height: 100vh;
   }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
-  .font-serif {
-    font-family: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif) !important;
-  }
-
-  *[class*="shadow-sm"] {
-    box-shadow: none !important;
-  }
-
-  p,
-  span,
-  li {
-    /* inherit color */
-  }
-
-  ::selection {
-    background: var(--color-brand-primary);
-    color: var(--color-text-inverted, #ffffff);
-  }
-
-  a {
-    color: var(--color-text-primary);
-  }
+  h1, h2, h3, h4, h5, h6 { font-weight: 500; letter-spacing: -0.025em; }
+  button, input, select, textarea { font: inherit; }
+  button:not(:disabled), summary { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--color-brand-light); outline-offset: 4px; }
+  ::selection { background: #dbe0d2; color: #252723; }
 }
 
 @theme inline {
-  --color-background: var(--color-surface-alt);
+  --color-background: var(--color-surface);
   --color-foreground: var(--color-text-primary);
-  --font-sans: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif);
+  --font-sans: var(--font-body), Arial, sans-serif;
+  --font-serif: var(--font-editorial), Georgia, serif;
+  /* Keep existing neutral utilities consistent across guest and operations screens. */
+  --color-gray-50: #f5f4f0;
+  --color-gray-100: #eeede7;
+  --color-gray-200: #deded5;
+  --color-gray-300: #c9cbc0;
+  --color-gray-400: #898d81;
+  --color-gray-500: #686a63;
+  --color-gray-600: #55594f;
+  --color-gray-700: #454940;
+  --color-gray-800: #343830;
+  --color-gray-900: #252723;
+  --color-gray-950: #191c17;
+}
+
+@layer components {
+  .eyebrow { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .editorial-title { font-family: var(--font-serif); font-weight: 400; line-height: 1.12; letter-spacing: -0.045em; }
+  .guest-surface { background: var(--color-surface); }
+  .soft-panel { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

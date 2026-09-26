@@ -1,92 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { CalendarCheck2, MessageCircleHeart, Sparkles } from "lucide-react";
-
-const HIGHLIGHTS = [
-  {
-    icon: CalendarCheck2,
-    title: "Itineraries built for you",
-    description: "Pre-stocked fridges, ski shuttles, and chef dinners arranged before you arrive.",
-  },
-  {
-    icon: MessageCircleHeart,
-    title: "Concierge on speed dial",
-    description: "Real humans with local knowledge, replying in under five minutes day or night.",
-  },
-  {
-    icon: Sparkles,
-    title: "Verified comfort",
-    description: "Designer-grade linens, pro housekeeping, and tech-enabled entry on every stay.",
-  },
-];
-
-const STATS = [
-  { label: "Avg. response time", value: "< 5 min" },
-  { label: "Curated partners", value: "50+" },
-  { label: "Guest rating", value: "4.9 / 5" },
-];
+import { ArrowUpRight } from "lucide-react";
 
 export function ExperienceBanner() {
   return (
-    <section className="relative mb-24 px-4">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] border border-stone-200 bg-[#F3ECEC] px-6 py-14 sm:px-10 lg:px-14 text-stone-900 shadow-[0_25px_60px_rgba(15,23,42,0.08)]">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="space-y-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
-              REPEAT AND TREAT
-            </p>
-            <h2 className="font-serif text-3xl sm:text-4xl leading-tight text-stone-900">
-              White-glove hospitality with the soul of the mountains.
-            </h2>
-            <p className="text-lg text-stone-500 max-w-2xl">
-              We obsess over every touchpoint—so your group arrives to a home staged like your favorite boutique hotel, layered
-              with concierge-level service, curated local rituals, and humans who reply when inspiration strikes at
-              midnight.
-            </p>
-
-            <div className="flex flex-wrap gap-6">
-              {STATS.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-[#E7DADA] bg-white px-5 py-4 text-stone-900 shadow-sm shadow-[#E7DADA]"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-stone-400">{stat.label}</p>
-                  <p className="text-2xl font-serif text-stone-900">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href="#listings"
-                className="inline-flex items-center justify-center rounded-full bg-stone-950 px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5"
-              >
-                Explore the collection
-              </Link>
-              <a
-                href="mailto:stay@bunks.com"
-                className="inline-flex items-center justify-center rounded-full border border-stone-900 px-6 py-3 text-sm font-semibold text-stone-900 hover:bg-stone-900/5"
-              >
-                Talk to our concierge
-              </a>
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            {HIGHLIGHTS.map((highlight) => (
-              <div
-                key={highlight.title}
-                className="group rounded-3xl border border-stone-100 bg-white p-6 shadow-sm"
-              >
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF5A5F]/10 text-[#FF5A5F]">
-                  <highlight.icon className="h-6 w-6" />
-                </div>
-                <h3 className="font-serif text-2xl mb-2 text-stone-900">{highlight.title}</h3>
-                <p className="text-sm text-stone-500">{highlight.description}</p>
-              </div>
-            ))}
-          </div>
+    <section className="mx-auto mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="grid items-center gap-10 md:grid-cols-2 lg:gap-20">
+        <div className="relative aspect-[5/4] overflow-hidden rounded-xl">
+          <Image src="/2211-lillie-ave/hero.jpg" alt="A welcoming space to settle into at Bunks" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+        </div>
+        <div className="max-w-lg py-4">
+          <p className="eyebrow mb-5 text-gray-500">Stay a little closer</p>
+          <h2 className="editorial-title mb-6 text-4xl sm:text-5xl">Beautiful homes.<br />A human welcome.</h2>
+          <p className="mb-8 text-gray-600 leading-relaxed">The best trips have a way of making you feel like you belong. We bring together homes with character and people who know them, so you can settle in and enjoy being there.</p>
+          <Link href="/?view=about" className="inline-flex min-h-12 items-center gap-4 rounded-full border border-gray-300 px-6 text-sm font-medium transition-colors hover:bg-gray-100">Get to know Bunks <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></Link>
         </div>
       </div>
     </section>

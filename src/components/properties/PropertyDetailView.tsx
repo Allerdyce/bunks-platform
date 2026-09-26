@@ -17,7 +17,6 @@ import {
   Image as ImageIcon,
   Info,
   Layers,
-  MapPin,
   Star,
   Tag,
   Users,
@@ -334,9 +333,6 @@ export function PropertyDetailView({
 
   const closeLightbox = () => setLightboxIndex(null);
 
-  const primaryTile = gallery[0];
-  const secondaryTile = gallery[1];
-  const tertiaryTile = gallery[2];
   const lightboxItems = gallery.map(({ src, label, description }) => ({
     src,
     label,
@@ -344,7 +340,7 @@ export function PropertyDetailView({
   }));
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in ${isMobile ? "pb-32" : ""}`}>
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-fade-in ${isMobile ? "pb-32" : ""}`}>
       <button
         onClick={() => onNavigate("home")}
         className="flex items-center text-gray-500 hover:text-gray-900 mb-6 transition-colors"
@@ -353,90 +349,27 @@ export function PropertyDetailView({
         Back to collection
       </button>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-2xl overflow-hidden h-[500px] mb-12">
-        {primaryTile && (
-          <div className="md:col-span-2 h-full bg-gray-100">
-            <button
-              type="button"
-              onClick={() => openLightboxAt(primaryTile.globalIndex)}
-              className="group w-full h-full block overflow-hidden"
-            >
-              <div className="relative w-full h-full">
-                <Image
-                  src={primaryTile.src}
-                  alt={`${primaryTile.label} primary photo`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 66vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-              <span className="sr-only">Open {primaryTile.label} photo</span>
-            </button>
-          </div>
-        )}
-        {(secondaryTile || tertiaryTile) && (
-          <div className="flex flex-col gap-4 h-full">
-            {secondaryTile && (
-              <div className="h-1/2 bg-gray-100 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => openLightboxAt(secondaryTile.globalIndex)}
-                  className="group w-full h-full block overflow-hidden"
-                >
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={secondaryTile.src}
-                      alt={`${secondaryTile.label} secondary photo`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="sr-only">Open {secondaryTile.label} photo</span>
-                </button>
-              </div>
-            )}
-            {tertiaryTile && (
-              <div className="h-1/2 bg-gray-100 overflow-hidden relative">
-                <button
-                  type="button"
-                  onClick={() => openLightboxAt(tertiaryTile.globalIndex)}
-                  className="group w-full h-full block overflow-hidden"
-                >
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={tertiaryTile.src}
-                      alt={`${tertiaryTile.label} tertiary photo`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="sr-only">Open {tertiaryTile.label} photo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openLightboxAt(0)}
-                  className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg text-sm font-medium hover:bg-white transition-colors"
-                >
-                  View All Photos
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+      <div className="relative mb-10 grid h-[320px] grid-cols-1 gap-2 overflow-hidden rounded-xl sm:h-[460px] md:grid-cols-4 md:grid-rows-2 lg:h-[520px]">
+        {gallery.slice(0, 5).map((tile, index) => (
+          <button key={tile.id} type="button" onClick={() => openLightboxAt(tile.globalIndex)}
+            className={`group relative min-h-0 overflow-hidden bg-gray-100 ${index === 0 ? "h-full md:col-span-2 md:row-span-2" : "hidden md:block"}`}>
+            <Image src={tile.src} alt={`${tile.label} photo ${index + 1}`} fill priority={index === 0}
+              sizes={index === 0 ? "(max-width: 768px) 100vw, 50vw" : "25vw"}
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+            <span className="sr-only">Open photo {index + 1}</span>
+          </button>
+        ))}
+        {gallery.length > 0 && <button type="button" onClick={() => openLightboxAt(0)} className="absolute bottom-4 right-4 flex min-h-11 items-center gap-2 rounded-full bg-white/95 px-5 py-2 text-sm font-medium hover:bg-white">
+          <ImageIcon className="h-4 w-4" aria-hidden="true" /> View all photos
+        </button>}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="font-serif text-3xl sm:text-4xl text-gray-900 mb-2">
-                {property.name}
-              </h1>
-              <p className="text-gray-500 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> {property.location}
-              </p>
+              <p className="mb-4 text-sm font-medium text-gray-700">{property.location}</p>
+              <h1 className="editorial-title text-3xl sm:text-4xl lg:text-5xl mb-3">{property.name}</h1>
             </div>
             <div className="text-right hidden sm:block shrink-0">
               <div className="flex items-center gap-1 justify-end mb-1">
@@ -453,7 +386,7 @@ export function PropertyDetailView({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-6 py-6 border-y border-gray-200 mb-8">
+          <div className="flex flex-wrap gap-x-8 gap-y-4 py-6 border-b border-gray-200 mb-8">
             <span className="flex items-center gap-2 text-gray-600">
               <Users className="w-5 h-5" /> {property.guests} Guests
             </span>
@@ -471,7 +404,7 @@ export function PropertyDetailView({
           </div>
 
           <div className="mb-12">
-            <h2 className="font-serif text-2xl text-gray-900 mb-4">About this space</h2>
+            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-4">About this space</h2>
             <p className="text-gray-600 leading-relaxed text-lg">{property.description}</p>
             {property.heroTagline && (
               <p className="text-gray-500 mt-4 text-base leading-relaxed">{property.heroTagline}</p>
@@ -480,10 +413,10 @@ export function PropertyDetailView({
 
           {property.highlights?.length ? (
             <div className="mb-12">
-              <h2 className="font-serif text-2xl text-gray-900 mb-4">Why you'll love it</h2>
+              <h2 className="font-serif font-normal text-2xl text-gray-900 mb-4">Why you'll love it</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {property.highlights.map((highlight) => (
-                  <div key={highlight} className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                  <div key={highlight} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                     <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                     <p className="text-gray-600">{highlight}</p>
                   </div>
@@ -509,7 +442,7 @@ export function PropertyDetailView({
 
           {property.sleepingArrangements?.length ? (
             <div className="mb-12">
-              <h2 className="font-serif text-2xl text-gray-900 mb-6">Sleeping arrangements</h2>
+              <h2 className="font-serif font-normal text-2xl text-gray-900 mb-6">Sleeping arrangements</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {property.sleepingArrangements.map((arrangement) => (
                   <div key={arrangement.title} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
@@ -580,7 +513,7 @@ export function PropertyDetailView({
 
           {property.photoGroups?.length ? (
             <div className="mb-12 space-y-8">
-              <h2 className="font-serif text-2xl text-gray-900">Room-by-room gallery</h2>
+              <h2 className="font-serif font-normal text-2xl text-gray-900">Room-by-room gallery</h2>
               {property.photoGroups.map((group) => (
                 <div key={group.title} className="border border-gray-200 rounded-2xl p-6">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -626,7 +559,7 @@ export function PropertyDetailView({
           ) : null}
 
           <div className="mb-12">
-            <h2 className="font-serif text-2xl text-gray-900 mb-6">What this place offers</h2>
+            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-6">What this place offers</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {property.features.map((feature, index) => (
                 <div key={feature} className="flex items-center gap-3 text-gray-600 p-4 bg-gray-50 rounded-xl">
@@ -638,7 +571,7 @@ export function PropertyDetailView({
           </div>
 
           <div className="mb-12" id="availability-calendar">
-            <h2 className="font-serif text-2xl text-gray-900 mb-2">Availability</h2>
+            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-2">Availability</h2>
             <p className="text-sm text-gray-500">
               View blocked nights below. Tap anywhere on the calendar to open the interactive picker and lock your stay.
             </p>
@@ -663,21 +596,21 @@ export function PropertyDetailView({
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 sticky top-24">
+          <div className="soft-panel p-6 lg:p-7 sticky top-28">
             <div className="flex justify-between items-start gap-3 mb-6">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline gap-3">
                   {canBook ? (
                     <>
                       <div className="flex items-baseline gap-1">
-                        <span className="font-serif text-2xl font-semibold text-gray-900">
+                        <span className="text-xl font-medium text-gray-900">
                           {formatCurrency(displayTotal / confirmedNights)}
                         </span>
                         <span className="text-gray-500">/ night</span>
                       </div>
                     </>
                   ) : (
-                    <span className="font-serif text-2xl font-semibold text-gray-900">
+                    <span className="text-xl font-medium text-gray-900">
                       Add dates for prices
                     </span>
                   )}
@@ -751,7 +684,7 @@ export function PropertyDetailView({
             >
               {canBook ? "Reserve" : "Check availability"}
             </Button>
-            <div className="mt-4 bg-emerald-50 rounded-2xl p-4 flex items-center justify-center gap-2">
+            <div className="mt-4 bg-[#e1e4d8] rounded-xl p-4 flex items-center justify-center gap-2">
               <Tag className="w-5 h-5 text-emerald-600 fill-emerald-600 rotate-90" />
               <p className="text-emerald-800 font-medium">{savingsCopy}</p>
             </div>

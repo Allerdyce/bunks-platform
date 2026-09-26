@@ -7,31 +7,31 @@ const FEATURES = [
     icon: ShieldCheck,
     title: "Best Rate Guarantee",
     desc: "Save on service fees when you book directly with us.",
-    accentBg: "bg-[#F3ECEC]",
-    accentText: "text-[#B34747]",
+    accentBg: "bg-[#e1e4d8]",
+    accentText: "text-gray-700",
   },
   {
     icon: Coffee,
     title: "Concierge Service",
     desc: "Local recommendations and support throughout your stay.",
-    accentBg: "bg-[#E0F4EF]",
-    accentText: "text-[#1F7A64]",
+    accentBg: "bg-[#e1e4d8]",
+    accentText: "text-gray-700",
   },
   {
     icon: Star,
     title: "Quality Assured",
     desc: "Every property is professionally cleaned and inspected.",
-    accentBg: "bg-[#E9F0FF]",
-    accentText: "text-[#2A5CA8]",
+    accentBg: "bg-[#e1e4d8]",
+    accentText: "text-gray-700",
   },
 ];
 
 export function WhyBook() {
   return (
-    <div className="bg-gray-50 py-24 rounded-3xl mb-24">
+    <div className="bg-[var(--color-surface-alt)] py-16 sm:py-24 mb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-3xl text-gray-900 mb-4">Why Book with Bunks?</h2>
+          <h2 className="editorial-title text-4xl sm:text-5xl mb-4">A good stay starts with the little things.</h2>
           <p className="text-gray-500 max-w-2xl mx-auto">
             We bridge the gap between professional hospitality and the comfort of a home.
           </p>
@@ -40,7 +40,7 @@ export function WhyBook() {
           {FEATURES.map((feature) => (
             <div key={feature.title} className="flex flex-col items-center text-center">
               <div
-                className={`w-14 h-14 rounded-2xl shadow-sm flex items-center justify-center mb-6 border border-white/60 ${feature.accentBg} ${feature.accentText}`}
+                className={`w-14 h-14 rounded-full flex items-center justify-center mb-6 border border-white/60 ${feature.accentBg} ${feature.accentText}`}
               >
                 <feature.icon className="w-6 h-6" />
               </div>
