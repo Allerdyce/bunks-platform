@@ -1,3 +1,4 @@
+import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -13,35 +14,41 @@ import { DoorCodeEmail, type DoorCodeInstruction } from '@/emails/DoorCodeEmail'
 
 const EMAIL_TYPE = 'DOOR_CODE_DELIVERY' as const;
 
-const DEFAULT_PARKING: DoorCodeInstruction[] = [
-  {
-    title: 'Driveway parking',
-    detail: 'Park nose-in. Plowed daily – keep two tyres on the gravel strip to avoid drifting snow berms.',
-  },
-  {
-    title: 'Overflow option',
-    detail: 'Use the marked gravel lot across the lane. Display the hanging permit from the mudroom hook.',
-  },
-];
+type PropertyAccess = {
+  lockboxCode: string | null;
+  garageCode: string | null;
+  skiLockerDoorCode: string | null;
+  skiLockerNumber: string | null;
+  skiLockerCode: string | null;
+  parkingNotes: string | null;
+};
 
-const DEFAULT_ENTRY_STEPS: DoorCodeInstruction[] = [
-  { title: 'Keypad location', detail: 'Mounted to the left of the mudroom door beneath the covered awning.' },
-  { title: 'Wake the lock', detail: 'Tap ✷ to wake, enter the code, then press # within 5 seconds.' },
-  { title: 'Locking up', detail: 'When leaving, press ✷ once. Wait for the green flash + chime before walking away.' },
-];
-
-const DEFAULT_BACKUP_STEPS: DoorCodeInstruction[] = [
-  { title: 'Backup lockbox', detail: 'Code 7711 · mounted behind the propane cover near the wood shed.' },
-  { title: 'Manual key', detail: 'Key inside lockbox – please return it immediately after use.' },
-];
-
-const DEFAULT_SECURITY_NOTES = [
-  'Disarm the panel in the entry hall within 60 seconds of unlocking.',
-  'Always lock doors when you head out – elk are oddly talented with levers.',
-];
+/** Entry details built only from what's stored on the property; nothing is invented. */
+export function buildAccessDetails(property: PropertyAccess) {
+  const entrySteps: DoorCodeInstruction[] = [];
+  if (property.lockboxCode && property.garageCode) {
+    entrySteps.push({ title: 'Garage code', detail: property.garageCode });
+  }
+  if (property.skiLockerDoorCode) {
+    entrySteps.push({ title: 'Ski locker room door', detail: `Code ${property.skiLockerDoorCode}` });
+  }
+  if (property.skiLockerNumber || property.skiLockerCode) {
+    entrySteps.push({
+      title: 'Ski locker',
+      detail: [property.skiLockerNumber && `Locker ${property.skiLockerNumber}`, property.skiLockerCode && `code ${property.skiLockerCode}`]
+        .filter(Boolean)
+        .join(' · '),
+    });
+  }
+  const parkingInfo: DoorCodeInstruction[] = property.parkingNotes?.trim()
+    ? [{ title: 'Where to park', detail: property.parkingNotes.trim() }]
+    : [];
+  return { entrySteps, parkingInfo };
+}
 
 interface SendDoorCodeOptions {
   doorCode: string;
+  codeLabel?: string;
   codeValidWindow?: string;
   arrivalWindow?: string;
   parkingInfo?: DoorCodeInstruction[];
@@ -73,7 +80,7 @@ export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCode
 
   if (!options.force) {
     const alreadySent = await prisma.emailLog.findFirst({
-      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT' },
+      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
     });
 
     if (alreadySent) {
@@ -86,24 +93,33 @@ export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCode
   const stayDates = formatStayDates(checkIn, checkOut);
   const supportEmail = resolveHostSupportEmail(booking);
 
+  const access = buildAccessDetails(booking.property);
+  const wifi =
+    options.wifi ??
+    (booking.property.wifiSsid && booking.property.wifiPassword
+      ? { network: booking.property.wifiSsid, password: booking.property.wifiPassword }
+      : undefined);
+  const checkInTime = booking.property.checkInTime?.trim();
+
   const html = await renderEmail(
     <DoorCodeEmail
       guestName={booking.guestName}
       propertyName={booking.property.name}
       arrivalDate={formatDateForEmail(checkIn)}
-      arrivalWindow={options.arrivalWindow ?? 'Self check-in · After 16:00'}
+      arrivalWindow={options.arrivalWindow ?? (checkInTime ? `Self check-in from ${checkInTime}` : 'Self check-in')}
       doorCode={options.doorCode}
-      codeValidWindow={options.codeValidWindow ?? `Active ${formatDateForEmail(checkIn)} 12:00 – ${formatDateForEmail(checkOut)} 12:00`}
-      parkingInfo={options.parkingInfo ?? DEFAULT_PARKING}
-      entrySteps={options.entrySteps ?? DEFAULT_ENTRY_STEPS}
-      wifi={options.wifi}
-      backupPlan={options.backupPlan ?? DEFAULT_BACKUP_STEPS}
-      securityNotes={options.securityNotes ?? DEFAULT_SECURITY_NOTES}
+      codeLabel={options.codeLabel ?? (booking.property.lockboxCode ? 'Lockbox code' : 'Entry code')}
+      codeValidWindow={options.codeValidWindow}
+      parkingInfo={options.parkingInfo ?? access.parkingInfo}
+      entrySteps={options.entrySteps ?? access.entrySteps}
+      wifi={wifi}
+      backupPlan={options.backupPlan}
+      securityNotes={options.securityNotes}
       support={{
         email: supportEmail,
         phone: options.supportPhone,
         concierge: options.conciergePhone,
-        note: options.supportNote ?? `Reference booking ${bookingReference} (${stayDates}) if you call or text.`,
+        note: options.supportNote ?? `Reference booking ${bookingReference} (${stayDates}) when you contact us.`,
       }}
     />,
   );

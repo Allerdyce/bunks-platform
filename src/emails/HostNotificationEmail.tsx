@@ -36,7 +36,7 @@ export function HostNotificationEmail(props: HostNotificationEmailProps) {
       footerText="Keep delighting guests — the Bunks crew is here when you need us."
     >
       <Heading className="text-2xl font-semibold">
-        New booking locked in {hostName ? `, ${hostName}` : ''}!
+        New booking locked in{hostName ? `, ${hostName}` : ''}!
       </Heading>
       <Text className="mt-2 text-base text-[#475467]">
         {guestName} just confirmed {nights} night{nights === 1 ? '' : 's'} at {propertyName}. Here are the details so you can prep with ease.
@@ -55,7 +55,7 @@ export function HostNotificationEmail(props: HostNotificationEmailProps) {
         </Row>
         <Row className="mt-4">
           <Column>
-            <Text className="text-sm font-semibold text-[#7F56D9]">Payout</Text>
+            <Text className="text-sm font-semibold text-[#7F56D9]">Guest paid (incl. fees &amp; taxes)</Text>
             <Text className="text-base text-[#1D2939]">{totalPayout}</Text>
           </Column>
           {calendarUrl && (

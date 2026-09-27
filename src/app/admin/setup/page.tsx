@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CalendarCheck } from "@/components/admin/CalendarCheck";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
@@ -58,8 +59,8 @@ const TEXT_FIELDS: {
   label: string;
   placeholder?: string;
 }[] = [
-  { key: "checkInTime", label: "Check-in time", placeholder: "4:00 PM" },
-  { key: "checkOutTime", label: "Check-out time", placeholder: "10:00 AM" },
+  { key: "checkInTime", label: "Check-in time", placeholder: "3:00 PM (used if left blank)" },
+  { key: "checkOutTime", label: "Check-out time", placeholder: "10:00 AM (used if left blank)" },
   {
     key: "hostSupportEmail",
     label: "Guest support email",
@@ -127,6 +128,12 @@ function PropertySetupCard({
         throw new Error((data as { error?: string }).error || "Save failed");
       setStatus({ type: "success", text: "Saved" });
       onSaved();
+      // A new or changed Airbnb link is imported straight away, so any problem shows up now.
+      if ((form.airbnbIcalUrl ?? "").trim() && (form.airbnbIcalUrl ?? "") !== (initial.airbnbIcalUrl ?? "")) {
+        setSaving(false);
+        await handleSync();
+        return;
+      }
     } catch (err) {
       setStatus({ type: "error", text: (err as Error).message });
     } finally {
@@ -134,19 +141,32 @@ function PropertySetupCard({
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (allowEmpty = false) => {
     setSyncing(true);
     setStatus(null);
     try {
       const res = await fetch(`/api/properties/${form.slug}/sync-ical`, {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowEmpty }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         nights?: number;
         reason?: string;
       };
+      if (res.status === 409 && data.reason === "EMPTY_FEED" && !allowEmpty) {
+        const confirmed = window.confirm(
+          "Airbnb's calendar now shows no upcoming reservations, but Bunks still has upcoming Airbnb nights blocked.\n\n" +
+            "If you've checked Airbnb and it really has no upcoming reservations, press OK to clear them. Otherwise press Cancel.",
+        );
+        if (confirmed) {
+          setSyncing(false);
+          return handleSync(true);
+        }
+        throw new Error("Kept the existing Airbnb blocks.");
+      }
       if (!res.ok) throw new Error(data.error || data.reason || "Sync failed");
       setStatus({
         type: "success",
@@ -205,21 +225,30 @@ function PropertySetupCard({
             className="text-sm font-medium text-gray-700"
             htmlFor={`ical-${form.id}`}
           >
-            2. Airbnb calendar link (Airbnb → Calendar → Availability → Connect
-            calendars → Export)
+            2. Calendars to import: every Airbnb listing for this home, plus Vrbo
+            or others. One link per line (Airbnb → Calendar → Availability →
+            Connect calendars → Export).
           </label>
-          <input
+          <textarea
             id={`ical-${form.id}`}
             value={form.airbnbIcalUrl ?? ""}
             onChange={(e) => set("airbnbIcalUrl", e.target.value)}
-            placeholder="https://www.airbnb.com/calendar/ical/….ics?s=…"
-            className={inputClass}
+            placeholder={"https://www.airbnb.com/calendar/ical/….ics?t=…\nhttps://www.vrbo.com/icalendar/….ics"}
+            rows={3}
+            className={`${inputClass} font-mono text-xs`}
           />
           <p className="mt-1 text-xs text-gray-500">
-            {initial.airbnbImportConfigured
-              ? `Connected · ${initial.upcomingAirbnbNights} upcoming Airbnb nights imported`
-              : "Not connected: Airbnb bookings are not being imported."}
+            {!initial.airbnbImportConfigured
+              ? "Not connected: Airbnb bookings are not being imported."
+              : initial.upcomingAirbnbNights > 0
+                ? `Connected · ${initial.upcomingAirbnbNights} upcoming Airbnb nights imported`
+                : "Link saved, but no upcoming Airbnb nights have been imported. Press “Sync now”: if it shows an error, copy a fresh link from Airbnb."}
           </p>
+          {initial.airbnbImportConfigured && (
+            <div className="mt-3">
+              <CalendarCheck slug={form.slug} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -370,7 +399,7 @@ function PropertySetupCard({
         </button>
         <button
           type="button"
-          onClick={handleSync}
+          onClick={() => handleSync()}
           disabled={syncing || !initial.airbnbImportConfigured}
           className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >

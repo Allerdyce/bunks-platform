@@ -67,7 +67,8 @@ const calculateNights = (range: DateRange) => {
   if (diff <= 0) {
     return 0;
   }
-  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  // round, not ceil: a stay spanning the DST change is 23h/25h per night.
+  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
 };
 
 const formatRangeSummary = (range: DateRange) => {
@@ -177,6 +178,7 @@ export function PropertyDetailView({
   }, [bookingDates, property.slug, guestCount]);
 
   const [minStay, setMinStay] = useState<Record<string, number>>({});
+  const [calendarError, setCalendarError] = useState(false);
 
   // Fetch blocked dates on mount
   useEffect(() => {
@@ -188,9 +190,11 @@ export function PropertyDetailView({
         if (isMounted) {
           setBlockedDates(dates);
           setMinStay(minStayData);
+          setCalendarError(false);
         }
       } catch (e) {
         console.error("Failed to fetch blocked dates", e);
+        if (isMounted) setCalendarError(true);
       }
     };
     loadBlockedDates();
@@ -707,6 +711,12 @@ export function PropertyDetailView({
               View blocked nights below. Tap anywhere on the calendar to open
               the interactive picker and lock your stay.
             </p>
+            {calendarError && (
+              <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+                We couldn&apos;t load live availability. Dates may already be
+                taken; we&apos;ll confirm before you pay.
+              </p>
+            )}
             <div className="relative mt-4">
               <Calendar
                 selectedRange={bookingDates}
@@ -750,6 +760,12 @@ export function PropertyDetailView({
                 {canBook && (
                   <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">
                     Direct booking rate
+                  </p>
+                )}
+                {canBook && quote && (
+                  <p className="text-sm text-gray-600">
+                    {formatCurrency(displayTotal)} total for {confirmedNights}{" "}
+                    {confirmedNights === 1 ? "night" : "nights"}, incl. fees and taxes
                   </p>
                 )}
               </div>
@@ -859,6 +875,12 @@ export function PropertyDetailView({
               </button>
             </div>
             <div className="px-4 py-4 overflow-y-auto max-h-[60vh] sm:max-h-[70vh]">
+            {calendarError && (
+              <p role="alert" className="mb-3 text-sm font-medium text-red-700">
+                We couldn&apos;t load live availability. Dates may already be
+                taken; we&apos;ll confirm before you pay.
+              </p>
+            )}
               <Calendar
                 selectedRange={pendingRange}
                 blockedDates={blockedDates}

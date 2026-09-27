@@ -61,9 +61,23 @@ export function formatStayDates(checkIn: Date, checkOut: Date) {
     return `${start} – ${end}, ${year}`;
   }
 
-  return `${start}, ${checkIn.getFullYear()} – ${end}, ${year}`;
+  return `${start}, ${checkIn.getUTCFullYear()} – ${end}, ${year}`;
 }
 
 export function resolveBookingReference(booking: Pick<Booking, 'id' | 'publicReference'>) {
   return booking.publicReference ?? `B-${booking.id}`;
+}
+
+type StayTimesSource = { checkInTime?: string | null; checkOutTime?: string | null };
+type OpsTimes = { checkInWindow?: string | null; checkOutTime?: string | null };
+
+/** Guest-facing check-in/out labels: the property's own times first, then the ops profile. */
+export function stayTimeLabels(property: StayTimesSource, ops?: OpsTimes) {
+  const checkInTime = property.checkInTime?.trim();
+  const checkOutTime = property.checkOutTime?.trim();
+  return {
+    checkIn: checkInTime ? `Check-in from ${checkInTime}` : ops?.checkInWindow || 'Check-in from 3:00 p.m.',
+    checkOut: checkOutTime ? `Checkout by ${checkOutTime}` : ops?.checkOutTime || 'Checkout by 10:00 a.m.',
+    checkOutTime: checkOutTime || '10:00 a.m.',
+  };
 }

@@ -1,3 +1,4 @@
+import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -10,6 +11,7 @@ import {
   logEmailSend,
 } from '@/lib/email';
 import { ReceiptEmail } from '@/emails/ReceiptEmail';
+import { bookingChargeLines } from '@/lib/pricing/breakdown';
 
 const EMAIL_TYPE = 'RECEIPT' as const;
 
@@ -26,30 +28,11 @@ async function hasReceiptAlreadySent(bookingId: number) {
       bookingId,
       type: EMAIL_TYPE,
       status: 'SENT',
+      ...notAClaim,
     },
   });
 
   return Boolean(log);
-}
-
-function buildLineItems(totalCents: number, cleaningFeeCents: number, serviceFeeCents: number, nights: number) {
-  const staySubtotal = Math.max(totalCents - cleaningFeeCents - serviceFeeCents, 0);
-  const items = [
-    {
-      label: `Nightly rate · ${nights} night${nights === 1 ? '' : 's'}`,
-      amount: formatCurrencyFromCents(staySubtotal),
-    },
-  ];
-
-  if (cleaningFeeCents > 0) {
-    items.push({ label: 'Cleaning fee', amount: formatCurrencyFromCents(cleaningFeeCents) });
-  }
-
-  if (serviceFeeCents > 0) {
-    items.push({ label: 'Service fee', amount: formatCurrencyFromCents(serviceFeeCents) });
-  }
-
-  return items;
 }
 
 export async function sendReceiptEmail(bookingId: number, options: SendReceiptOptions = {}) {
@@ -73,9 +56,16 @@ export async function sendReceiptEmail(bookingId: number, options: SendReceiptOp
   const checkOut = new Date(booking.checkOutDate);
   const nights = calculateNights(checkIn, checkOut);
   const stayDates = formatStayDates(checkIn, checkOut);
-  const cleaningFeeCents = booking.property.cleaningFee ?? 0;
-  const serviceFeeCents = booking.property.serviceFee ?? 0;
-  const lineItems = buildLineItems(booking.totalPriceCents, cleaningFeeCents, serviceFeeCents, nights);
+  // Itemise only when the pricing rules reproduce the amount actually charged.
+  const chargeLines = await bookingChargeLines(booking);
+  const lineItems = chargeLines
+    ? chargeLines.map((line) => ({ label: line.label, amount: formatCurrencyFromCents(line.amountCents) }))
+    : [
+        {
+          label: `Stay · ${nights} night${nights === 1 ? '' : 's'} (incl. fees and taxes)`,
+          amount: formatCurrencyFromCents(booking.totalPriceCents),
+        },
+      ];
 
   const html = await renderEmail(
     <ReceiptEmail

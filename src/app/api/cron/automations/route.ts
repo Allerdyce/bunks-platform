@@ -1,3 +1,6 @@
+import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
+import { resolveDoorCode } from '@/lib/email/doorCodeDelivery';
+import { resolvePropertyTimeZone } from '@/lib/stayRules';
 import { NextResponse } from 'next/server';
 import type { Booking, EmailType, Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -13,6 +16,10 @@ import {
   sendReviewRequest,
   sendMidStayCheckIn,
   sendDoorCodeEmail,
+  sendReceiptEmail,
+  sendBookingConfirmation,
+  sendBookingWelcomeEmail,
+  sendHostNotification,
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
 import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
@@ -174,6 +181,7 @@ async function runAutomations(request: Request) {
   for (const job of DAILY_JOBS.filter((entry) => !PAUSED_EMAIL_TYPES.has(entry.type))) {
     summary[job.key] = await runDailyJob(job, bookings, now, opsDetails);
   }
+  summary.confirmationCatchUp = await catchUpConfirmationEmails(now);
   summary.wifiBookDirect = await handleWiFiBookDirect(now);
 
   return NextResponse.json({ ok: true, ranAt: now.toISOString(), summary });
@@ -208,10 +216,26 @@ async function runDailyJob(
       continue;
     }
 
+    // Claim first so an overlapping run (retry, manual trigger) can't send it twice.
+    const target = { type: job.type, to: booking.guestEmail, bookingId: booking.id };
+    const claimId = await claimEmail(target);
+    if (claimId === null) {
+      summary.skipped += 1;
+      continue;
+    }
+
     try {
-      await job.send(booking, opsDetails);
+      const result = await job.send(booking, opsDetails);
+      if (result === null || result === undefined) {
+        // Nothing sent (e.g. no door code yet): release so a later run can send it.
+        await releaseClaim(claimId);
+        summary.skipped += 1;
+        continue;
+      }
+      await completeClaim(claimId, target);
       summary.sent += 1;
     } catch (error) {
+      await releaseClaim(claimId);
       summary.errors += 1;
       console.error(`[cron][${job.type}] Failed to send automation`, { bookingId: booking.id, error });
     }
@@ -222,32 +246,6 @@ async function runDailyJob(
 
 function anchorDate(booking: Booking, anchor: Anchor) {
   return anchor === 'checkIn' ? booking.checkInDate : booking.checkOutDate;
-}
-
-function resolveDoorCode(property: Property) {
-  return property.lockboxCode || property.garageCode || property.skiLockerDoorCode || null;
-}
-
-// Property.timezone defaults to "Europe/London" in the schema, which is wrong for every listing.
-function resolvePropertyTimeZone(property: Pick<Property, 'timezone' | 'slug'>) {
-  const tz = property.timezone?.trim();
-  if (tz && tz !== 'Europe/London' && isValidTimeZone(tz)) {
-    return tz;
-  }
-  const slug = property.slug.toLowerCase();
-  if (slug.startsWith('summerland')) {
-    return 'America/Los_Angeles';
-  }
-  return 'America/Denver';
-}
-
-function isValidTimeZone(timeZone: string) {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // Stay dates are stored as UTC midnight of the calendar date → day number from the UTC date parts.
@@ -282,6 +280,51 @@ async function fetchSentMap(type: EmailType, bookingIds: number[]) {
   });
 
   return new Set(logs.map((log) => log.bookingId ?? 0));
+}
+
+// Booking emails are sent by the Stripe webhook. If that send failed (email provider down,
+// function timeout), Stripe's retry sees the booking already PAID and won't resend, so catch
+// them up here for recent bookings. Skip the last hour so we never race an in-flight webhook.
+const CONFIRMATION_EMAILS: Array<{ type: EmailType; send: (bookingId: number) => Promise<unknown> }> = [
+  { type: 'RECEIPT', send: (id) => sendReceiptEmail(id) },
+  { type: 'BOOKING_CONFIRMATION', send: (id) => sendBookingConfirmation(id) },
+  { type: 'BOOKING_WELCOME', send: (id) => sendBookingWelcomeEmail(id) },
+  { type: 'HOST_NOTIFICATION', send: (id) => sendHostNotification(id) },
+];
+
+async function catchUpConfirmationEmails(now: Date): Promise<BatchSummary> {
+  const bookings = await prisma.booking.findMany({
+    where: {
+      status: 'PAID',
+      createdAt: { gte: new Date(now.getTime() - 7 * DAY_IN_MS), lte: new Date(now.getTime() - 60 * 60_000) },
+      checkOutDate: { gte: now },
+    },
+    select: { id: true, guestEmail: true },
+  });
+  const summary: BatchSummary = { total: 0, sent: 0, skipped: 0, errors: 0 };
+  for (const booking of bookings) {
+    for (const email of CONFIRMATION_EMAILS) {
+      const target = { type: email.type, to: booking.guestEmail, bookingId: booking.id };
+      const claimId = await claimEmail(target);
+      if (claimId === null) continue; // already sent
+      summary.total += 1;
+      try {
+        const result = await email.send(booking.id);
+        if (result === null || result === undefined) {
+          await releaseClaim(claimId);
+          summary.skipped += 1;
+          continue;
+        }
+        await completeClaim(claimId, target);
+        summary.sent += 1;
+      } catch (error) {
+        await releaseClaim(claimId);
+        summary.errors += 1;
+        console.error(`[cron][catch-up] Failed to send ${email.type}`, { bookingId: booking.id, error });
+      }
+    }
+  }
+  return summary;
 }
 
 const WIFI_CAMPAIGN_DELAY_DAYS = 14;
@@ -365,23 +408,22 @@ async function handleWiFiBookDirect(now: Date): Promise<BatchSummary> {
       continue;
     }
 
+    const target = { type: 'CAMPAIGN_BOOK_DIRECT_WIFI' as const, to: user.email };
+    const claimId = await claimEmail(target);
+    if (claimId === null) {
+      summary.skipped += 1;
+      continue;
+    }
+
     try {
       await sendWifiLeadCampaign({
         email: user.email,
         name: user.name && user.name !== LEGACY_WIFI_USER_NAME ? user.name : undefined,
       });
-
-      await prisma.emailLog.create({
-        data: {
-          to: user.email,
-          type: 'CAMPAIGN_BOOK_DIRECT_WIFI',
-          status: 'SENT',
-          sentAt: new Date(),
-        },
-      });
-
+      await completeClaim(claimId, target);
       summary.sent += 1;
     } catch (error) {
+      await releaseClaim(claimId);
       summary.errors += 1;
       console.error('[cron][wifi-campaign] Failed to send', { email: user.email, error });
     }

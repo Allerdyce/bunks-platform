@@ -4,18 +4,14 @@ import { logEmailSend, renderEmail, sendEmail } from "@/lib/email";
 import { NewMessageHostEmail } from "@/emails/NewMessageHostEmail";
 import { NewMessageGuestEmail } from "@/emails/NewMessageGuestEmail";
 import { OPS_ALERT_EMAIL } from "@/lib/contact";
+import { toAbsoluteUrl } from "@/lib/url";
 
 const DEFAULT_HOST_EMAIL = process.env.MESSAGING_HOST_FALLBACK_EMAIL ?? OPS_ALERT_EMAIL;
-const HOST_PORTAL_URL = process.env.HOST_PORTAL_URL ?? "https://bunks.com/admin";
-const GUEST_PORTAL_URL = process.env.GUEST_PORTAL_URL ?? "https://bunks.com/manage";
+const HOST_PORTAL_URL = process.env.HOST_PORTAL_URL ?? toAbsoluteUrl("/admin/messages") ?? "https://bunks.com/admin/messages";
+const GUEST_PORTAL_URL = process.env.GUEST_PORTAL_URL ?? toAbsoluteUrl("/my-trips") ?? "https://bunks.com/my-trips";
 
-const buildGuestPortalUrl = (booking: MessagingBooking) => {
-  if (booking.publicReference) {
-    const params = new URLSearchParams({ reference: booking.publicReference });
-    return `${GUEST_PORTAL_URL}?${params.toString()}`;
-  }
-  return `${GUEST_PORTAL_URL}?bookingId=${booking.id}`;
-};
+const buildGuestPortalUrl = (booking: MessagingBooking) =>
+  booking.publicReference ? `${GUEST_PORTAL_URL}/${booking.publicReference}` : GUEST_PORTAL_URL;
 
 type NotificationArgs = {
   booking: MessagingBooking;
@@ -23,7 +19,7 @@ type NotificationArgs = {
   conversationId: number;
 };
 
-export async function sendHostMessageNotification({ booking, messageBody, conversationId }: NotificationArgs) {
+export async function sendHostMessageNotification({ booking, messageBody }: NotificationArgs) {
   const to = booking.property.hostSupportEmail ?? DEFAULT_HOST_EMAIL;
   if (!to) {
     return;
@@ -35,7 +31,7 @@ export async function sendHostMessageNotification({ booking, messageBody, conver
       propertyName={booking.property.name}
       messageBody={messageBody}
       bookingReference={booking.publicReference ?? String(booking.id)}
-      conversationUrl={`${HOST_PORTAL_URL}?bookingId=${booking.id}&tab=messages&conversationId=${conversationId}`}
+      conversationUrl={`${HOST_PORTAL_URL}?bookingId=${booking.id}`}
     />,
   );
 

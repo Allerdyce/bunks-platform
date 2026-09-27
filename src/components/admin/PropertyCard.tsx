@@ -9,6 +9,15 @@ import {
   Trash2,
 } from "lucide-react";
 import type { AdminProperty, DateRange } from "@/types";
+import { formatStayDate } from "@/lib/availability";
+
+// The picker's end date is the checkout day, so the last night overridden is the day before it.
+const lastNightOf = (range: DateRange) => {
+  if (!range.start || !range.end) return range.start;
+  const last = new Date(range.end);
+  last.setDate(last.getDate() - 1);
+  return last < range.start ? range.start : last;
+};
 
 const Calendar = dynamic(
   () => import("@/components/shared/Calendar").then((mod) => mod.Calendar),
@@ -157,8 +166,6 @@ export function PropertyCard({
     }
   };
 
-  const formatDateInput = (date: Date | null) =>
-    date ? date.toISOString().split("T")[0] : "";
 
   const handleSpecialSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
@@ -181,10 +188,8 @@ export function PropertyCard({
     setSavingSpecial(true);
     try {
       await onSaveSpecial(property.id, {
-        startDate: formatDateInput(specialRange.start),
-        endDate: specialRange.end
-          ? formatDateInput(specialRange.end)
-          : undefined,
+        startDate: formatStayDate(specialRange.start),
+        endDate: formatStayDate(lastNightOf(specialRange) ?? specialRange.start),
         price: specialForm.isBlocked ? undefined : priceValue,
         note: specialForm.note,
         isBlocked: specialForm.isBlocked,
@@ -263,10 +268,10 @@ export function PropertyCard({
         day: "numeric",
       });
     if (specialRange.start && specialRange.end) {
-      return `${format(specialRange.start)} → ${format(specialRange.end)}`;
+      return `Nights of ${format(specialRange.start)} → ${format(lastNightOf(specialRange))}`;
     }
     return format(specialRange.start);
-  }, [specialRange.end, specialRange.start]);
+  }, [specialRange]);
 
   const formatOverrideRange = (group: OverrideGroup) =>
     group.endDate && group.endDate !== group.startDate
@@ -391,7 +396,7 @@ export function PropertyCard({
                   </p>
                   <p className="text-xs text-gray-500">
                     {specialRange.end
-                      ? "Inclusive of all nights"
+                      ? `Checkout ${specialRange.end.toLocaleDateString("en-US", { month: "short", day: "numeric" })} is not included`
                       : specialRange.start
                         ? "Tap to set checkout"
                         : "Tap to choose dates"}

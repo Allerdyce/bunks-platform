@@ -18,9 +18,19 @@ export function parseStayDate(value: unknown): Date | null {
   if (typeof value !== "string") return null;
   const match = DATE_ONLY.exec(value.trim());
   if (!match) return null;
-  const [, y, m, d] = match;
-  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
-  return Number.isNaN(date.getTime()) ? null : date;
+  const [year, month, day] = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Reject dates that roll over (2026-02-30 → Mar 2) and implausible years.
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    year < 2000 ||
+    year > 2100
+  ) {
+    return null;
+  }
+  return date;
 }
 
 export const toISODate = (date: Date) => date.toISOString().slice(0, 10);

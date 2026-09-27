@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 import { BunksApp } from "@/components/BunksApp";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 
@@ -56,8 +57,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PropertyPage({ params }: PageProps) {
   // Pre-fetch properties to ensure cache is primed or available
   const properties = await fetchMarketingProperties();
-  // We use params to ensure the slug is valid, although BunksApp reads from URL/props
-  await params;
+  const { slug } = await params;
+  if (!properties.some((property) => property.slug === slug)) {
+    notFound();
+  }
 
   // Note: BunksApp (Client Component) handles the actual rendering and "selectedProperty" state.
   // We pass the properties array, but the specific selection happens via URL state in BunksApp.

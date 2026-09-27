@@ -9,6 +9,11 @@ import {
   isRangeValid,
 } from "@/lib/availability";
 
+
+// Whole nights between two local-midnight dates. Rounds so the DST change (23h/25h days) doesn't add a night.
+const nightsBetweenLocal = (from: Date, to: Date) =>
+  Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+
 interface CalendarProps {
   blockedDates?: string[];
   minStay?: Record<string, number>;
@@ -76,9 +81,7 @@ export function Calendar({
     // If selecting end date:
     // Check if `date` satisfies minStay from `startDate`
     const requiredNights = getMinStayForDate(startDate);
-    const nights = Math.ceil(
-      (date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const nights = nightsBetweenLocal(startDate, date);
     return nights < requiredNights && date > startDate;
   };
 
@@ -107,9 +110,7 @@ export function Calendar({
 
     // Check min stay constraints
     const requiredNights = getMinStayForDate(startDate);
-    const nights = Math.ceil(
-      (clickedDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const nights = nightsBetweenLocal(startDate, clickedDate);
     if (nights < requiredNights) {
       // Don't alert, just ignore as it should be disabled visually or show tooltip
       return;
@@ -158,6 +159,8 @@ export function Calendar({
                   )
                 }
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                aria-label="Previous month"
+                type="button"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -172,6 +175,8 @@ export function Calendar({
                   )
                 }
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                aria-label="Next month"
+                type="button"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -273,9 +278,17 @@ export function Calendar({
                 )}
 
                 <button
+                  type="button"
                   onClick={() => handleDateClick(day, referenceDate)}
                   disabled={blocked || isRestricted}
                   className={buttonClass}
+                  aria-label={`${normalized.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}${blocked ? ", unavailable" : isRestricted ? `, below ${getMinStayForDate(startDate ?? normalized)}-night minimum` : ""}`}
+                  aria-pressed={Boolean(isStart || isEnd)}
                 >
                   {day}
                 </button>

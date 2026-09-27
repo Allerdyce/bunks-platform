@@ -22,12 +22,38 @@ const sanitizeOptionalString = (value: unknown) => {
   return trimmed.length ? trimmed : null;
 };
 
+// Values written by an early version of prisma/seed.mjs. They are fictional (555 numbers, a
+// made-up concierge and property code, links to pages that don't exist), so they must never
+// reach a guest: treat them as unset wherever they are read.
+const SEED_PLACEHOLDER_VALUES = new Set([
+  '+1 (970) 555-0119',
+  '+1 (970) 555-0124',
+  '+1 (970) 555-0101',
+  'ops@bunks.com',
+  '07:00–22:00 MT',
+  'Priya',
+  'Slack #host-support',
+  'Add-on escalations',
+  'Share property code 8821',
+  'Check-in after 16:00',
+  'Checkout by 10:00',
+]);
+const isSeedPlaceholder = (value: unknown) =>
+  typeof value === 'string' &&
+  (SEED_PLACEHOLDER_VALUES.has(value.trim()) || /bunks\.com\/\?property=[^/]+\//.test(value));
+
+const withoutSeedPlaceholders = <T extends Record<string, unknown>>(values: T, defaults: Record<string, unknown>): T =>
+  Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [key, isSeedPlaceholder(value) ? (defaults[key] ?? null) : value]),
+  ) as T;
+
 const normalizeRecord = (record?: OpsContactProfile | null): OpsDetails => {
   if (!record) {
     return { ...DEFAULT_OPS_DETAILS };
   }
 
-  const { id, createdAt, updatedAt, ...rest } = record;
+  const { id, createdAt, updatedAt, ...stored } = record;
+  const rest = withoutSeedPlaceholders(stored, DEFAULT_OPS_DETAILS);
   return {
     ...DEFAULT_OPS_DETAILS,
     ...rest,
@@ -50,7 +76,8 @@ export function parseOpsDetailsPayload(payload: unknown): OpsDetailsInput {
 
   for (const field of REQUIRED_OPS_FIELDS) {
     const value = sanitizeString(data[field]);
-    if (!value) {
+    // Only the support email is truly required; blank phone lines are omitted from guest emails.
+    if (!value && field === 'supportEmail') {
       throw new Error(`Field "${field}" is required.`);
     }
     setField(field, value as OpsDetailsInput[typeof field]);
@@ -155,9 +182,9 @@ export function buildReferenceLinks(details: OpsDetails, options: ReferenceLinkO
     links.push({ label, href: absoluteHref, description });
   };
 
-  addLink('Open live instructions', options.checkInGuideUrl ?? details.liveInstructionsUrl, 'Smart lock, parking, and Wi-Fi details.');
-  addLink('Door codes & arrival notes', details.doorCodesDocUrl, 'Always-current smart lock codes and arrival notes.');
-  addLink('Arrival overview', details.arrivalNotesUrl, 'Route tips, parking plans, and contingency steps.');
+  addLink('Open live instructions', options.checkInGuideUrl ?? details.liveInstructionsUrl, 'Entry, parking and Wi-Fi details.');
+  addLink('Door codes & arrival notes', details.doorCodesDocUrl, 'Your entry codes and arrival notes.');
+  addLink('Arrival overview', details.arrivalNotesUrl, 'Directions and parking.');
   addLink('Browse recommendations', details.recommendationsUrl, 'Food, adventure, and family-friendly picks.');
   addLink('Open the guest book', options.guestBookUrl ?? details.guestBookUrl, 'FAQs, itineraries, and local intel.');
 

@@ -6,6 +6,8 @@ import { sendCancellationConfirmation } from "@/lib/email/sendCancellationConfir
 import { sendHostGuestCancelled } from "@/lib/email/sendHostGuestCancelled";
 import { getStripeClient } from "@/lib/stripe";
 import { releaseBookingNights } from "@/lib/bookingAvailability";
+import { formatStayDates, resolveHostSupportEmail } from "@/lib/email/helpers";
+import { resolvePropertyTimeZone } from "@/lib/stayRules";
 
 export const runtime = "nodejs";
 
@@ -43,6 +45,18 @@ export async function POST(
         // Refund: "full" (default, e.g. host cancels), "none", or an amount in cents.
         const body = (await request.json().catch(() => ({}))) as { refund?: "full" | "none" | number };
         const refundRequest = body.refund ?? "full";
+        // Reject anything that isn't "full", "none" or a whole number of cents, rather than
+        // cancelling with a silent $0 refund on a typo.
+        if (
+            refundRequest !== "full" &&
+            refundRequest !== "none" &&
+            !(typeof refundRequest === "number" && Number.isInteger(refundRequest) && refundRequest >= 0)
+        ) {
+            return NextResponse.json(
+                { error: 'Refund must be "full", "none" or an amount in cents.' },
+                { status: 400 }
+            );
+        }
         let refundCents = 0;
         if (booking.status === "PAID" && booking.stripePaymentIntentId.startsWith("pi_")) {
             refundCents =
@@ -50,7 +64,7 @@ export async function POST(
                     ? booking.totalPriceCents
                     : refundRequest === "none"
                         ? 0
-                        : Math.max(0, Math.min(Math.round(Number(refundRequest)), booking.totalPriceCents));
+                        : Math.min(refundRequest, booking.totalPriceCents);
         }
 
         if (refundCents > 0) {
@@ -60,63 +74,80 @@ export async function POST(
                 { idempotencyKey: `cancel-refund-${booking.id}-${refundCents}` }
             );
         } else if (booking.status === "PENDING" && booking.stripePaymentIntentId.startsWith("pi_")) {
-            await getStripeClient().paymentIntents.cancel(booking.stripePaymentIntentId).catch(() => undefined);
+            // The guest may have just paid (webhook not processed yet): never release a paid hold.
+            const stripe = getStripeClient();
+            const intent = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
+            if (intent.status === "succeeded" || intent.status === "processing") {
+                return NextResponse.json(
+                    { error: "This guest's payment has just gone through. Refresh in a minute; it will show as Paid." },
+                    { status: 409 }
+                );
+            }
+            if (intent.status !== "canceled") {
+                await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
+            }
         }
         const refundLabel = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(refundCents / 100);
 
-        // 2. Cancellation Logic
-        /*
-           - Update Status
-           - Clear blocked dates
-        */
-
-        // Start transaction
-        await prisma.$transaction(async (tx) => {
-            // Update status
-            await tx.booking.update({
-                where: { id: booking.id },
+        // Cancel only if the status hasn't changed since we read it (e.g. a payment landing mid-cancel).
+        const cancelled = await prisma.$transaction(async (tx) => {
+            const { count } = await tx.booking.updateMany({
+                where: { id: booking.id, status: booking.status },
                 data: { status: "CANCELLED" },
             });
-
+            if (count === 0) return false;
             await releaseBookingNights(booking, tx);
+            return true;
         });
-
-        // 3. Send Emails (Fire and forget or await?)
-        // Better to await to report errors, but don't fail the request if email fails?
-        // We'll await and log errors.
-
-        // Guest Email
-        try {
-            await sendCancellationConfirmation(booking.id, {
-                cancellationInitiator: "Host/Admin",
-                refundTotal: refundLabel,
-                refundMethod: "Original Payment Method",
-                refundTimeline: refundCents > 0 ? "5-10 business days" : "No refund issued",
-                refundLineItems: [{ label: "Refund", amount: refundLabel }],
-            });
-        } catch (e) {
-            console.error("Failed to send guest cancellation email", e);
+        if (!cancelled) {
+            const latest = await prisma.booking.findUnique({ where: { id: booking.id }, select: { status: true } });
+            if (refundCents > 0 && latest?.status === "CANCELLED") {
+                // The refund's own webhook cancelled it first (and emailed the guest about the refund).
+                return NextResponse.json({ ok: true, refundCents });
+            }
+            return NextResponse.json(
+                { error: "This booking just changed (it may have been paid). Refresh and try again." },
+                { status: 409 }
+            );
         }
 
-        // Host Email
-        try {
-            await sendHostGuestCancelled({
-                bookingId: booking.id,
-                hostName: "Host",
-                guestName: booking.guestName,
-                propertyName: booking.property.name,
-                stayDates: `${booking.checkInDate.toLocaleDateString("en-US")} - ${booking.checkOutDate.toLocaleDateString("en-US")} `,
-                cancelledAt: new Date().toLocaleString(),
-                policyApplied: "Host Cancelled",
-                refundSummary: {
-                    guestRefund: refundLabel,
-                    hostPayoutChange: "Pending",
-                    retention: "Pending"
-                },
-                lineItems: [{ label: "Cancellation", amount: "N/A", type: "charge" }],
-            });
-        } catch (e) {
-            console.error("Failed to send host cancellation email", e);
+        // An abandoned checkout (never paid) is just released; there's nothing to tell the guest or host.
+        if (booking.status === "PAID") {
+            try {
+                await sendCancellationConfirmation(booking.id, {
+                    cancellationInitiator: "Host/Admin",
+                    refundTotal: refundLabel,
+                    refundMethod: "Original Payment Method",
+                    refundTimeline: refundCents > 0 ? "5-10 business days" : "No refund issued",
+                    refundLineItems: [{ label: "Refund", amount: refundLabel }],
+                });
+            } catch (e) {
+                console.error("Failed to send guest cancellation email", e);
+            }
+
+            try {
+                await sendHostGuestCancelled({
+                    to: resolveHostSupportEmail(booking),
+                    bookingId: booking.id,
+                    hostName: "Host",
+                    guestName: booking.guestName,
+                    propertyName: booking.property.name,
+                    stayDates: formatStayDates(booking.checkInDate, booking.checkOutDate),
+                    cancelledAt: new Date().toLocaleString("en-US", {
+                        timeZone: resolvePropertyTimeZone(booking.property),
+                        timeZoneName: "short",
+                    }),
+                    policyApplied: "Host Cancelled",
+                    refundSummary: {
+                        guestRefund: refundLabel,
+                        hostPayoutChange: "Pending",
+                        retention: "Pending"
+                    },
+                    lineItems: [{ label: "Cancellation", amount: "N/A", type: "charge" }],
+                });
+            } catch (e) {
+                console.error("Failed to send host cancellation email", e);
+            }
         }
 
         return NextResponse.json({ ok: true, refundCents });

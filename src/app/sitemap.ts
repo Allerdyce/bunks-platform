@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         // Add other static pages if desirable (e.g. /login is protected/irrelevant for SEO usually, but maybe /privacy)
         {
+            url: `${BASE_URL}/owners`,
+            lastModified: new Date(),
+            changeFrequency: "monthly",
+            priority: 0.7,
+        },
+        {
             url: `${BASE_URL}/privacy`,
             lastModified: new Date(),
             changeFrequency: "monthly",

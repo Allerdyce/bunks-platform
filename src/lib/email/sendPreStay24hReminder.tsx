@@ -1,3 +1,5 @@
+import { notAClaim } from '@/lib/email/claims';
+import { stayTimeLabels } from '@/lib/email/helpers';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -29,12 +31,8 @@ function buildChecklist(checkIn: Date, windowLabel: string) {
       detail: `Reply to this email if your arrival time changed. Check-in starts ${formatDateForEmail(checkIn)} · ${windowLabel}.`,
     },
     {
-      label: 'Download guide offline',
-      detail: 'Cell coverage dips near the cabin—save codes and parking info before you depart.',
-    },
-    {
-      label: 'Stage IDs + payment card',
-      detail: 'Have the reservation holder present at arrival if asked.',
+      label: 'Save your check-in details',
+      detail: 'Keep this email and your check-in guide handy in case you lose signal on the way.',
     },
   ];
 }
@@ -63,7 +61,7 @@ export async function sendPreStay24hReminder(
   // Check EmailLog for dedupe once Prisma client is regenerated after schema update
   if (!options.force) {
     const alreadySent = await prisma.emailLog.findFirst({
-      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT' },
+      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
     });
     if (alreadySent) {
       return null;
@@ -80,10 +78,10 @@ export async function sendPreStay24hReminder(
   const guestBookUrl = resolveGuestBookUrl(booking) ?? toAbsoluteUrl(opsDetails.guestBookUrl);
   const referenceLinks = buildReferenceLinks(opsDetails, { checkInGuideUrl, guestBookUrl });
   const supportDirectory = buildSupportDirectory(opsDetails);
-  const checkInWindowLabel = opsDetails.checkInWindow ?? 'Check-in after 16:00';
+  const checkInWindowLabel = stayTimeLabels(booking.property, opsDetails).checkIn;
   const nightsLabel = formatNightsLabel(nights);
 
-  let weatherCallout = options.weatherCallout ?? 'Temps dip to the low 30s after sunset—pack layers and boots.';
+  let weatherCallout = options.weatherCallout ?? 'Check the local forecast before you travel.';
 
   // Attempt dynamic weather fetch
   if (!options.weatherCallout && booking.property.latitude && booking.property.longitude) {
@@ -103,7 +101,7 @@ export async function sendPreStay24hReminder(
       roadStatus={options.roadStatus ?? 'Check local traffic apps for live updates.'}
       checkInGuideUrl={checkInGuideUrl}
       checkInChecklist={buildChecklist(checkIn, checkInWindowLabel)}
-      outstandingTasks={options.outstandingTasks ?? ['Share ETA via reply if delayed', 'Double-check you packed swim gear for the hot tub']}
+      outstandingTasks={options.outstandingTasks ?? ['Reply with your ETA if your plans change']}
       hostSupportEmail={supportEmail}
       hostSupportPhone={hostSupportPhone}
       supportNote={`Reference booking ${bookingReference} or ${stayDates} when you contact us.`}

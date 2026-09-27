@@ -65,7 +65,7 @@ function CheckoutForm({
     setIsLoading(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
         confirmParams: {
@@ -77,6 +77,19 @@ function CheckoutForm({
         setMessage(
           error.message ?? "Payment failed. Please verify your card details.",
         );
+        return;
+      }
+
+      // Only a completed payment confirms the stay; bank-transfer style methods can sit in
+      // "processing" for days, and the dates aren't held that long.
+      if (paymentIntent?.status === "processing") {
+        setMessage(
+          "Your payment is processing. We'll email you as soon as it clears and your stay is confirmed.",
+        );
+        return;
+      }
+      if (paymentIntent && paymentIntent.status !== "succeeded") {
+        setMessage("Payment wasn't completed. Please try again or use a different card.");
         return;
       }
 
