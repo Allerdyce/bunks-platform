@@ -34,7 +34,7 @@ export function EmailLayout({ previewText, children, footerText }: EmailLayoutPr
               {footerText ?? 'You received this email because you booked a stay with Bunks.'}
             </Text>
             <Text className="mt-2 text-center text-xs text-[#98A2B3]">
-              Bunks · Crafted stays across the mountains
+              Bunks · Homes worth returning to
             </Text>
           </Container>
         </Body>

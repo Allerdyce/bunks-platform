@@ -64,7 +64,9 @@ export function BookingConfirmationEmail(props: BookingConfirmationEmailProps) {
     normalizedCheckInGuide && normalizedGuestBook && normalizedCheckInGuide === normalizedGuestBook,
   );
   const combinedGuideUrl = checkInGuideUrl ?? guestBookUrl;
-  const recommendationsAnchor = guestBookUrl ? appendAnchor(guestBookUrl, 'recommendations') : null;
+  // A PDF guide has no #recommendations section to jump to.
+  const recommendationsAnchor =
+    guestBookUrl && !/\.pdf($|[?#])/i.test(guestBookUrl) ? appendAnchor(guestBookUrl, 'recommendations') : null;
 
   return (
     <EmailLayout previewText={`You&apos;re confirmed for ${propertyName}!`}>

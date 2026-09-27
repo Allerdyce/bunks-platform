@@ -28,7 +28,7 @@ async function main() {
       timezone: 'America/Los_Angeles',
       guestBookUrl: 'https://guestbook.bunks.com/summerland',
       checkInGuideUrl: 'https://guides.bunks.com/summerland/check-in',
-      hostSupportEmail: 'ali@bunks.com',
+      hostSupportEmail: 'alissa@bunks.com',
     },
     {
       name: 'Downtown Steamboat Luxury Townhome',
@@ -43,7 +43,7 @@ async function main() {
       timezone: 'America/Denver',
       guestBookUrl: 'https://guestbook.bunks.com/steamboat',
       checkInGuideUrl: 'https://guides.bunks.com/steamboat/check-in',
-      hostSupportEmail: 'ali@bunks.com',
+      hostSupportEmail: 'alissa@bunks.com',
     },
   ];
 
@@ -74,28 +74,16 @@ async function main() {
     console.log(`✅ Upserted property: ${result.slug}`);
   }
 
+  // Real contact details are entered in Admin → Details; never seed fake phone numbers or names.
   await prisma.opsContactProfile.upsert({
     where: { id: 1 },
     update: {},
     create: {
-      supportEmail: 'ali@bunks.com',
-      supportSmsNumber: '+1 (970) 555-0119',
-      opsEmail: 'ops@bunks.com',
-      opsPhone: '+1 (970) 555-0124',
-      opsDeskPhone: '+1 (970) 555-0101',
-      opsDeskHours: '07:00–22:00 MT',
-      conciergeName: 'Priya',
-      conciergeContact: 'Slack #host-support',
-      conciergeNotes: 'Add-on escalations',
+      supportEmail: 'alissa@bunks.com',
+      supportSmsNumber: '',
+      opsEmail: 'alissa@bunks.com',
+      opsPhone: '',
       emergencyContact: '911',
-      emergencyDetails: 'Share property code 8821',
-      doorCodesDocUrl: 'https://bunks.com/?property=steamboat-downtown-townhome/door-codes',
-      arrivalNotesUrl: 'https://bunks.com/?property=steamboat-downtown-townhome/arrival-notes',
-      liveInstructionsUrl: 'https://bunks.com/?property=steamboat-downtown-townhome/live-instructions',
-      recommendationsUrl: 'https://bunks.com/?property=steamboat-downtown-townhome/recommendations',
-      guestBookUrl: 'https://bunks.com/?property=steamboat-downtown-townhome/guestbook',
-      checkInWindow: 'Check-in after 16:00',
-      checkOutTime: 'Checkout by 10:00',
     },
   });
 

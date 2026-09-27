@@ -41,7 +41,7 @@ export function buildAccessDetails(property: PropertyAccess) {
     });
   }
   const parkingInfo: DoorCodeInstruction[] = property.parkingNotes?.trim()
-    ? [{ title: 'Parking', detail: property.parkingNotes.trim() }]
+    ? [{ title: 'Where to park', detail: property.parkingNotes.trim() }]
     : [];
   return { entrySteps, parkingInfo };
 }
@@ -119,7 +119,7 @@ export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCode
         email: supportEmail,
         phone: options.supportPhone,
         concierge: options.conciergePhone,
-        note: options.supportNote ?? `Reference booking ${bookingReference} (${stayDates}) if you call or text.`,
+        note: options.supportNote ?? `Reference booking ${bookingReference} (${stayDates}) when you contact us.`,
       }}
     />,
   );

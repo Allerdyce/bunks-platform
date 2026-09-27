@@ -164,9 +164,6 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
         </Text>
         {support.note && <Text className="mt-2 text-sm text-[#475467]">{support.note}</Text>}
         <Hr className="my-4 border-[#E4E7EC]" />
-        <Text className="text-xs text-[#98A2B3]">
-          Keep your photo ID handy—our ops team may verify it if the keypad flags anything unusual.
-        </Text>
       </Section>
     </EmailLayout>
   );

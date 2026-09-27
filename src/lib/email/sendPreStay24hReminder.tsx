@@ -34,10 +34,6 @@ function buildChecklist(checkIn: Date, windowLabel: string) {
       label: 'Save your check-in details',
       detail: 'Keep this email and your check-in guide handy in case you lose signal on the way.',
     },
-    {
-      label: 'Stage IDs + payment card',
-      detail: 'Have the reservation holder present at arrival if asked.',
-    },
   ];
 }
 
