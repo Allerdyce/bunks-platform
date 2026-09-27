@@ -46,15 +46,6 @@ export function Footer({ onNavigate }: FooterProps) {
                 About
               </Link>
             </li>
-            <li>
-              <Link
-                href="/?view=journal"
-                onClick={() => onNavigate("journal")}
-                className="transition hover:text-[var(--color-text-primary)]"
-              >
-                Journal
-              </Link>
-            </li>
           </ul>
         </div>
         <div>
