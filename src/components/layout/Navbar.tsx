@@ -78,18 +78,18 @@ export function Navbar({ currentView = "home", bookingSection = null, bookingRef
 
   return (
     <nav className={navContainerClass}>
-      <div className={isBookingView ? "w-full px-4 sm:px-12 lg:px-12" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
-        <div className="flex justify-between h-20 lg:h-24 items-center">
+      <div className="w-full px-4 sm:px-6 lg:px-10">
+        <div className="flex justify-between h-20 lg:h-24 items-center gap-6 lg:grid lg:grid-cols-[1fr_auto_1fr]">
           <Link
             href="/"
-            className="flex-shrink-0 cursor-pointer flex items-center"
+            className="justify-self-start flex-shrink-0 cursor-pointer flex items-center"
             aria-label="Bunks home"
             onClick={handleLinkClick}
           >
             <Image src="/bunks-logo.svg" alt="Bunks" width={140} height={40} priority className="h-8 w-auto grayscale" />
           </Link>
 
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center gap-8 xl:gap-10">
             {navLinks.map((link) => {
               if (link.type === "anchor") {
                 return (
@@ -97,7 +97,7 @@ export function Navbar({ currentView = "home", bookingSection = null, bookingRef
                     key={link.label}
                     href={link.href}
                     onClick={() => setIsOpen(false)}
-                    className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+                    className="text-base font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-text-primary)]"
                   >
                     {link.label}
                   </a>
@@ -110,7 +110,7 @@ export function Navbar({ currentView = "home", bookingSection = null, bookingRef
                     key={link.label}
                     href={link.href}
                     onClick={handleLinkClick}
-                    className={`text-sm font-semibold transition-colors ${isActive
+                    className={`text-base font-semibold transition-colors ${isActive
                       ? "rounded-full bg-[var(--color-surface-alt)] px-4 py-2 text-[var(--color-text-primary)]"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       }`}
@@ -124,20 +124,20 @@ export function Navbar({ currentView = "home", bookingSection = null, bookingRef
                   key={link.label}
                   href={link.href}
                   onClick={handleLinkClick}
-                  className="text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+                  className="text-base font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
                   {link.label}
                 </Link>
               );
             })}
+          </div>
+          <div className="hidden lg:flex justify-self-end">
             {!isBookingView && (
-              <Link href="/#listings" onClick={handleLinkClick} className={ctaClasses}>
-                Find a stay
-              </Link>
+              <Link href="/#listings" onClick={handleLinkClick} className={ctaClasses}>Find a stay</Link>
             )}
           </div>
 
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="rounded-full border border-[var(--color-border)] p-2 text-[var(--color-text-primary)] shadow-sm"
@@ -152,7 +152,7 @@ export function Navbar({ currentView = "home", bookingSection = null, bookingRef
       </div>
 
       {isOpen && (
-        <div id="mobile-navigation" className="md:hidden absolute w-full border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+        <div id="mobile-navigation" className="lg:hidden absolute w-full border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
           <div className="px-4 pt-2 pb-6 space-y-1">
             {navLinks.map((link) => {
               if (link.type === "anchor") {

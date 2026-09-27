@@ -12,3 +12,7 @@ Inspired by the warmth and restraint of Kindred; Bunks retains its own brand, pr
 Runtime source of truth: `src/app/globals.css`. Exported palette: `tokens`. The root `design-system` file is a legacy, unmounted prototype, not the live component library.
 
 Covered: homepage and destination filters, shared navigation/footer/buttons, property cards and details, booking summary/forms, trip lookup, guest messaging, about page. Shared typography and neutral tokens also flow through journal, guides, and operations screens.
+
+## Reading hierarchy
+
+Use serif for page titles and editorial moments; use 20px semibold sans-serif for property section headings. Property descriptions use 17px, weight 450, 1.65 line-height and a 65-character maximum measure. Reading copy uses primary charcoal; reserve secondary gray for metadata. Present narrative sections with simple dividers and highlights as open lists rather than repeated tinted cards.

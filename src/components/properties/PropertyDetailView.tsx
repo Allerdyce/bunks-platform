@@ -368,8 +368,8 @@ export function PropertyDetailView({
         <div className="lg:col-span-2">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="mb-4 text-sm font-medium text-gray-700">{property.location}</p>
-              <h1 className="editorial-title text-3xl sm:text-4xl lg:text-5xl mb-3">{property.name}</h1>
+              <p className="mb-4 text-lg font-semibold text-gray-900">{property.location}</p>
+              <h1 className="editorial-title text-3xl sm:text-4xl mb-3">{property.name}</h1>
             </div>
             <div className="text-right hidden sm:block shrink-0">
               <div className="flex items-center gap-1 justify-end mb-1">
@@ -404,21 +404,21 @@ export function PropertyDetailView({
           </div>
 
           <div className="mb-12">
-            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-4">About this space</h2>
-            <p className="text-gray-600 leading-relaxed text-lg">{property.description}</p>
+            <h2 className="section-heading text-gray-900 mb-4">About this space</h2>
+            <p className="property-copy max-w-[65ch]">{property.description}</p>
             {property.heroTagline && (
-              <p className="text-gray-500 mt-4 text-base leading-relaxed">{property.heroTagline}</p>
+              <p className="property-copy mt-4 max-w-[65ch]">{property.heroTagline}</p>
             )}
           </div>
 
           {property.highlights?.length ? (
             <div className="mb-12">
-              <h2 className="font-serif font-normal text-2xl text-gray-900 mb-4">Why you'll love it</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <h2 className="section-heading text-gray-900 mb-4">Why you'll love it</h2>
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
                 {property.highlights.map((highlight) => (
-                  <div key={highlight} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <p className="text-gray-600">{highlight}</p>
+                  <div key={highlight} className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-1 w-5 h-5 text-gray-700 shrink-0" />
+                    <p className="property-copy">{highlight}</p>
                   </div>
                 ))}
               </div>
@@ -428,9 +428,9 @@ export function PropertyDetailView({
           {property.aboutSections?.length ? (
             <div className="mb-12 space-y-8">
               {property.aboutSections.map((section) => (
-                <div key={section.title} className="p-6 bg-gray-50 rounded-2xl border border-gray-200">
-                  <h3 className="font-serif text-xl text-gray-900 mb-3">{section.title}</h3>
-                  <div className="space-y-3 text-gray-600 leading-relaxed">
+                <div key={section.title} className="border-t border-gray-200 pt-8">
+                  <h3 className="section-heading text-gray-900 mb-3">{section.title}</h3>
+                  <div className="property-copy max-w-[65ch] space-y-3">
                     {section.body.map((paragraph) => (
                       <p key={paragraph}>{paragraph}</p>
                     ))}
@@ -442,10 +442,10 @@ export function PropertyDetailView({
 
           {property.sleepingArrangements?.length ? (
             <div className="mb-12">
-              <h2 className="font-serif font-normal text-2xl text-gray-900 mb-6">Sleeping arrangements</h2>
+              <h2 className="section-heading text-gray-900 mb-6">Sleeping arrangements</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {property.sleepingArrangements.map((arrangement) => (
-                  <div key={arrangement.title} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                  <div key={arrangement.title} className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
                     <div className="flex items-start gap-3 mb-3">
                       <Layers className="w-5 h-5 text-gray-400" />
                       <div>
@@ -454,7 +454,7 @@ export function PropertyDetailView({
                       </div>
                     </div>
                     {arrangement.description && (
-                      <p className="text-gray-600 text-sm leading-relaxed">{arrangement.description}</p>
+                      <p className="property-copy">{arrangement.description}</p>
                     )}
                   </div>
                 ))}
@@ -465,12 +465,12 @@ export function PropertyDetailView({
           {property.guestAccess?.length || property.otherNotes?.length ? (
             <div className="mb-12 grid lg:grid-cols-2 gap-6">
               {property.guestAccess?.length ? (
-                <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl">
+                <div className="p-5 border border-gray-200 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
                     <DoorOpen className="w-5 h-5 text-gray-500" />
-                    <h3 className="font-serif text-xl text-gray-900">Guest access</h3>
+                    <h3 className="section-heading text-gray-900">Guest access</h3>
                   </div>
-                  <ul className="space-y-3 text-gray-600">
+                  <ul className="property-copy space-y-3">
                     {property.guestAccess.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -478,12 +478,12 @@ export function PropertyDetailView({
                 </div>
               ) : null}
               {property.otherNotes?.length ? (
-                <div className="p-6 bg-white border border-gray-200 rounded-2xl">
+                <div className="p-5 bg-white border border-gray-200 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
                     <Info className="w-5 h-5 text-gray-500" />
-                    <h3 className="font-serif text-xl text-gray-900">Good to know</h3>
+                    <h3 className="section-heading text-gray-900">Good to know</h3>
                   </div>
-                  <ul className="space-y-3 text-gray-600">
+                  <ul className="property-copy space-y-3">
                     {property.otherNotes.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -499,7 +499,7 @@ export function PropertyDetailView({
                 <div key={notice.title} className="border border-amber-200 rounded-2xl bg-amber-50/70 p-6">
                   <div className="flex items-start gap-3 mb-3">
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    <h3 className="font-serif text-xl text-gray-900">{notice.title}</h3>
+                    <h3 className="section-heading text-gray-900">{notice.title}</h3>
                   </div>
                   <div className="space-y-3 text-gray-700">
                     {notice.body.map((paragraph) => (
@@ -513,7 +513,7 @@ export function PropertyDetailView({
 
           {property.photoGroups?.length ? (
             <div className="mb-12 space-y-8">
-              <h2 className="font-serif font-normal text-2xl text-gray-900">Room-by-room gallery</h2>
+              <h2 className="section-heading text-gray-900">Room-by-room gallery</h2>
               {property.photoGroups.map((group) => (
                 <div key={group.title} className="border border-gray-200 rounded-2xl p-6">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -559,8 +559,8 @@ export function PropertyDetailView({
           ) : null}
 
           <div className="mb-12">
-            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-6">What this place offers</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <h2 className="section-heading text-gray-900 mb-6">What this place offers</h2>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
               {property.features.map((feature, index) => (
                 <div key={feature} className="flex items-center gap-3 text-gray-600 p-4 bg-gray-50 rounded-xl">
                   {index % 2 === 0 ? <Wifi className="w-5 h-5" /> : <Car className="w-5 h-5" />}
@@ -571,7 +571,7 @@ export function PropertyDetailView({
           </div>
 
           <div className="mb-12" id="availability-calendar">
-            <h2 className="font-serif font-normal text-2xl text-gray-900 mb-2">Availability</h2>
+            <h2 className="section-heading text-gray-900 mb-2">Availability</h2>
             <p className="text-sm text-gray-500">
               View blocked nights below. Tap anywhere on the calendar to open the interactive picker and lock your stay.
             </p>
@@ -766,7 +766,7 @@ export function PropertyDetailView({
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>
-                <p className="font-serif text-xl text-gray-900">Guest reviews</p>
+                <p className="section-heading text-gray-900">Guest reviews</p>
                 <p className="text-sm text-gray-500">{reviewCountLabel} · Rated {property.rating}</p>
               </div>
               <button

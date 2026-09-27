@@ -6,7 +6,7 @@
     --color-brand-hover: #454940;
     --color-brand-light: #64705b;
     --color-text-primary: #252723;
-    --color-text-secondary: #686a63;
+    --color-text-secondary: #565852;
     --color-text-inverted: #ffffff;
     --color-border: #deded5;
     --color-border-strong: #72786b;
@@ -48,8 +48,8 @@
   --color-gray-200: #deded5;
   --color-gray-300: #c9cbc0;
   --color-gray-400: #898d81;
-  --color-gray-500: #686a63;
-  --color-gray-600: #55594f;
+  --color-gray-500: #565852;
+  --color-gray-600: #3f423c;
   --color-gray-700: #454940;
   --color-gray-800: #343830;
   --color-gray-900: #252723;
@@ -59,6 +59,8 @@
 @layer components {
   .eyebrow { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
   .editorial-title { font-family: var(--font-serif); font-weight: 400; line-height: 1.12; letter-spacing: -0.045em; }
+  .section-heading { font-family: var(--font-sans); font-size: 1.25rem; font-weight: 600; line-height: 1.4; letter-spacing: -0.015em; }
+  .property-copy { color: var(--color-text-primary); font-size: 1.0625rem; line-height: 1.65; font-weight: 450; }
   .guest-surface { background: var(--color-surface); }
   .soft-panel { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: 12px; }
 }
