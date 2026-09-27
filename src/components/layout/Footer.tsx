@@ -47,6 +47,14 @@ export function Footer({ onNavigate }: FooterProps) {
                 About
               </Link>
             </li>
+            <li>
+              <Link
+                href="/owners"
+                className="transition hover:text-[var(--color-text-primary)]"
+              >
+                For owners
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

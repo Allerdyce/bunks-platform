@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T18:40:38.629Z",
-  "pass": 136,
-  "total": 136,
+  "at": "2026-09-27T20:25:11.214Z",
+  "pass": 140,
+  "total": 140,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -1026,6 +1026,38 @@
       "pass": true,
       "detail": "",
       "ticket": "T-BK-10"
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW1",
+      "description": "a valid request emails the support inbox with the owner as reply-to",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW2",
+      "description": "owner-supplied text is escaped in the email",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW3",
+      "description": "invalid email rejected with a readable message",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW4",
+      "description": "malformed body → 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
     },
     {
       "scenario": "Wi-Fi lead capture",

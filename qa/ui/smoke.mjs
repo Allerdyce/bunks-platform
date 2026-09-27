@@ -30,7 +30,7 @@ await db.property.update({ where: { slug: SB }, data: { wifiSsid: "Bunks-Guest",
 
 scenario("Public pages render cleanly");
 for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["mobile", { width: 390, height: 844 }]]) {
-  for (const [name, path] of [["home", "/"], ["steamboat", `/property/${SB}`], ["summerland", `/property/${SL}`], ["about", "/?view=about"], ["mytrips", "/my-trips"], ["privacy", "/privacy"], ["wifi", `/connect/${SB}`]]) {
+  for (const [name, path] of [["home", "/"], ["steamboat", `/property/${SB}`], ["summerland", `/property/${SL}`], ["about", "/?view=about"], ["mytrips", "/my-trips"], ["privacy", "/privacy"], ["wifi", `/connect/${SB}`], ["owners", "/owners"]]) {
     const page = await newPage(viewport);
     const res = await page.goto(BASE + path, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => ({ status: () => `ERR ${e.message}` }));
     await page.waitForTimeout(500);
@@ -202,6 +202,22 @@ scenario("Wi-Fi page and My Trips edge cases");
   check("MT2", "no unexpected errors on a failed lookup", unexpected.length === 0, unexpected.join(" | "));
   await page.context().close();
   await trips.context().close();
+}
+
+scenario("Owners page request form");
+{
+  const page = await newPage({ width: 390, height: 844 });
+  await page.goto(`${BASE}/owners`, { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: /request your free home hub/i }).first().click();
+  await page.fill("#owner-name", "Sam Owner");
+  await page.fill("#owner-email", "sam@example.com");
+  await page.fill("#owner-location", "Steamboat Springs, CO");
+  await page.getByRole("button", { name: /request my free home hub/i }).click();
+  await page.waitForTimeout(1500);
+  const text = await page.locator("body").innerText();
+  await shot(page, "owners-form-sent");
+  check("OWUI1", "owner form submits and shows a thank-you", /we.ve got it/i.test(text) && page.problems.length === 0, `${text.slice(0, 200)} ${page.problems.join(" | ")}`);
+  await page.context().close();
 }
 
 scenario("Admin pages");

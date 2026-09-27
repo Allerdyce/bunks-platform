@@ -451,6 +451,17 @@ def("Partial refund on cancel", async () => {
   check("PR4", "a typo'd refund amount is rejected and the booking stays PAID", junk.status === 400 && still.status === "PAID", `${junk.status} ${still.status}`, "T-BK-10");
 });
 
+def("Owner Home Hub requests", async () => {
+  const ok = await api("/api/owner-interest", { method: "POST", body: { name: "Pat <b>Owner</b>", email: "Pat@Example.com", location: "Summerland, CA", properties: "2", listingUrl: "", message: "Hi" } });
+  const mail = emails().find((m) => /Home Hub request/.test(m.subject));
+  check("OW1", "a valid request emails the support inbox with the owner as reply-to", ok.status === 200 && mail && mail.replyTo === "pat@example.com" && !String(mail.to).includes("example.com"), `${ok.status} ${JSON.stringify(mail && { to: mail.to, replyTo: mail.replyTo })}`);
+  check("OW2", "owner-supplied text is escaped in the email", mail && mail.html.includes("&lt;b&gt;Owner&lt;/b&gt;"), "not escaped");
+  const bad = await api("/api/owner-interest", { method: "POST", body: { name: "X", email: "nope", location: "Y" } });
+  check("OW3", "invalid email rejected with a readable message", bad.status === 400 && /valid email/i.test(bad.json?.error ?? ""), `${bad.status} ${bad.text}`);
+  const missing = await api("/api/owner-interest", { method: "POST", body: "{" });
+  check("OW4", "malformed body → 400", missing.status === 400, missing.status);
+});
+
 def("Wi-Fi lead capture", async () => {
   const ok = await api("/api/wifi-lead", { method: "POST", body: { email: "Wifi@Example.com", name: "Guest", propertySlug: SB } });
   check("WL1", "valid lead accepted", ok.status === 200, ok.text);

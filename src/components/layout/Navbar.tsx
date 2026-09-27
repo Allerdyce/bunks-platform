@@ -86,6 +86,7 @@ export function Navbar({
         href: "/#listings",
       },
       { label: "About", type: "route", target: "about", href: "/?view=about" },
+      { label: "For owners", type: "anchor", href: "/owners" },
       // { label: "SB Tax Tool", type: "route", target: "about", href: "/tools/sb-tot" }, // Moved to Footer
       {
         label: "My trips",

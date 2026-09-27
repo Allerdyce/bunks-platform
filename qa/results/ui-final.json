@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T06:08:47.543Z",
-  "pass": 50,
-  "total": 50,
+  "at": "2026-09-27T20:27:13.222Z",
+  "pass": 54,
+  "total": 54,
   "results": [
     {
       "scenario": "Public pages render cleanly",
@@ -55,6 +55,14 @@
       "scenario": "Public pages render cleanly",
       "id": "UI-desktop-wifi",
       "description": "desktop /connect/steamboat-downtown-townhome loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-owners",
+      "description": "desktop /owners loads with no errors",
       "pass": true,
       "detail": "",
       "ticket": ""
@@ -167,6 +175,22 @@
       "scenario": "Public pages render cleanly",
       "id": "UI-mobile-wifi-overflow",
       "description": "/connect/steamboat-downtown-townhome has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-owners",
+      "description": "mobile /owners loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-owners-overflow",
+      "description": "/owners has no horizontal scroll on a phone",
       "pass": true,
       "detail": "",
       "ticket": ""
@@ -327,6 +351,14 @@
       "scenario": "Wi-Fi page and My Trips edge cases",
       "id": "MT2",
       "description": "no unexpected errors on a failed lookup",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owners page request form",
+      "id": "OWUI1",
+      "description": "owner form submits and shows a thank-you",
       "pass": true,
       "detail": "",
       "ticket": ""
