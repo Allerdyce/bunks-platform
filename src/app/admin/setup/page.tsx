@@ -134,19 +134,32 @@ function PropertySetupCard({
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (allowEmpty = false) => {
     setSyncing(true);
     setStatus(null);
     try {
       const res = await fetch(`/api/properties/${form.slug}/sync-ical`, {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowEmpty }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         nights?: number;
         reason?: string;
       };
+      if (res.status === 409 && data.reason === "EMPTY_FEED" && !allowEmpty) {
+        const confirmed = window.confirm(
+          "Airbnb's calendar now shows no upcoming reservations, but Bunks still has upcoming Airbnb nights blocked.\n\n" +
+            "If you've checked Airbnb and it really has no upcoming reservations, press OK to clear them. Otherwise press Cancel.",
+        );
+        if (confirmed) {
+          setSyncing(false);
+          return handleSync(true);
+        }
+        throw new Error("Kept the existing Airbnb blocks.");
+      }
       if (!res.ok) throw new Error(data.error || data.reason || "Sync failed");
       setStatus({
         type: "success",
@@ -370,7 +383,7 @@ function PropertySetupCard({
         </button>
         <button
           type="button"
-          onClick={handleSync}
+          onClick={() => handleSync()}
           disabled={syncing || !initial.airbnbImportConfigured}
           className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >

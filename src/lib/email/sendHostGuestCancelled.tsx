@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { HostGuestCancelledEmail, type HostGuestCancelledEmailProps } from '@/emails/HostGuestCancelledEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
 
@@ -41,7 +42,7 @@ export async function sendHostGuestCancelled(options: SendHostGuestCancelledOpti
     />,
   );
 
-  const to = options.to ?? 'hosts@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Cancellation] ${options.propertyName}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

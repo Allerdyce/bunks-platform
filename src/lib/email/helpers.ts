@@ -61,7 +61,7 @@ export function formatStayDates(checkIn: Date, checkOut: Date) {
     return `${start} – ${end}, ${year}`;
   }
 
-  return `${start}, ${checkIn.getFullYear()} – ${end}, ${year}`;
+  return `${start}, ${checkIn.getUTCFullYear()} – ${end}, ${year}`;
 }
 
 export function resolveBookingReference(booking: Pick<Booking, 'id' | 'publicReference'>) {

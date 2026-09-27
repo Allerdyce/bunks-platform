@@ -30,7 +30,8 @@ const SERVICE_FEE = 20;
 const calculateNights = (range: DateRange) => {
   if (!range.start || !range.end) return 0;
   const diff = range.end.getTime() - range.start.getTime();
-  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  // round, not ceil: a stay spanning the DST change is 23h/25h per night.
+  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
 };
 
 export function BookingContainer({

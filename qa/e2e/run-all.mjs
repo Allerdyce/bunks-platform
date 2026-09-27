@@ -26,7 +26,7 @@ def("Quote matches pricing rules", async () => {
   // Fri + Sat at 42000 → 37800 each, Sun at 35000 → 31500
   check("Q6", "Fri/Sat nights use weekend rate", wk.json?.quote?.nightlySubtotalCents === 37800 * 2 + 31500, JSON.stringify(wk.json?.quote?.nightlyLineItems));
   const short = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-05", checkOut: "2026-10-06" } });
-  check("Q7", "quote rejects stays under the 3-night minimum", short.status === 400 || short.json?.available === false, short.text, "T-AV-07");
+  check("Q7", "quote rejects stays under the 3-night minimum", short.json?.available === false && short.json?.reason === "MINIMUM_STAY", short.text, "T-AV-07");
 });
 
 def("Happy path: book, pay, confirm", async () => {
@@ -123,11 +123,26 @@ def("Airbnb feed failures never erase reservations", async () => {
   const afterTrunc = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
   check("F3", "truncated feed (cut mid-event) → blocks kept", afterTrunc === before, `${before} → ${afterTrunc}`, "T-AV-01");
   writeIcal("steamboat.ics", "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n");
-  await forceSync(SB);
+  const emptySync = await forceSync(SB);
   const afterEmpty = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
-  check("F4", "valid but empty feed while future reservations exist → blocks kept (needs confirmation)", afterEmpty === before, `${before} → ${afterEmpty}`, "T-AV-01");
+  check("F4", "valid but empty feed while future reservations exist → blocks kept, sync reports EMPTY_FEED", afterEmpty === before && emptySync.json?.reason === "EMPTY_FEED", `${before} → ${afterEmpty} ${emptySync.text}`, "T-AV-01");
+  const confirmed = await api(`/api/properties/${SB}/sync-ical`, { method: "POST", body: { allowEmpty: true }, headers: { cookie: await adminCookie() } });
+  const afterConfirm = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
+  check("F5", "admin can confirm an empty Airbnb calendar to clear blocks", confirmed.status === 200 && afterConfirm === 0, `${confirmed.status} ${afterConfirm}`, "T-AV-01");
+  const cronForce = await api(`/api/properties/${SB}/sync-ical`, { method: "POST", body: { allowEmpty: true }, headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  check("F6", "cron secret alone cannot confirm an empty calendar", cronForce.status !== 200 || cronForce.json?.nights === 0, cronForce.text);
   restoreIcal();
   await forceSync(SB);
+  removeIcal("steamboat.ics");
+  clearEmails();
+  const cron = await api("/api/cron/ical-sync", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  check("F7", "daily import failure emails an ops alert", cron.status === 200 && emails().some((m) => /Airbnb calendar import failed/.test(m.subject)), emails().map((m) => m.subject).join(" | "), "T-AV-02");
+  const blocked = await book({ guestEmail: "during-outage@example.com" });
+  check("F8", "checkout pauses (503, friendly message) while the Airbnb import is failing", blocked.status === 503 && /try again|email us/i.test(blocked.json?.message ?? ""), `${blocked.status} ${blocked.text}`, "T-AV-02");
+  restoreIcal();
+  await forceSync(SB);
+  const after = await book({ guestEmail: "after-recovery@example.com" });
+  check("F9", "checkout resumes once the import works again", after.status === 200, `${after.status} ${after.text}`, "T-AV-02");
 });
 
 def("Late payment after the hold expired", async () => {

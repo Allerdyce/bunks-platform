@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isAuthorizedCronRequest } from '@/lib/cronAuth';
-import { syncAirbnbCalendar } from '@/lib/icalSync';
+import { IcalSyncError, syncAirbnbCalendar } from '@/lib/icalSync';
+import { sendEmail } from '@/lib/email/sendEmail';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
+import { escapeHtml } from '@/lib/html';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,13 +17,29 @@ export async function GET(request: Request) {
 
   const properties = await prisma.property.findMany({ select: { id: true, slug: true, airbnbIcalUrl: true } });
   const results = [];
+  const failures: string[] = [];
   for (const property of properties) {
     try {
       results.push({ slug: property.slug, ...(await syncAirbnbCalendar(property)) });
     } catch (error) {
       console.error(`[cron][ical-sync] ${property.slug} failed`, error);
-      results.push({ slug: property.slug, ok: false, reason: 'FETCH_FAILED' });
+      const reason = error instanceof IcalSyncError ? error.reason : 'FETCH_FAILED';
+      results.push({ slug: property.slug, ok: false, reason });
+      failures.push(`<li><strong>${escapeHtml(property.slug)}</strong>: ${escapeHtml((error as Error).message)}</li>`);
     }
+  }
+
+  // While the Airbnb import is broken, direct checkout for that home pauses (it can't confirm
+  // availability), so someone needs to know today.
+  if (failures.length) {
+    await sendEmail({
+      to: OPS_ALERT_EMAIL,
+      subject: `Action needed: Airbnb calendar import failed (${failures.length})`,
+      html:
+        `<p>The daily Airbnb calendar import failed:</p><ul>${failures.join('')}</ul>` +
+        `<p>Until it works again, direct bookings for these homes can't be confirmed. Check the Airbnb ` +
+        `calendar link in Admin → Setup and press "Sync now".</p>`,
+    }).catch((error) => console.error('[cron][ical-sync] failed to send alert', error));
   }
   return NextResponse.json({ results });
 }

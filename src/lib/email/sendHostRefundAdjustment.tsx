@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { HostRefundAdjustmentEmail, type HostRefundAdjustmentEmailProps } from '@/emails/HostRefundAdjustmentEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
 
@@ -42,7 +43,7 @@ export async function sendHostRefundAdjustment(options: SendHostRefundAdjustment
     />,
   );
 
-  const to = options.to ?? 'hosts@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Refund adjustment] ${options.propertyName}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

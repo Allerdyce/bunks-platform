@@ -1,47 +1,20 @@
 // src/app/api/bookings/route.ts
-import { Prisma, Property as PrismaProperty } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { randomInt, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripeClient } from '@/lib/stripe';
 import {
   isRangeAvailable,
-  nightsBetween,
   parseStayDate,
   pendingHoldCutoff,
   withPropertyLock,
 } from '@/lib/bookingAvailability';
-import { minimumNightsFor } from '@/lib/stayRules';
+import { checkStayRules } from '@/lib/stayRules';
+import { z } from 'zod';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 
 export const runtime = 'nodejs';
-
-
-
-
-
-type CreateBookingBody = {
-  propertySlug: string;
-  checkIn: string;   // 'YYYY-MM-DD' or ISO
-  checkOut: string;  // 'YYYY-MM-DD' or ISO
-  guestName: string;
-  guestEmail: string;
-  guests?: number;
-};
-type PropertyWithRates = {
-  weekdayRate?: number | null;
-  weekendRate?: number | null;
-  serviceFee?: number | null;
-  baseNightlyRate: number;
-  cleaningFee: number;
-};
-
-const toISODate = (date: Date) => date.toISOString().split('T')[0];
-
-const DEFAULT_ACTIVITY_TIME_SLOT = '16:00';
-
-// Removed unused imports and constants
-
 
 const BOOKING_REFERENCE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const BOOKING_REFERENCE_LENGTH = 5;
@@ -136,18 +109,35 @@ function isBookingReferenceCollision(error: unknown) {
 }
 
 
+const UNAVAILABLE_MESSAGE =
+  'Sorry, those dates were just booked. Please pick different dates.';
+
+const EMAIL_MESSAGE = 'Please enter a valid email address.';
+const bookingRequestSchema = z.object({
+  propertySlug: z.string({ error: 'propertySlug is required' }).trim().min(1, 'propertySlug is required').max(100),
+  checkIn: z.string({ error: 'checkIn is required' }).trim().min(1, 'checkIn is required').max(40),
+  checkOut: z.string({ error: 'checkOut is required' }).trim().min(1, 'checkOut is required').max(40),
+  guestName: z.string({ error: 'Please enter your name.' }).trim().min(1, 'Please enter your name.').max(120, 'Name is too long.'),
+  guestEmail: z.string({ error: EMAIL_MESSAGE }).trim().toLowerCase().max(254, EMAIL_MESSAGE).pipe(z.email(EMAIL_MESSAGE)),
+  guests: z.coerce.number({ error: 'Guest count must be a number.' }).int().min(1).max(50).optional(),
+});
+
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CreateBookingBody;
-
-    const { propertySlug, checkIn, checkOut, guestName, guestEmail } = body;
-
-    if (!propertySlug || !checkIn || !checkOut || !guestName || !guestEmail) {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== 'object') {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+    const parsed = bookingRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
       return NextResponse.json(
-        { error: 'propertySlug, checkIn, checkOut, guestName, guestEmail are required' },
+        { error: issue?.message ?? 'Invalid booking request', field: issue?.path.join('.') },
         { status: 400 }
       );
     }
+    const body = parsed.data;
+    const { propertySlug, checkIn, checkOut, guestName } = body;
 
     const property = await prisma.property.findUnique({
       where: { slug: propertySlug },
@@ -161,8 +151,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
-
     const checkInDate = parseStayDate(checkIn);
     const checkOutDate = parseStayDate(checkOut);
 
@@ -173,49 +161,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (checkOutDate <= checkInDate) {
+    const violation = checkStayRules(property, checkInDate, checkOutDate);
+    if (violation) {
+      return NextResponse.json(violation, { status: 400 });
+    }
+
+    const maxGuests = property.maxGuests ?? 16;
+    if (body.guests !== undefined && body.guests > maxGuests) {
       return NextResponse.json(
-        { error: 'checkOut must be after checkIn' },
+        { error: `This home sleeps up to ${maxGuests} guests.`, field: 'guests' },
         { status: 400 }
       );
     }
 
-    // Allow "today" in any US timezone.
-    const earliestCheckIn = new Date(Date.now() - 36 * 60 * 60 * 1000);
-    if (checkInDate < earliestCheckIn) {
-      return NextResponse.json({ error: 'Check-in date is in the past' }, { status: 400 });
-    }
+    const normalizedEmail = body.guestEmail;
 
-    const nights = nightsBetween(checkInDate, checkOutDate);
-    const minimumNights = minimumNightsFor(property.slug);
-
-    if (nights < minimumNights) {
+    // Pull the latest Airbnb calendar before taking payment. If it can't be read, stop:
+    // taking payment against a stale calendar risks a double booking.
+    const sync = await syncAirbnbCalendarIfStale(property, 2 * 60_000, { retryImmediately: true });
+    if (sync === 'failed') {
       return NextResponse.json(
         {
-          error: 'MINIMUM_STAY',
-          message: `This property requires a minimum stay of ${minimumNights} nights.`,
-          minimumNights,
+          error: 'AVAILABILITY_UNCONFIRMED',
+          message: "We couldn't confirm these dates right now. Please try again in a few minutes, or email us to book.",
         },
-        { status: 400 }
+        { status: 503 }
       );
     }
-
-    const normalizedEmail = guestEmail.trim().toLowerCase();
-
-    // Pull the latest Airbnb calendar before taking payment.
-    await syncAirbnbCalendarIfStale(property, 2 * 60_000);
 
     // Fast pre-check (repeated under the property lock before inserting).
     if (!(await isRangeAvailable(property.id, checkInDate, checkOutDate, { ignorePendingForEmail: normalizedEmail }))) {
       return NextResponse.json(
-        { available: false, reason: 'DATES_UNAVAILABLE' },
+        { available: false, reason: 'DATES_UNAVAILABLE', error: UNAVAILABLE_MESSAGE },
         { status: 409 }
       );
     }
 
     // 3) Calculate Pricing using shared logic
     const { calculatePricing } = await import('@/lib/pricing/calculator');
-    const partySize = Math.max(1, Math.min(body.guests ?? property.maxGuests ?? 1, property.maxGuests ?? 16));
+    const partySize = body.guests ?? 1;
 
     // Note: This re-fetches property internally but ensures consistency with frontend quote
     const quote = await calculatePricing(property.slug, checkInDate, checkOutDate, partySize);
@@ -262,16 +246,24 @@ export async function POST(req: NextRequest) {
           if (sameStay) {
             return { reused: sameStay };
           }
+
+          // Check first, then release this guest's other holds, so a failed restart keeps them.
+          const available = await isRangeAvailable(
+            property.id,
+            checkInDate,
+            checkOutDate,
+            { ignorePendingForEmail: normalizedEmail },
+            tx
+          );
+          if (!available) {
+            return { unavailable: true as const };
+          }
+
           if (ownHolds.length) {
             await tx.booking.updateMany({
               where: { id: { in: ownHolds.map((hold) => hold.id) } },
               data: { status: 'CANCELLED' },
             });
-          }
-
-          const available = await isRangeAvailable(property.id, checkInDate, checkOutDate, {}, tx);
-          if (!available) {
-            return { unavailable: true as const };
           }
 
           const created = await tx.booking.create({
@@ -293,7 +285,7 @@ export async function POST(req: NextRequest) {
 
         if ('unavailable' in result) {
           return NextResponse.json(
-            { available: false, reason: 'DATES_UNAVAILABLE' },
+            { available: false, reason: 'DATES_UNAVAILABLE', error: UNAVAILABLE_MESSAGE },
             { status: 409 }
           );
         }
