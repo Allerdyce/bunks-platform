@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T20:31:55.370Z",
-  "pass": 140,
-  "total": 140,
+  "at": "2026-09-27T20:41:47.760Z",
+  "pass": 146,
+  "total": 146,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -431,6 +431,54 @@
       "scenario": "Airbnb booking that overlaps a paid direct stay raises an alarm",
       "id": "DB3",
       "description": "a 'Not available' block (e.g. Airbnb mirroring our own booking) is not an alarm",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC1",
+      "description": "nights from both calendars are blocked (Airbnb Oct 10–13 + Vrbo Oct 20–22)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC2",
+      "description": "a direct booking over the Vrbo stay is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC3",
+      "description": "if one calendar fails, nothing is removed and the error names that calendar",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC4",
+      "description": "Check calendars lists each linked calendar with its stays, without guest names",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC5",
+      "description": "Check calendars requires admin",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC6",
+      "description": "saving a bad line in the calendar links is rejected with a clear message",
       "pass": true,
       "detail": "",
       "ticket": ""

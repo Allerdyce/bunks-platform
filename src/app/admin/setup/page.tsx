@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CalendarCheck } from "@/components/admin/CalendarCheck";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
@@ -224,15 +225,17 @@ function PropertySetupCard({
             className="text-sm font-medium text-gray-700"
             htmlFor={`ical-${form.id}`}
           >
-            2. Airbnb calendar link (Airbnb → Calendar → Availability → Connect
-            calendars → Export)
+            2. Calendars to import: every Airbnb listing for this home, plus Vrbo
+            or others. One link per line (Airbnb → Calendar → Availability →
+            Connect calendars → Export).
           </label>
-          <input
+          <textarea
             id={`ical-${form.id}`}
             value={form.airbnbIcalUrl ?? ""}
             onChange={(e) => set("airbnbIcalUrl", e.target.value)}
-            placeholder="https://www.airbnb.com/calendar/ical/….ics?t=…"
-            className={inputClass}
+            placeholder={"https://www.airbnb.com/calendar/ical/….ics?t=…\nhttps://www.vrbo.com/icalendar/….ics"}
+            rows={3}
+            className={`${inputClass} font-mono text-xs`}
           />
           <p className="mt-1 text-xs text-gray-500">
             {!initial.airbnbImportConfigured
@@ -241,6 +244,11 @@ function PropertySetupCard({
                 ? `Connected · ${initial.upcomingAirbnbNights} upcoming Airbnb nights imported`
                 : "Link saved, but no upcoming Airbnb nights have been imported. Press “Sync now”: if it shows an error, copy a fresh link from Airbnb."}
           </p>
+          {initial.airbnbImportConfigured && (
+            <div className="mt-3">
+              <CalendarCheck slug={form.slug} />
+            </div>
+          )}
         </div>
       </section>
 

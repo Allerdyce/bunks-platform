@@ -49,3 +49,13 @@ test("mixed CRLF/LF line endings still parse every event", () => {
   const text = "BEGIN:VCALENDAR\nVERSION:2.0\n" + event("a", "20261005", "20261008").replace(/\r\n/g, "\n") + event("b", "20261101", "20261103") + "END:VCALENDAR\n";
   assert.equal(parseIcalNights(text).size, 5);
 });
+
+import { parseIcalUrls, describeIcalUrl } from "@/lib/icalSync";
+
+test("several calendar links per property", () => {
+  const urls = parseIcalUrls("https://www.airbnb.com/calendar/ical/111.ics?t=a\n  https://www.vrbo.com/icalendar/abc.ics \n\nhttps://www.airbnb.com/calendar/ical/111.ics?t=a");
+  assert.equal(urls.length, 2);
+  assert.equal(describeIcalUrl(urls[0]), "Airbnb listing 111");
+  assert.equal(describeIcalUrl(urls[1]), "Vrbo");
+  assert.deepEqual(parseIcalUrls("https://www.calendarlabs.com/x.ics"), []);
+});

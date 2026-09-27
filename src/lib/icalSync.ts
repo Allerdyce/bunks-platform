@@ -36,15 +36,44 @@ export class IcalSyncError extends Error {
   }
 }
 
-export function isUsableIcalUrl(url: string | null | undefined): url is string {
-  if (!url) return false;
+const isUsableSingleUrl = (url: string) => {
   try {
     const { hostname, protocol } = new URL(url);
     return protocol.startsWith("http") && !PLACEHOLDER_ICAL_HOSTS.some((host) => hostname.endsWith(host));
   } catch {
     return false;
   }
+};
+
+/**
+ * The calendars to import for a property. The field holds one link per line, so a home listed
+ * more than once (two Airbnb listings, Vrbo, …) blocks the nights booked on any of them.
+ */
+export function parseIcalUrls(value: string | null | undefined) {
+  return Array.from(new Set((value ?? "").split(/[\s,]+/).map((url) => url.trim()).filter(isUsableSingleUrl)));
 }
+
+export function isUsableIcalUrl(value: string | null | undefined): value is string {
+  return parseIcalUrls(value).length > 0;
+}
+
+/** Human label for a calendar link, e.g. "Airbnb listing 1552191060469626901" or "Vrbo". */
+export function describeIcalUrl(url: string) {
+  try {
+    const { hostname, pathname } = new URL(url);
+    const airbnbId = /\/calendar\/ical\/(\d+)\.ics/.exec(pathname)?.[1];
+    if (/airbnb\./.test(hostname)) return airbnbId ? `Airbnb listing ${airbnbId}` : "Airbnb";
+    if (/vrbo|homeaway/.test(hostname)) return "Vrbo";
+    if (/booking\.com/.test(hostname)) return "Booking.com";
+    return hostname.replace(/^www\./, "");
+  } catch {
+    return "Calendar link";
+  }
+}
+
+export type EventKind = "reservation" | "blocked";
+const eventKind = (summary: unknown): EventKind =>
+  /reserved|reservation|booked/i.test(String(summary ?? "")) ? "reservation" : "blocked";
 
 /** Parses an iCal feed into booked nights (YYYY-MM-DD). Throws on anything that looks incomplete. */
 export function parseIcalNights(text: string) {
@@ -78,6 +107,7 @@ export function parseIcalFeed(text: string) {
 
   const nights = new Set<string>();
   const reservedNights = new Set<string>();
+  const ranges: Array<{ start: string; end: string; kind: EventKind }> = [];
   for (const event of events) {
     if (!event.start || Number.isNaN(new Date(event.start).getTime())) {
       throw new IcalSyncError(`Calendar event ${event.uid ?? ""} has no valid start date`, "MALFORMED_FEED");
@@ -85,13 +115,87 @@ export function parseIcalFeed(text: string) {
     const start = toStayDay(event.start as IcalDate);
     // A missing DTEND on an all-day event means a single day.
     const end = event.end ? toStayDay(event.end as IcalDate) : new Date(start.getTime() + DAY_MS);
-    const isReservation = /reserved/i.test(String(event.summary ?? ""));
-    for (const night of eachNight(start, end > start ? end : new Date(start.getTime() + DAY_MS))) {
+    const kind = eventKind(event.summary);
+    const checkout = end > start ? end : new Date(start.getTime() + DAY_MS);
+    ranges.push({ start: toISODate(start), end: toISODate(checkout), kind });
+    for (const night of eachNight(start, checkout)) {
       nights.add(toISODate(night));
-      if (isReservation) reservedNights.add(toISODate(night));
+      if (kind === "reservation") reservedNights.add(toISODate(night));
     }
   }
+  return { nights, reservedNights, ranges };
+}
+
+/** Fetches one calendar link. Throws IcalSyncError with a plain-English reason on failure. */
+async function fetchCalendar(url: string, slug: string) {
+  const label = `${describeIcalUrl(url)} (${slug})`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+      // Some calendar hosts refuse requests that don't look like a calendar client.
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarSync/1.0; +https://bunks.com)",
+        Accept: "text/calendar, text/plain;q=0.9, */*;q=0.8",
+      },
+    });
+  } catch (error) {
+    throw new IcalSyncError(`${label}: couldn't be reached (${(error as Error).message})`, "FETCH_FAILED");
+  }
+  if (!res.ok) {
+    const hint =
+      res.status === 404 || res.status === 410
+        ? "the link wasn't found. It may have been reset; copy a fresh export link."
+        : res.status === 401 || res.status === 403
+          ? "the request was refused. Check it's the full export link (for Airbnb, including ?t=…)."
+          : res.status === 429
+            ? "too many requests. It will retry automatically."
+            : "the calendar host returned an error.";
+    throw new IcalSyncError(`${label}: HTTP ${res.status}, ${hint}`, "FETCH_FAILED");
+  }
+  const text = await res.text();
+  if (!text.includes("BEGIN:VCALENDAR")) {
+    throw new IcalSyncError(
+      `${label}: the link returned a web page, not a calendar. Use the calendar export link (Airbnb → Calendar → Availability → Connect calendars).`,
+      "FETCH_FAILED",
+    );
+  }
+  return text;
+}
+
+/** Reads every calendar link for the property; all must succeed (a partial import would under-block). */
+async function readAllCalendars(property: SyncableProperty) {
+  const nights = new Set<string>();
+  const reservedNights = new Set<string>();
+  for (const url of parseIcalUrls(property.airbnbIcalUrl)) {
+    const feed = parseIcalFeed(await fetchCalendar(url, property.slug));
+    feed.nights.forEach((night) => nights.add(night));
+    feed.reservedNights.forEach((night) => reservedNights.add(night));
+  }
   return { nights, reservedNights };
+}
+
+/**
+ * For Admin → Setup "Check calendars": what each link currently says, next to what Bunks blocks.
+ * Returns stay ranges and whether each is a reservation or a block; never guest names.
+ */
+export async function inspectCalendars(property: SyncableProperty) {
+  const today = toISODate(toUtcDay(new Date()));
+  const feeds = [];
+  for (const url of parseIcalUrls(property.airbnbIcalUrl)) {
+    try {
+      const { ranges } = parseIcalFeed(await fetchCalendar(url, property.slug));
+      feeds.push({
+        label: describeIcalUrl(url),
+        ok: true as const,
+        ranges: ranges.filter((range) => range.end > today).sort((a, b) => a.start.localeCompare(b.start)),
+      });
+    } catch (error) {
+      feeds.push({ label: describeIcalUrl(url), ok: false as const, error: (error as Error).message, ranges: [] });
+    }
+  }
+  return feeds;
 }
 
 /**
@@ -105,48 +209,14 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
     return { ok: false as const, reason: "NO_ICAL_URL" };
   }
 
-  let text = "";
-  try {
-    const res = await fetch(property.airbnbIcalUrl, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-      // Some calendar hosts refuse requests that don't look like a calendar client.
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarSync/1.0; +https://bunks.com)",
-        Accept: "text/calendar, text/plain;q=0.9, */*;q=0.8",
-      },
-    });
-    text = res.ok ? await res.text() : "";
-    if (!res.ok) {
-      const hint =
-        res.status === 404 || res.status === 410
-          ? "the link wasn't found. It may have been reset in Airbnb; copy a fresh export link."
-          : res.status === 401 || res.status === 403
-            ? "Airbnb refused the request. Check the link is the full export link including ?t=…"
-            : res.status === 429
-              ? "Airbnb is rate-limiting requests. It will retry automatically."
-              : "Airbnb returned an error.";
-      throw new IcalSyncError(`Airbnb calendar for ${property.slug}: HTTP ${res.status}, ${hint}`, "FETCH_FAILED");
-    }
-    if (!text.includes("BEGIN:VCALENDAR")) {
-      throw new IcalSyncError(
-        `Airbnb calendar for ${property.slug}: the link returned a web page, not a calendar. Use the export link from Airbnb → Calendar → Availability → Connect calendars.`,
-        "FETCH_FAILED",
-      );
-    }
-  } catch (error) {
-    recordSyncFailure(property, error);
-    if (error instanceof IcalSyncError) throw error;
-    throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug}: ${(error as Error).message}`, "FETCH_FAILED");
-  }
-
   let nights: Set<string>;
   let reservedNights: Set<string>;
   try {
-    ({ nights, reservedNights } = parseIcalFeed(text));
+    ({ nights, reservedNights } = await readAllCalendars(property));
   } catch (error) {
     recordSyncFailure(property, error);
-    throw error;
+    if (error instanceof IcalSyncError) throw error;
+    throw new IcalSyncError(`Calendar import failed for ${property.slug}: ${(error as Error).message}`, "FETCH_FAILED");
   }
 
   const today = toISODate(toUtcDay(new Date()));

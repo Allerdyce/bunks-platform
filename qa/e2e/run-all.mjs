@@ -176,6 +176,34 @@ def("Airbnb booking that overlaps a paid direct stay raises an alarm", async () 
   restoreIcal();
 });
 
+def("A home listed in several places imports every calendar", async () => {
+  const both = "http://localhost:8765/steamboat.ics\nhttp://localhost:8765/steamboat-vrbo.ics";
+  await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: both } });
+  try {
+    const s1 = await forceSync(SB);
+    const nights = (await db.blockedDate.findMany({ where: { propertyId: 2, source: "AIRBNB" } })).map((x) => x.date.toISOString().slice(0, 10));
+    check("MC1", "nights from both calendars are blocked (Airbnb Oct 10–13 + Vrbo Oct 20–22)", s1.status === 200 && nights.includes("2026-10-11") && nights.includes("2026-10-21") && !nights.includes("2026-10-23"), `${s1.status} ${nights.join(",")}`, "T-AV-15");
+    const r = await book({ checkIn: "2026-10-19", checkOut: "2026-10-22" });
+    check("MC2", "a direct booking over the Vrbo stay is rejected", r.status === 409, r.status, "T-AV-15");
+    removeIcal("steamboat-vrbo.ics");
+    const s2 = await forceSync(SB);
+    const after = await db.blockedDate.count({ where: { propertyId: 2, source: "AIRBNB" } });
+    check("MC3", "if one calendar fails, nothing is removed and the error names that calendar", s2.status === 502 && after === nights.length && /localhost/.test(s2.json?.error ?? ""), `${s2.status} ${after}/${nights.length} ${s2.text}`, "T-AV-15");
+    restoreIcal();
+    const cookie = await adminCookie();
+    const check1 = await api(`/api/admin/calendar-check?slug=${SB}`, { headers: { cookie } });
+    const feeds = check1.json?.feeds ?? [];
+    check("MC4", "Check calendars lists each linked calendar with its stays, without guest names", feeds.length === 2 && feeds.every((f) => f.ok) && feeds[1].ranges.some((x) => x.start === "2026-10-20" && x.kind === "reservation") && !/Test Guest/.test(check1.text), check1.text.slice(0, 300), "T-AV-15");
+    const anon = await api(`/api/admin/calendar-check?slug=${SB}`);
+    check("MC5", "Check calendars requires admin", anon.status === 401, anon.status);
+    const cookieSave = await api("/api/admin/properties/2/settings", { method: "PUT", headers: { cookie }, body: { airbnbIcalUrl: "https://a.example/x.ics\nnot a link" } });
+    check("MC6", "saving a bad line in the calendar links is rejected with a clear message", cookieSave.status === 400, `${cookieSave.status} ${cookieSave.text.slice(0, 150)}`);
+  } finally {
+    await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: "http://localhost:8765/steamboat.ics" } });
+    restoreIcal();
+  }
+});
+
 def("Late payment after the hold expired", async () => {
   const a = await book({ guestEmail: "slow@example.com" });
   await expireHold(a.json.bookingId);
