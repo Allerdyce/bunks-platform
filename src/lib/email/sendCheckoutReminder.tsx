@@ -143,8 +143,10 @@ export async function sendCheckoutReminder(bookingId: number, options: CheckoutR
 
   const timeZone = booking.property.timezone ?? 'UTC';
   const checkoutDate = new Date(booking.checkOutDate);
-  const checkoutDateLabel = options.checkoutDateOverride ?? formatCheckoutDate(checkoutDate, timeZone);
-  const checkoutTimeLabel = options.checkoutTimeOverride ?? formatCheckoutTime(checkoutDate, timeZone);
+  // checkOutDate is a calendar date stored as UTC midnight; the time comes from the property.
+  const checkoutDateLabel = options.checkoutDateOverride ?? formatCheckoutDate(checkoutDate, 'UTC');
+  const checkoutTimeLabel =
+    options.checkoutTimeOverride ?? booking.property.checkOutTime ?? formatCheckoutTime(checkoutDate, timeZone);
 
   const support = {
     email: options.supportOverrides?.email ?? resolveHostSupportEmail(booking),

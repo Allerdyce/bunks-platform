@@ -61,9 +61,10 @@ function formatTime(date: Date, timeZone: string) {
   return timeFormatterCache.get(cacheKey)!.format(date);
 }
 
-function formatWindowLabel(base: Date, offsetHours: number, windowLabel: string, timeZone: string) {
+// Check-in is a calendar date stored as UTC midnight, so day labels are computed in UTC.
+function formatWindowLabel(base: Date, offsetHours: number, windowLabel: string) {
   const target = addHours(base, offsetHours);
-  return `${formatDay(target, timeZone)} · ${windowLabel}`;
+  return `${formatDay(target, 'UTC')} · ${windowLabel}`;
 }
 
 function buildContacts(details: OpsDetails): ContactRecord[] {
@@ -112,21 +113,21 @@ function buildThreeDayTimeline(checkIn: Date, timeZone: string) {
     {
       label: 'Deep clean + linens reset',
       owner: 'Ops crew',
-      window: formatWindowLabel(checkIn, -24, '11:00–14:00', timeZone),
+      window: formatWindowLabel(checkIn, -24, '11:00–14:00'),
       status: 'scheduled' as const,
       notes: 'Standard turnover before arrival.',
     },
     {
       label: 'Hot tub + exterior sweep',
       owner: 'Field ops',
-      window: formatWindowLabel(checkIn, -20, '15:00', timeZone),
+      window: formatWindowLabel(checkIn, -20, '15:00'),
       status: 'scheduled' as const,
       notes: 'Balance chemicals + clear pathways.',
     },
     {
       label: 'Pre-arrival walkthrough',
       owner: 'QA lead',
-      window: formatWindowLabel(checkIn, -4, '12:30', timeZone),
+      window: formatWindowLabel(checkIn, -4, '12:30'),
       status: 'scheduled' as const,
       notes: 'Confirm staging, temp, and amenity basket.',
     },
@@ -203,7 +204,7 @@ export function buildHostPrepThreeDayOptions(
     arrivalWindow,
     nights,
     headcount: 'Guest party confirmed',
-    housekeepingWindow: formatWindowLabel(checkIn, -24, '11:00–14:00', booking.property.timezone),
+    housekeepingWindow: formatWindowLabel(checkIn, -24, '11:00–14:00'),
     specialRequests: ['Verify welcome basket + HVAC before the walkthrough.'],
     prepTimeline: buildThreeDayTimeline(checkIn, booking.property.timezone),
     supplyReminders,

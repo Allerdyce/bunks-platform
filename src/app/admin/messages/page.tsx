@@ -43,9 +43,11 @@ type AdminThreadSummary = {
   } | null;
 };
 
+// Stay dates are calendar dates stored as UTC midnight.
 const stayDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
+  timeZone: "UTC",
 });
 const threadTimestampFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",

@@ -3,13 +3,16 @@ import { toAbsoluteUrl } from '@/lib/url';
 
 const DEFAULT_CURRENCY = 'USD';
 
+// Stay dates are calendar dates stored as UTC midnight, so always format them in UTC.
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
   weekday: 'short',
   month: 'long',
   day: 'numeric',
 });
 
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
   month: 'short',
   day: 'numeric',
 });
@@ -48,8 +51,8 @@ export function resolveHostSupportEmail(booking: Booking & { property: Property 
 export function formatStayDates(checkIn: Date, checkOut: Date) {
   const start = shortDateFormatter.format(checkIn);
   const end = shortDateFormatter.format(checkOut);
-  const sameYear = checkIn.getFullYear() === checkOut.getFullYear();
-  const year = checkOut.getFullYear();
+  const sameYear = checkIn.getUTCFullYear() === checkOut.getUTCFullYear();
+  const year = checkOut.getUTCFullYear();
 
   if (sameYear) {
     return `${start} – ${end}, ${year}`;
