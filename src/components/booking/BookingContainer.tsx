@@ -69,7 +69,7 @@ export function BookingContainer({
 
     const subtotal = nights * discountedNightlyRate;
     const cleaningFee = property.cleaningFee ?? 0;
-    const serviceFee = 0; // No service fee on direct bookings
+    const serviceFee = Math.round(subtotal * 0.05); // 5% Bunks service fee (matches src/lib/pricing/calculator.ts)
     const total = subtotal + cleaningFee + serviceFee;
 
     return {

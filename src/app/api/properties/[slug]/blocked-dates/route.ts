@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUnavailableNights, toISODate } from '@/lib/bookingAvailability';
+import { getUnavailableNights } from '@/lib/bookingAvailability';
+import { minimumNightsFor } from '@/lib/stayRules';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 
 export const runtime = 'nodejs';
@@ -24,18 +25,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1));
     const to = new Date(from.getTime() + WINDOW_DAYS * 86_400_000);
 
-    const [unavailable, pricing] = await Promise.all([
-      getUnavailableNights(property.id, from, to, { includePendingHolds: false }),
-      prisma.propertyPricing.findMany({
-        where: { propertyId: property.id, date: { gte: from }, minNights: { gt: 1 } },
-        select: { date: true, minNights: true },
-      }),
-    ]);
+    const unavailable = await getUnavailableNights(property.id, from, to, { includePendingHolds: false });
 
-    const minStay: Record<string, number> = {};
-    for (const row of pricing) {
-      if (row.minNights) minStay[toISODate(row.date)] = row.minNights;
-    }
+    // "default" applies to every check-in date without its own rule.
+    const minStay: Record<string, number> = { default: minimumNightsFor(property.slug) };
 
     return NextResponse.json({
       property: slug,

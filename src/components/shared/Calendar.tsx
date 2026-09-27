@@ -68,7 +68,7 @@ export function Calendar({
     );
 
   const getMinStayForDate = (date: Date) => {
-    return minStay[toISODate(date)] || 1;
+    return minStay[toISODate(date)] || minStay.default || 1;
   };
 
   const isDateInvalidForEnd = (date: Date) => {

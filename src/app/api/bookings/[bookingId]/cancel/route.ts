@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { readSessionFromRequest } from "@/lib/adminAuth";
 import { sendCancellationConfirmation } from "@/lib/email/sendCancellationConfirmation";
 import { sendHostGuestCancelled } from "@/lib/email/sendHostGuestCancelled";
-import { PriceLabsService } from "@/lib/pricelabs/service";
 import { getStripeClient } from "@/lib/stripe";
 import { releaseBookingNights } from "@/lib/bookingAvailability";
 
@@ -81,24 +80,6 @@ export async function POST(
 
             await releaseBookingNights(booking, tx);
         });
-
-        // PriceLabs Sync
-        try {
-            // Need to update reservation status (Canceled)
-            // But we modified booking inside transaction. The `booking` variable is STALE (has old status).
-            // However, `syncReservation` takes a Booking object.
-            // We should manually patch the object or fetch again, or better:
-            // SyncService likely just needs the ID for some things, but `syncReservation` uses the object fields.
-            // Let's manually set status on the object we pass.
-
-            const updatedBooking = { ...booking, status: "CANCELLED" as const };
-            await PriceLabsService.syncReservation(updatedBooking);
-
-            // Update calendar availability (dates open up)
-            await PriceLabsService.syncCalendar(booking.propertyId);
-        } catch (plError) {
-            console.error('Failed to sync cancellation to PriceLabs', plError);
-        }
 
         // 3. Send Emails (Fire and forget or await?)
         // Better to await to report errors, but don't fail the request if email fails?

@@ -203,7 +203,7 @@ export interface PricingQuote {
   nights: number;
 }
 
-export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY" | "PRICELABS";
+export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY";
 
 export interface NightlyLineItem {
   date: string; // YYYY-MM-DD
@@ -265,7 +265,6 @@ export interface AdminProperty {
   serviceFee: number;
   currency: string;
   specialRates: AdminSpecialRate[];
-  pricelabsListingId?: string | null;
 }
 
 export interface AdminFeatureToggle {

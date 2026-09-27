@@ -11,7 +11,6 @@ import { sendHostRefundAdjustment } from '@/lib/email/sendHostRefundAdjustment';
 import { sendPaymentFailure } from '@/lib/email/sendPaymentFailure';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
-import { PriceLabsService } from '@/lib/pricelabs/service';
 import { sendEmail } from '@/lib/email/sendEmail';
 import {
   blockBookingNights,
@@ -162,17 +161,6 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ Booking ${booking.id} marked PAID and dates blocked`);
 
-      // PriceLabs Sync
-      try {
-        const updatedBooking = { ...booking, status: 'PAID' as const };
-        // Sync reservation (now PAID/Reserved status confirmed)
-        await PriceLabsService.syncReservation(updatedBooking);
-        // Sync calendar (blocked dates)
-        await PriceLabsService.syncCalendar(booking.propertyId);
-      } catch (plError) {
-        console.error("Failed to sync Stripe payment to PriceLabs", plError);
-      }
-
       const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails');
 
       try {
@@ -235,12 +223,6 @@ export async function POST(req: NextRequest) {
               await tx.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } });
               await releaseBookingNights(booking, tx);
             });
-            try {
-              await PriceLabsService.syncReservation({ ...booking, status: 'CANCELLED' });
-              await PriceLabsService.syncCalendar(booking.propertyId);
-            } catch (plError) {
-              console.error('Failed to sync refund cancellation to PriceLabs', plError);
-            }
           }
 
           try {

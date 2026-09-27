@@ -70,7 +70,6 @@ export async function GET(request: NextRequest) {
           note: rate.note,
           isBlocked: rate.isBlocked,
         })),
-        pricelabsListingId: property.pricelabsListingId,
       };
     });
 
