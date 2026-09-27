@@ -27,7 +27,7 @@ type PdfRequest = {
 };
 
 // Helper: Format currency without dollar sign for form fields (or with, depending on field type. Usually numeric string is safest)
-const fmt = (num: number) => num.toFixed(2);
+const fmt = (num: number) => (Number.isFinite(Number(num)) ? Number(num).toFixed(2) : '0.00');
 
 // Helper to get value from body (JSON or FormData)
 async function getBodyData(req: NextRequest): Promise<PdfRequest> {
@@ -52,8 +52,13 @@ async function getBodyData(req: NextRequest): Promise<PdfRequest> {
 }
 
 export async function POST(req: NextRequest) {
+    let body: PdfRequest;
     try {
-        const body = await getBodyData(req);
+        body = await getBodyData(req);
+    } catch {
+        return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+    }
+    try {
 
         const publicDir = path.join(process.cwd(), 'public');
         const templatePath = path.join(publicDir, 'Transient Occupancy Tax Return (Fillable) - South County (PDF).pdf');
