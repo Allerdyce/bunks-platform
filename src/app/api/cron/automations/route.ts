@@ -14,6 +14,10 @@ import {
   sendReviewRequest,
   sendMidStayCheckIn,
   sendDoorCodeEmail,
+  sendReceiptEmail,
+  sendBookingConfirmation,
+  sendBookingWelcomeEmail,
+  sendHostNotification,
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
 import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
@@ -175,6 +179,7 @@ async function runAutomations(request: Request) {
   for (const job of DAILY_JOBS.filter((entry) => !PAUSED_EMAIL_TYPES.has(entry.type))) {
     summary[job.key] = await runDailyJob(job, bookings, now, opsDetails);
   }
+  summary.confirmationCatchUp = await catchUpConfirmationEmails(now);
   summary.wifiBookDirect = await handleWiFiBookDirect(now);
 
   return NextResponse.json({ ok: true, ranAt: now.toISOString(), summary });
@@ -300,6 +305,51 @@ async function fetchSentMap(type: EmailType, bookingIds: number[]) {
   });
 
   return new Set(logs.map((log) => log.bookingId ?? 0));
+}
+
+// Booking emails are sent by the Stripe webhook. If that send failed (email provider down,
+// function timeout), Stripe's retry sees the booking already PAID and won't resend, so catch
+// them up here for recent bookings. Skip the last hour so we never race an in-flight webhook.
+const CONFIRMATION_EMAILS: Array<{ type: EmailType; send: (bookingId: number) => Promise<unknown> }> = [
+  { type: 'RECEIPT', send: (id) => sendReceiptEmail(id) },
+  { type: 'BOOKING_CONFIRMATION', send: (id) => sendBookingConfirmation(id) },
+  { type: 'BOOKING_WELCOME', send: (id) => sendBookingWelcomeEmail(id) },
+  { type: 'HOST_NOTIFICATION', send: (id) => sendHostNotification(id) },
+];
+
+async function catchUpConfirmationEmails(now: Date): Promise<BatchSummary> {
+  const bookings = await prisma.booking.findMany({
+    where: {
+      status: 'PAID',
+      createdAt: { gte: new Date(now.getTime() - 7 * DAY_IN_MS), lte: new Date(now.getTime() - 60 * 60_000) },
+      checkOutDate: { gte: now },
+    },
+    select: { id: true, guestEmail: true },
+  });
+  const summary: BatchSummary = { total: 0, sent: 0, skipped: 0, errors: 0 };
+  for (const booking of bookings) {
+    for (const email of CONFIRMATION_EMAILS) {
+      const target = { type: email.type, to: booking.guestEmail, bookingId: booking.id };
+      const claimId = await claimEmail(target);
+      if (claimId === null) continue; // already sent
+      summary.total += 1;
+      try {
+        const result = await email.send(booking.id);
+        if (result === null || result === undefined) {
+          await releaseClaim(claimId);
+          summary.skipped += 1;
+          continue;
+        }
+        await completeClaim(claimId, target);
+        summary.sent += 1;
+      } catch (error) {
+        await releaseClaim(claimId);
+        summary.errors += 1;
+        console.error(`[cron][catch-up] Failed to send ${email.type}`, { bookingId: booking.id, error });
+      }
+    }
+  }
+  return summary;
 }
 
 const WIFI_CAMPAIGN_DELAY_DAYS = 14;

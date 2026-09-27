@@ -320,6 +320,35 @@ def("Daily email automations", async () => {
   void p;
 });
 
+def("Missed confirmation emails are caught up", async () => {
+  const a = await book({ guestEmail: "missed@example.com" });
+  await pay(a);
+  // Simulate the webhook's emails never going out (provider outage / timeout).
+  await db.emailLog.deleteMany({ where: { bookingId: a.json.bookingId } });
+  await db.booking.update({ where: { id: a.json.bookingId }, data: { createdAt: new Date(Date.now() - 2 * 3600_000) } });
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  const first = emails().filter((m) => m.to === "missed@example.com").map((m) => m.subject);
+  check("M1", "daily run re-sends the missed receipt + confirmation", first.some((x) => /receipt/i.test(x)) && first.length >= 2, first.join(" | "), "T-EM-03");
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  check("M2", "catch-up doesn't repeat on the next run", emails().filter((m) => m.to === "missed@example.com").length === 0, emails().map((m) => m.subject).join(" | "), "T-EM-03");
+  const fresh = await book({ guestEmail: "fresh@example.com", checkIn: "2026-11-10", checkOut: "2026-11-13" });
+  await pay(fresh);
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  check("M3", "bookings paid in the last hour are left to the webhook", emails().filter((m) => m.to === "fresh@example.com").length === 0, emails().map((m) => m.subject).join(" | "));
+});
+
+def("Guest messaging is email-only", async () => {
+  const a = await book({ guestEmail: "chat@example.com" });
+  await pay(a);
+  clearEmails();
+  const r = await api(`/api/bookings/${a.json.bookingId}/messages`, { method: "POST", body: { body: "hi", guestEmail: "chat@example.com", bookingReference: a.json.bookingReference } });
+  check("GM1", "guest can't post in-app messages (410 with support email)", r.status === 410 && /@/.test(r.json?.error ?? ""), `${r.status} ${r.text}`, "T-SEC-06");
+  check("GM2", "no host email triggered", emails().length === 0, emails().map((m) => m.subject).join(" | "));
+});
+
 def("Wi-Fi lead capture", async () => {
   const ok = await api("/api/wifi-lead", { method: "POST", body: { email: "Wifi@Example.com", name: "Guest", propertySlug: SB } });
   check("WL1", "valid lead accepted", ok.status === 200, ok.text);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 import {
   assertBookingAccess,
   ensureConversation,
@@ -10,10 +11,7 @@ import {
   serializeMessages,
   toHttpErrorResponse,
 } from "@/lib/messaging/server";
-import {
-  sendGuestMessageNotification,
-  sendHostMessageNotification,
-} from "@/lib/email/sendMessagingNotifications";
+import { sendGuestMessageNotification } from "@/lib/email/sendMessagingNotifications";
 
 export const runtime = "nodejs";
 
@@ -55,15 +53,22 @@ export async function POST(request: NextRequest, context: ParamsOrPromise) {
     if (!requester) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+    // Guest messaging is email-only; the in-app chat was retired.
+    if (requester.kind === "guest") {
+      return NextResponse.json(
+        { error: `Messaging is by email. Please write to ${SUPPORT_EMAIL} and include your booking reference.` },
+        { status: 410 }
+      );
+    }
 
     const booking = await getBookingWithPropertyOrThrow(bookingId);
     assertBookingAccess(booking, requester);
 
     const conversation = await ensureConversation(booking.id);
 
-    const senderEmail = requester.kind === "guest" ? booking.guestEmail : requester.email;
-    const senderName = requester.kind === "guest" ? booking.guestName : `${booking.property.name} Host`;
-    const senderRole = requester.kind === "guest" ? UserRole.GUEST : UserRole.ADMIN;
+    const senderEmail = requester.email;
+    const senderName = `${booking.property.name} Host`;
+    const senderRole = UserRole.ADMIN;
 
     const senderUser = await getOrCreateUserForEmail(senderEmail, senderRole, senderName);
 
@@ -81,13 +86,11 @@ export async function POST(request: NextRequest, context: ParamsOrPromise) {
       viewerKind: requester.kind,
     })[0];
 
-    const notify = requester.kind === "guest"
-      ? sendHostMessageNotification({ booking, messageBody, conversationId: conversation.id })
-      : sendGuestMessageNotification({ booking, messageBody, conversationId: conversation.id });
-
-    notify.catch((error) => {
+    try {
+      await sendGuestMessageNotification({ booking, messageBody, conversationId: conversation.id });
+    } catch (error) {
       console.error("Failed to send messaging notification", error);
-    });
+    }
 
     return NextResponse.json(serialized, { status: 201 });
   } catch (error) {

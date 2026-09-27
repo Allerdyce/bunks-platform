@@ -1,4 +1,5 @@
 import { notAClaim } from '@/lib/email/claims';
+import { stayTimeLabels } from '@/lib/email/helpers';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -17,12 +18,18 @@ import { toAbsoluteUrl } from '@/lib/url';
 
 const EMAIL_TYPE = 'BOOKING_WELCOME' as const;
 
-const DEFAULT_HOUSE_RULES = [
-  'No smoking indoors or on the decks – sensors will alert us.',
-  'Quiet hours are 22:00–07:00 out of respect for neighbors.',
-  'Please rinse and cover the hot tub after each soak.',
-  'Lock doors and arm the security system whenever you leave.',
-];
+// Used when the property has no house rules saved; kept generic so it's true for every home.
+function defaultHouseRules(quietHours?: string | null) {
+  return [
+    'No smoking or vaping indoors.',
+    `Quiet hours are ${quietHours?.trim() || '10 p.m.–7 a.m.'} out of respect for neighbors.`,
+    'Please lock up whenever you head out.',
+  ];
+}
+
+function propertyHouseRules(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((rule): rule is string => typeof rule === 'string' && rule.trim() !== '') : [];
+}
 
 function formatNightsLabel(nights: number) {
   return `${nights} night${nights === 1 ? '' : 's'}`;
@@ -84,21 +91,27 @@ export async function sendBookingWelcomeEmail(
     ];
   }
 
+  const times = stayTimeLabels(booking.property, opsDetails);
   const stayInfo = [
     { label: 'Stay dates', value: stayDates, helper: formatNightsLabel(nights) },
     {
       label: 'Check-in window',
-      value: `${formatDateForEmail(checkIn)} · ${opsDetails.checkInWindow ?? 'Check-in after 16:00'}`,
+      value: `${formatDateForEmail(checkIn)} · ${times.checkIn}`,
       helper: 'Self check-in available',
     },
     {
       label: 'Check-out',
-      value: `${formatDateForEmail(checkOut)} · ${opsDetails.checkOutTime ?? 'Checkout by 10:00'}`,
+      value: `${formatDateForEmail(checkOut)} · ${times.checkOut}`,
       helper: 'Cleaners arrive shortly after',
     },
   ];
 
-  const houseRules = options.houseRules?.length ? options.houseRules : DEFAULT_HOUSE_RULES;
+  const savedRules = propertyHouseRules(booking.property.houseRules);
+  const houseRules = options.houseRules?.length
+    ? options.houseRules
+    : savedRules.length
+      ? savedRules
+      : defaultHouseRules(booking.property.quietHours);
 
   const html = await renderEmail(
     <BookingWelcomeEmail
