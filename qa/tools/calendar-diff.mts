@@ -32,7 +32,7 @@ const ranges = (nights: string[]) => {
   return out;
 };
 
-const res = await fetch(`${site.replace(/\/$/, "")}/api/properties/${slug}/blocked-dates`, { cache: "no-store" });
+const res = await fetch(`${site.replace(/\/$/, "")}/api/properties/${slug}/blocked-dates`, { cache: "no-store", headers: { "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarDiff/1.0)" } });
 if (!res.ok) throw new Error(`site returned HTTP ${res.status}`);
 const siteNights = new Set<string>(((await res.json()).blockedDates ?? []).map((e: { date: string }) => e.date.slice(0, 10)));
 
