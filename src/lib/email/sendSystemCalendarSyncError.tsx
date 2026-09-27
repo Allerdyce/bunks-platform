@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SystemCalendarSyncErrorEmail, type SystemCalendarSyncErrorEmailProps } from '@/emails/SystemCalendarSyncErrorEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_CALENDAR_SYNC_ERROR' as const;
 
@@ -57,7 +58,7 @@ export async function sendSystemCalendarSyncError(options: SendSystemCalendarSyn
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Calendar] ${options.propertyName} · ${options.channel} feed failing`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

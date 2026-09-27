@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button, Heading, Hr, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 function normalizeHref(href?: string | null) {
   if (!href) return null;
@@ -192,7 +193,7 @@ export function BookingConfirmationEmail(props: BookingConfirmationEmailProps) {
           Need help?
         </Heading>
         <Text className="text-sm text-[#475467]">
-          Reach us anytime at {hostSupportEmail ?? 'hello@bunks.com'}
+          Reach us anytime at {hostSupportEmail ?? SUPPORT_EMAIL}
           {hostPhoneNumber ? ` or via SMS at ${hostPhoneNumber}` : ''}.
         </Text>
       </Section>

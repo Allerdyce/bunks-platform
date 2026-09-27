@@ -2,6 +2,7 @@ import * as React from 'react';
 import { SystemEmailFailedEmail } from '@/emails/SystemEmailFailedEmail';
 import type { FailureActionItem, FailureMetadataItem } from '@/emails/SystemEmailFailedEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_EMAIL_FAILED' as const;
 
@@ -80,7 +81,7 @@ export async function sendSystemEmailFailed(options: SystemEmailFailedOptions) {
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Email Failure] ${options.bounceType} · ${options.recipient}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

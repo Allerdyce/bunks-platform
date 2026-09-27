@@ -18,6 +18,7 @@ import {
   releaseBookingNights,
   withPropertyLock,
 } from '@/lib/bookingAvailability';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 export const runtime = 'nodejs';
 
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
           { idempotencyKey: `conflict-refund-${booking.id}` }
         );
         const property = await prisma.property.findUnique({ where: { id: booking.propertyId } });
-        const alertTo = property?.hostSupportEmail || process.env.ADMIN_EMAIL || 'ali@bunks.com';
+        const alertTo = property?.hostSupportEmail || OPS_ALERT_EMAIL;
         try {
           await sendEmail({
             to: alertTo,

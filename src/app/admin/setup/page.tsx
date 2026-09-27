@@ -62,7 +62,7 @@ const TEXT_FIELDS: {
   {
     key: "hostSupportEmail",
     label: "Guest support email",
-    placeholder: "stay@bunks.com",
+    placeholder: "alissa@bunks.com",
   },
   { key: "wifiSsid", label: "Wi-Fi network" },
   { key: "wifiPassword", label: "Wi-Fi password" },

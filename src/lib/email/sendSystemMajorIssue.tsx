@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SystemMajorIssueEmail, type SystemMajorIssueEmailProps } from '@/emails/SystemMajorIssueEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_MAJOR_ISSUE' as const;
 
@@ -61,7 +62,7 @@ export async function sendSystemMajorIssue(options: SendSystemMajorIssueOptions)
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Issue] ${options.propertyName} · ${severitySubjectLabel[options.severity]}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

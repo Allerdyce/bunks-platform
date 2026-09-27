@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SystemCronSummaryEmail, type SystemCronSummaryEmailProps } from '@/emails/SystemCronSummaryEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_CRON_SUMMARY' as const;
 
@@ -69,7 +70,7 @@ export async function sendSystemCronSummary(options: SendSystemCronSummaryOption
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Cron] ${options.cronName} · ${statusSubjectLabel[status]} run`;
 
   const logResult = async (logStatus: 'SENT' | 'FAILED', error?: unknown) => {

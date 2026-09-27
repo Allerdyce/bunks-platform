@@ -20,6 +20,7 @@ import {
   MessagesLayout,
 } from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
@@ -268,7 +269,7 @@ export default function AdminMessagesPage() {
       guestName={activeThread.guestName}
       propertyName={activeThread.property.name}
       hostSupportEmail={
-        activeThread.property.hostSupportEmail ?? "ops@bunks.com"
+        activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL
       }
       onConversationSummaryChange={handleActiveThreadSummaryChange}
     />
@@ -354,7 +355,7 @@ export default function AdminMessagesPage() {
           Property support
         </p>
         <p className="mt-2 font-semibold text-gray-900">
-          {activeThread.property.hostSupportEmail ?? "ops@bunks.com"}
+          {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}
         </p>
         <p className="text-xs text-gray-500">
           Use this escalation channel if messaging doesn&apos;t get a reply
@@ -535,7 +536,7 @@ export default function AdminMessagesPage() {
                 guestName={activeThread.guestName}
                 propertyName={activeThread.property.name}
                 hostSupportEmail={
-                  activeThread.property.hostSupportEmail ?? "ops@bunks.com"
+                  activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL
                 }
                 onConversationSummaryChange={handleActiveThreadSummaryChange}
               />
@@ -626,7 +627,7 @@ export default function AdminMessagesPage() {
                     </p>
                     <p className="font-semibold text-gray-900 text-sm">
                       {activeThread.property.hostSupportEmail ??
-                        "ops@bunks.com"}
+                        SUPPORT_EMAIL}
                     </p>
                     <p className="text-xs text-gray-500">
                       Use this for escalations.

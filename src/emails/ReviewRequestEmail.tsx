@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button, Heading, Hr, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 export interface ReviewRequestEmailProps {
   guestName: string;
@@ -46,7 +47,7 @@ export function ReviewRequestEmail(props: ReviewRequestEmailProps) {
 
       <Hr className="my-6 border-[#EAECF0]" />
       <Text className="text-sm text-[#475467]">
-        Need anything? Reply to this email or reach us at {supportEmail ?? 'hello@bunks.com'}.
+        Need anything? Reply to this email or reach us at {supportEmail ?? SUPPORT_EMAIL}.
       </Text>
     </EmailLayout>
   );

@@ -78,6 +78,7 @@ import { Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Icon, Style } from "ol/style";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 type EssentialMapProps = {
   propertyName: string;
@@ -166,7 +167,7 @@ function EssentialMap({
   );
 }
 
-const supportFallback = "hello@bunks.com";
+const supportFallback = SUPPORT_EMAIL;
 const BOOKING_REFERENCE_PATTERN = /^[A-Z0-9]{5}$/;
 
 function normalizeBookingReferenceInput(raw: string) {

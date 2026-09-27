@@ -7,6 +7,7 @@ import type {
   BookingFailurePayloadSnippet,
 } from '@/emails/SystemBookingCreationFailedEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_BOOKING_CREATION_FAILED' as const;
 
@@ -75,7 +76,7 @@ export async function sendSystemBookingCreationFailed(options: SystemBookingCrea
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Booking Creation Failed] ${options.request.endpoint}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

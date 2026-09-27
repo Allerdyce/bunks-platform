@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SystemPaymentExceptionEmail, type SystemPaymentExceptionEmailProps } from '@/emails/SystemPaymentExceptionEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_PAYMENT_EXCEPTION' as const;
 
@@ -58,7 +59,7 @@ export async function sendSystemPaymentException(options: SendSystemPaymentExcep
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const fallbackContext = options.bookingRef ?? options.propertyName ?? options.guestName ?? options.incidentId;
   const subject = options.subjectOverride ?? `[Payments] ${options.anomalyType} · ${fallbackContext}`;
 

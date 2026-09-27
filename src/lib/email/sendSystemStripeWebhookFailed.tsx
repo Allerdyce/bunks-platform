@@ -6,6 +6,7 @@ import type {
   WebhookMetadataItem,
 } from '@/emails/SystemStripeWebhookFailedEmail';
 import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
 
 const EMAIL_TYPE = 'SYSTEM_STRIPE_WEBHOOK_FAILED' as const;
 
@@ -80,7 +81,7 @@ export async function sendSystemStripeWebhookFailed(options: StripeWebhookFailur
     />,
   );
 
-  const to = options.to ?? 'ops@bunks.com';
+  const to = options.to ?? OPS_ALERT_EMAIL;
   const subject = options.subjectOverride ?? `[Stripe Webhook Failed] ${options.eventType}`;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

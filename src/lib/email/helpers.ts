@@ -1,5 +1,6 @@
 import { Booking, Property } from '@prisma/client';
 import { toAbsoluteUrl } from '@/lib/url';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 const DEFAULT_CURRENCY = 'USD';
 
@@ -45,7 +46,7 @@ export function resolveCheckInGuideUrl(booking: Booking & { property: Property }
 }
 
 export function resolveHostSupportEmail(booking: Booking & { property: Property }) {
-  return booking.property.hostSupportEmail ?? 'ali@bunks.com';
+  return booking.property.hostSupportEmail ?? SUPPORT_EMAIL;
 }
 
 export function formatStayDates(checkIn: Date, checkOut: Date) {

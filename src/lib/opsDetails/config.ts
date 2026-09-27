@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@/lib/contact';
 export type OpsDetailsInput = {
   supportEmail: string;
   supportSmsNumber: string;
@@ -38,11 +39,11 @@ export type OpsReferenceLink = {
 };
 
 export const DEFAULT_OPS_DETAILS: OpsDetailsInput = {
-  supportEmail: 'ali@bunks.com',
+  supportEmail: SUPPORT_EMAIL,
   // No placeholder phone numbers or names: when a value isn't configured in Admin → Details,
   // guest emails omit that line instead of showing a fake contact.
   supportSmsNumber: '',
-  opsEmail: 'ops@bunks.com',
+  opsEmail: SUPPORT_EMAIL,
   opsPhone: '',
   opsDeskPhone: null,
   opsDeskHours: null,
