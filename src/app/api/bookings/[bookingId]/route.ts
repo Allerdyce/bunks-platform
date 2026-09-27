@@ -59,6 +59,8 @@ export async function GET(
           checkInGuideUrl: booking.property.checkInGuideUrl ?? null,
           guestBookUrl: booking.property.guestBookUrl ?? null,
           hostSupportEmail: booking.property.hostSupportEmail ?? null,
+          checkInTime: booking.property.checkInTime ?? null,
+          checkOutTime: booking.property.checkOutTime ?? null,
         },
       },
     });

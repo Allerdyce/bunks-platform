@@ -109,9 +109,11 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
   const isMessagesRoute = pathname?.startsWith("/my-trips") ?? false;
   const bookingSection: BookingPortalSection | null = useMemo(() => {
     if (!isMessagesRoute || !pathname) return null;
-    if (pathname === "/my-trips" || pathname === "/my-trips/essential") return "essential";
-    if (pathname.startsWith("/my-trips/guide")) return "guide";
-    return "messages";
+    // /my-trips, /my-trips/<section> and /my-trips/<ref>/<section>
+    const section = pathname.split("/").filter(Boolean).pop();
+    if (section === "guide") return "guide";
+    if (section === "inbox") return "messages";
+    return "essential";
   }, [isMessagesRoute, pathname]);
 
   const propertyIndex = useMemo(() => new Map(properties.map((p) => [p.slug, p])), [properties]);

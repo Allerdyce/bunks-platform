@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionToken, isValidAdminCredentials, setSessionCookie } from "@/lib/adminAuth";
+import {
+  createSessionToken,
+  isAdminAuthConfigured,
+  isValidAdminCredentials,
+  logAdminAuthConfigError,
+  setSessionCookie,
+} from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  if (!isAdminAuthConfigured()) {
+    logAdminAuthConfigError();
+    return NextResponse.json({ error: "Admin login is not configured" }, { status: 503 });
+  }
+
   const { email, password } = (await req.json().catch(() => ({}))) as {
     email?: string;
     password?: string;
   };
 
-  if (!email || !password) {
+  if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
 

@@ -102,7 +102,7 @@ export class PriceLabsService {
                 propertyId: property.id,
                 checkInDate: { lte: endDate },
                 checkOutDate: { gte: startDate },
-                status: { not: 'CANCELLED' }
+                status: 'PAID'
             }
         });
 

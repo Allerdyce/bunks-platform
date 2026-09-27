@@ -26,7 +26,7 @@ export function HomeHero({ onExplore }: HomeHeroProps) {
             Direct Booking.
           </h1>
           <p className="text-lg sm:text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
-            Book direct and save 10% on other platforms. Experience boutique hospitality in our collection of unique homes.
+            Book direct and save 10% versus other platforms. Experience boutique hospitality in our collection of unique homes.
           </p>
           <Button
             onClick={onExplore}

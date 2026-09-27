@@ -8,6 +8,8 @@ export interface SendEmailOptions {
   cc?: string | string[];
   bcc?: string | string[];
   messageStream?: (typeof MessageStream)[keyof typeof MessageStream];
+  // Marketing email can be paused independently of transactional (booking/guest/host) email.
+  category?: 'transactional' | 'marketing';
 }
 
 const DEFAULT_FROM = process.env.POSTMARK_FROM_ADDRESS ?? process.env.ADMIN_EMAIL ?? 'stays@bunks.com';
@@ -17,13 +19,22 @@ function normalizeRecipients(value?: string | string[]) {
   return Array.isArray(value) ? value.join(',') : value;
 }
 
-// Temporary kill switch: all outbound email is paused. Set EMAIL_SENDING_PAUSED=false to resume.
-const EMAIL_SENDING_PAUSED = process.env.EMAIL_SENDING_PAUSED !== 'false';
+// Marketing email is paused unless EMAIL_SENDING_PAUSED=false. Transactional email always sends.
+const MARKETING_EMAIL_PAUSED = process.env.EMAIL_SENDING_PAUSED !== 'false';
+// Emergency stop for ALL outbound email (transactional included): set EMAIL_PAUSE_ALL=true.
+const ALL_EMAIL_PAUSED = process.env.EMAIL_PAUSE_ALL === 'true';
 
 export async function sendEmail(options: SendEmailOptions) {
-  if (EMAIL_SENDING_PAUSED) {
-    console.info(`[email] Sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
-    throw new Error('Email sending is paused (EMAIL_SENDING_PAUSED).');
+  const category = options.category ?? 'transactional';
+
+  if (ALL_EMAIL_PAUSED) {
+    console.info(`[email] All sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
+    throw new Error('Email sending is paused (EMAIL_PAUSE_ALL).');
+  }
+
+  if (category === 'marketing' && MARKETING_EMAIL_PAUSED) {
+    console.info(`[email] Marketing sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
+    throw new Error('Marketing email sending is paused (EMAIL_SENDING_PAUSED).');
   }
 
   if (!postmarkClient) {

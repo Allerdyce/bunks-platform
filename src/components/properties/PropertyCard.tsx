@@ -35,10 +35,12 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 shadow-sm">
-          <Star className="w-3 h-3 fill-current text-gray-900" />
-          {property.rating}
-        </div>
+        {property.reviews > 0 && property.rating > 0 && (
+          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 shadow-sm">
+            <Star className="w-3 h-3 fill-current text-gray-900" />
+            {property.rating}
+          </div>
+        )}
       </div>
 
       <div className="p-6 flex flex-col flex-grow">
@@ -56,7 +58,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
 
         <div className="flex items-center gap-4 text-gray-500 text-sm my-4 border-t border-gray-50 pt-4">
           <span className="flex items-center gap-1">
-            <Users className="w-4 h-4" /> {property.guests} Guests
+            <Users className="w-4 h-4" /> {property.guests} {property.guests === 1 ? "Guest" : "Guests"}
           </span>
           <span className="flex items-center gap-1">
             <Bed className="w-4 h-4" /> {property.bedrooms} Bd

@@ -3,12 +3,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 interface AdminTopNavProps {
-  active: "details" | "pricing" | "emails" | "resources" | "messages" | "marketing";
+  active: "details" | "setup" | "pricing" | "emails" | "resources" | "messages" | "marketing";
   actions?: React.ReactNode;
 }
 
 const NAV_ITEMS = [
   { id: "details" as const, label: "Details", href: "/admin/details" },
+  { id: "setup" as const, label: "Setup", href: "/admin/setup" },
   { id: "pricing" as const, label: "Pricing", href: "/admin/pricing" },
   { id: "emails" as const, label: "Emails", href: "/admin/emails" },
   { id: "resources" as const, label: "Resources", href: "/admin/resources" },

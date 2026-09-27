@@ -6,7 +6,8 @@ import { STEAMBOAT_GUIDE } from "@/data/steamboatGuide";
 
 interface SteamboatGuestGuideProps {
   /**
-   * When true, sensitive codes (Wi-Fi, garage, lockbox, etc.) render inline.
+   * When true, Wi-Fi and host phone numbers render inline. Door/lock codes are never shown here;
+   * paid guests get them from their trip page.
    * Keep this enabled only in authenticated or booking-specific contexts.
    */
   showSecureDetails?: boolean;
@@ -121,22 +122,11 @@ export function SteamboatGuestGuide({ showSecureDetails = false, className }: St
               secure: true,
             },
             {
-              label: "Garage",
-              value: guide.propertyBasics.garageCode,
-              helper: "Code + press enter",
-              secure: true,
-            },
-            {
-              label: "Lockbox",
-              value: guide.propertyBasics.lockboxCode,
-              helper: "Backup key by garage entry",
-              secure: true,
-            },
-            {
-              label: "Ski locker",
-              value: `Door ${guide.propertyBasics.skiLocker.doorCode} · Locker #${guide.propertyBasics.skiLocker.lockerNumber}`,
-              helper: `Locker code ${guide.propertyBasics.skiLocker.lockerCode}`,
-              secure: true,
+              // Codes are never bundled into the guide; they're served per-booking from /api/trip-access.
+              label: "Door & lock codes",
+              value: showSecureDetails ? "See the Essential info tab" : "On your trip page",
+              helper: "Your access codes appear on your trip page 24 hours before check-in.",
+              secure: false,
             },
             {
               label: "Hosts",

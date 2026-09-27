@@ -100,7 +100,8 @@ export async function calculatePricing(
     const nights = nightlyLineItems.length;
 
     const cleaningFeeCents = Number(property.cleaningFee ?? 8500);
-    const serviceFeeCents = Math.round(nightlySubtotalCents * 0.15);
+    // Direct bookings carry no Bunks service fee: guests pay 10% less than the nightly rate.
+    const serviceFeeCents = 0;
 
     let taxCents = 0;
     // @ts-ignore - Property type inference with include is complex, but we known taxes are included

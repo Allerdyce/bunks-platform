@@ -1,18 +1,24 @@
 
-import { startOfDay, isBefore, isSameDay } from 'date-fns';
+import { startOfDay, isBefore } from 'date-fns';
 import type { DateRange } from '@/types';
 
 /**
- * Checks if a specific date is blocked by iCal or other external sources.
+ * Formats a local calendar date as YYYY-MM-DD. Stay dates are calendar dates, so never
+ * use toISOString() for them: it converts to UTC and shifts the day for many timezones.
+ */
+export const formatStayDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/**
+ * Checks if a specific night is blocked. blockedDates are YYYY-MM-DD strings from the API.
  */
 export const isDateBlocked = (date: Date, blockedDates: string[]): boolean => {
-    return blockedDates.some((blocked) => {
-        // Parse blocked string (YYYY-MM-DD or ISO) to local date comparison
-        // We assume blockedDates are YYYY-MM-DD strings from the API
-        const blockedDate = new Date(blocked);
-        // Adjust logic if blockedDate is ISO with time
-        return isSameDay(date, blockedDate);
-    });
+    const key = formatStayDate(date);
+    return blockedDates.some((blocked) => blocked.slice(0, 10) === key);
 };
 
 /**

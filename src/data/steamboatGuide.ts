@@ -5,12 +5,9 @@ export interface SteamboatGuide {
     checkInTime: string;
     checkOutTime: string;
     wifi: { ssid: string; password: string };
-    garageCode: string;
-    lockboxCode: string;
+    // Door/lock codes intentionally live only in the database (Property row) and are served
+    // to verified guests via /api/trip-access/[ref]. Never add them to client-bundled data.
     skiLocker: {
-      doorCode: string;
-      lockerNumber: string;
-      lockerCode: string;
       locationNotes: string;
     };
     hosts: { name: string; phone: string }[];
@@ -72,12 +69,7 @@ export const STEAMBOAT_GUIDE: SteamboatGuide = {
     checkInTime: "3:00 p.m.",
     checkOutTime: "10:00 a.m.",
     wifi: { ssid: "Townhouse2", password: "Steamboat" },
-    garageCode: "0409",
-    lockboxCode: "1009",
     skiLocker: {
-      doorCode: "47754",
-      lockerNumber: "36",
-      lockerCode: "2482",
       locationNotes:
         "Across from the gondola entrance in Steamboat Square—look for the Alpen Glow door beside the candy store and chairlift swing.",
     },

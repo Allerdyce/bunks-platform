@@ -12,8 +12,9 @@ export const PROPERTIES: Property[] = [
     guests: 8,
     bedrooms: 4,
     bathrooms: 4.5,
-    rating: 4.88,
-    reviews: 94,
+    // No verified reviews yet — rating UI is hidden while these are 0.
+    rating: 0,
+    reviews: 0,
     description:
       "Enjoy sweeping Pacific views from this sparkling 4-bed, 4.5-bath retreat just two blocks from downtown Summerland and a three-minute walk to the sand. Fresh interiors, sun decks, and furnished patios make it effortless to entertain between beach runs, wine tasting, or mountain adventures.",
     image: "/2211-lillie-ave/exterior/exterior-1.webp",
@@ -37,7 +38,7 @@ export const PROPERTIES: Property[] = [
       "Four king bedrooms including a detached cottage suite with private deck",
       "Multiple alfresco lounges, two dining patios, grill station, and propane fire pit",
       "Private hot tub plus 8 beach chairs, umbrellas, and gear for coastal days",
-      "Smart lock access, dedicated workspace, and lightning-fast Wi-Fi for extended stays",
+      "Smart lock access, Wi-Fi, and a dedicated workspace for extended stays",
       "Walk to Field + Fort, Garde, and Summerland Beach or bike into Montecito",
     ],
     aboutSections: [
@@ -175,8 +176,9 @@ export const PROPERTIES: Property[] = [
     bedrooms: 3,
     beds: 5,
     bathrooms: 2.5,
-    rating: 5.0,
-    reviews: 42,
+    // No verified reviews yet — rating UI is hidden while these are 0.
+    rating: 0,
+    reviews: 0,
     description:
       "Best location in Downtown Steamboat—steps from the Yampa River, top restaurants, shops, and the year-round energy of Lincoln Avenue, with effortless access to the mountain via a 15-minute shuttle loop.",
     image: "/steamboat-pictures/exterior/exterior-5.jpg",
@@ -340,11 +342,6 @@ export const PROPERTIES: Property[] = [
     checkOutTime: STEAMBOAT_GUIDE.propertyBasics.checkOutTime,
     wifiSsid: STEAMBOAT_GUIDE.propertyBasics.wifi.ssid,
     wifiPassword: STEAMBOAT_GUIDE.propertyBasics.wifi.password,
-    garageCode: STEAMBOAT_GUIDE.propertyBasics.garageCode,
-    lockboxCode: STEAMBOAT_GUIDE.propertyBasics.lockboxCode,
-    skiLockerDoorCode: STEAMBOAT_GUIDE.propertyBasics.skiLocker.doorCode,
-    skiLockerNumber: STEAMBOAT_GUIDE.propertyBasics.skiLocker.lockerNumber,
-    skiLockerCode: STEAMBOAT_GUIDE.propertyBasics.skiLocker.lockerCode,
     quietHours: STEAMBOAT_GUIDE.checkinCheckout.quietHours,
     parkingNotes: STEAMBOAT_GUIDE.checkinCheckout.parking,
     houseRules: [...STEAMBOAT_GUIDE.checkinCheckout.houseRules],

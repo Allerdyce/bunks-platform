@@ -21,11 +21,6 @@ type DbProperty = Pick<
     | "checkOutTime"
     | "wifiSsid"
     | "wifiPassword"
-    | "garageCode"
-    | "lockboxCode"
-    | "skiLockerDoorCode"
-    | "skiLockerNumber"
-    | "skiLockerCode"
     | "quietHours"
     | "parkingNotes"
     | "houseRules"
@@ -85,11 +80,6 @@ const mergeProperty = (marketing: Property, dbProperty: DbProperty): Property =>
     checkOutTime: marketing.checkOutTime ?? dbProperty.checkOutTime ?? undefined,
     wifiSsid: marketing.wifiSsid ?? dbProperty.wifiSsid ?? undefined,
     wifiPassword: marketing.wifiPassword ?? dbProperty.wifiPassword ?? undefined,
-    garageCode: marketing.garageCode ?? dbProperty.garageCode ?? undefined,
-    lockboxCode: marketing.lockboxCode ?? dbProperty.lockboxCode ?? undefined,
-    skiLockerDoorCode: marketing.skiLockerDoorCode ?? dbProperty.skiLockerDoorCode ?? undefined,
-    skiLockerNumber: marketing.skiLockerNumber ?? dbProperty.skiLockerNumber ?? undefined,
-    skiLockerCode: marketing.skiLockerCode ?? dbProperty.skiLockerCode ?? undefined,
     quietHours: marketing.quietHours ?? dbProperty.quietHours ?? undefined,
     parkingNotes: marketing.parkingNotes ?? dbProperty.parkingNotes ?? undefined,
     houseRules: marketing.houseRules ?? coerceStringArray(dbProperty.houseRules),
@@ -145,11 +135,6 @@ const propertySelect = {
   checkOutTime: true,
   wifiSsid: true,
   wifiPassword: true,
-  garageCode: true,
-  lockboxCode: true,
-  skiLockerDoorCode: true,
-  skiLockerNumber: true,
-  skiLockerCode: true,
   quietHours: true,
   parkingNotes: true,
   houseRules: true,
