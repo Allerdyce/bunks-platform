@@ -38,6 +38,16 @@ export async function sendEmail(options: SendEmailOptions) {
     throw new Error('Marketing email sending is paused (EMAIL_SENDING_PAUSED).');
   }
 
+  // Local QA: write emails to disk instead of sending (ignored in production).
+  const captureDir = process.env.NODE_ENV !== 'production' ? process.env.EMAIL_CAPTURE_DIR : undefined;
+  if (captureDir) {
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    await mkdir(captureDir, { recursive: true });
+    const file = `${captureDir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
+    await writeFile(file, JSON.stringify({ ...options, replyTo: options.replyTo ?? SUPPORT_EMAIL, from: DEFAULT_FROM }, null, 2));
+    return { MessageID: `captured:${file}`, To: normalizeRecipients(options.to), SubmittedAt: new Date().toISOString(), ErrorCode: 0, Message: 'captured' };
+  }
+
   if (!postmarkClient) {
     throw new Error('Postmark client is not configured. Missing POSTMARK_API_KEY.');
   }
