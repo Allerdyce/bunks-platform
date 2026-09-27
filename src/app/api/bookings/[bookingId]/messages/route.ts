@@ -15,7 +15,7 @@ import { sendGuestMessageNotification } from "@/lib/email/sendMessagingNotificat
 
 export const runtime = "nodejs";
 
-type ParamsOrPromise = { params: { bookingId?: string } } | { params: Promise<{ bookingId?: string }> };
+type RouteContext = { params: Promise<{ bookingId: string }> };
 
 type MessageRequestBody = {
   body?: unknown;
@@ -23,14 +23,9 @@ type MessageRequestBody = {
   bookingReference?: unknown;
 };
 
-const resolveParams = async (context: ParamsOrPromise) =>
-  typeof (context.params as Promise<{ bookingId?: string }>).then === "function"
-    ? ((await context.params) as { bookingId?: string })
-    : (context.params as { bookingId?: string });
-
-export async function POST(request: NextRequest, context: ParamsOrPromise) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const params = await resolveParams(context);
+    const params = await context.params;
     const bookingId = Number.parseInt(params.bookingId ?? "", 10);
 
     if (!Number.isFinite(bookingId) || bookingId <= 0) {

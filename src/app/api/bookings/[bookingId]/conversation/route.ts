@@ -10,16 +10,11 @@ import {
 
 export const runtime = "nodejs";
 
-type ParamsOrPromise = { params: { bookingId?: string } } | { params: Promise<{ bookingId?: string }> };
+type RouteContext = { params: Promise<{ bookingId: string }> };
 
-const resolveParams = async (context: ParamsOrPromise) =>
-  typeof (context.params as Promise<{ bookingId?: string }>).then === "function"
-    ? ((await context.params) as { bookingId?: string })
-    : (context.params as { bookingId?: string });
-
-export async function GET(request: NextRequest, context: ParamsOrPromise) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const params = await resolveParams(context);
+    const params = await context.params;
     const bookingId = Number.parseInt(params.bookingId ?? "", 10);
 
     if (!Number.isFinite(bookingId) || bookingId <= 0) {

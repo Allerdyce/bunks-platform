@@ -17,15 +17,13 @@ function normalizeBookingReference(rawValue: string | undefined) {
 
 export async function GET(
   req: NextRequest,
-  context: { params: { bookingId?: string } } | { params: Promise<{ bookingId?: string }> },
+  context: { params: Promise<{ bookingId: string }> },
 ) {
   const limited = rateLimitResponse(req, "trip-lookup", 30, 10 * 60_000);
   if (limited) return limited;
 
   try {
-    const resolvedParams = typeof (context.params as Promise<{ bookingId?: string }>).then === "function"
-      ? await (context.params as Promise<{ bookingId?: string }>)
-      : (context.params as { bookingId?: string });
+    const resolvedParams = await context.params;
 
     const bookingReference = normalizeBookingReference(resolvedParams?.bookingId);
     const email = req.nextUrl.searchParams.get("email");
