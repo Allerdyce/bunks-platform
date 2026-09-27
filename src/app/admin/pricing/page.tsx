@@ -343,7 +343,7 @@ export default function AdminPricingPage() {
                 Rates & availability
               </h1>
               <p className="text-sm text-gray-500">
-                Adjust weekday/weekend rates, cleaning & service fees, plus
+                Set your Airbnb nightly rates and cleaning fee, plus
                 date-specific overrides.
               </p>
             </div>

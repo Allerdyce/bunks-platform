@@ -70,20 +70,18 @@ type EssentialMapProps = {
   className?: string;
 };
 
-// Lightweight location card: opens the address in the guest's maps app instead of
-// shipping an interactive map library to every trip page.
-function EssentialMap({ propertyName, location, address, className = "w-full" }: EssentialMapProps) {
+// Opens the address in the guest's maps app instead of shipping an interactive map
+// library to every trip page.
+function EssentialMap({ propertyName, location, address, className = "" }: EssentialMapProps) {
   const query = address || [propertyName, location].filter(Boolean).join(", ");
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return (
-    <div className={`${className} flex flex-col justify-end gap-3 rounded-[28px] bg-[var(--color-surface-muted,#f3efe8)] p-6`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Getting there</p>
-      <p className="font-serif text-2xl text-gray-900">{address || location || propertyName}</p>
+    <div className={className}>
       <a
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex w-fit items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+        className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
       >
         <MapPin className="h-4 w-4" /> Open in Google Maps
       </a>
@@ -639,7 +637,7 @@ export function BookingDetailsView({
                   {mapProps.address ?? propertyDetails?.location}
                 </p>
               </div>
-              <EssentialMap {...mapProps} className="h-[320px] w-full" />
+              <EssentialMap {...mapProps} className="px-6 pb-6" />
             </div>
             <div className="rounded-xl bg-gray-100 p-7 sm:p-8">
               <h2 className="font-serif text-3xl font-normal">

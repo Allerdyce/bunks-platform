@@ -458,10 +458,10 @@ export default function AdminMessagesPage() {
             Bunks Ops
           </p>
           <h1 className="page-title   text-gray-900 mt-1">
-            Conversations with your guests
+            Bookings & guests
           </h1>
           <p className="text-sm text-gray-500">
-            Look up any booking and reply without leaving the ops console.
+            Look up any booking, see its details, and email the guest.
           </p>
         </div>
 
