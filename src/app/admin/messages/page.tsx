@@ -2,12 +2,24 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Lock, LogOut, MapPin, RefreshCw, Search } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  Search,
+} from "lucide-react";
+import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
-import { BookingMessages } from "@/components/messaging/BookingMessages";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
-import { MessageThreadList, type MessageThreadSummary, MessagesLayout } from "@/components/messaging/MessagesWorkspace";
+import {
+  MessageThreadList,
+  type MessageThreadSummary,
+} from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
+import { SUPPORT_EMAIL } from "@/lib/contact";
+import { CancelBookingControl, type AdminBookingStatus } from "@/components/admin/CancelBookingControl";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
@@ -18,6 +30,9 @@ type AdminThreadSummary = {
   guestEmail: string;
   checkInDate: string;
   checkOutDate: string;
+  status: AdminBookingStatus;
+  totalPriceCents: number;
+  holdExpired: boolean;
   property: {
     id: number;
     name: string;
@@ -31,12 +46,11 @@ type AdminThreadSummary = {
   } | null;
 };
 
-const stayDateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
-const threadTimestampFormatter = new Intl.DateTimeFormat("en-US", {
+// Stay dates are calendar dates stored as UTC midnight.
+const stayDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
+  timeZone: "UTC",
 });
 
 const formatStayRange = (checkIn: string, checkOut: string) => {
@@ -49,14 +63,30 @@ const formatStayRange = (checkIn: string, checkOut: string) => {
   }
 };
 
-const formatThreadTimestamp = (value?: string | null) => {
-  if (!value) return null;
-  try {
-    return threadTimestampFormatter.format(new Date(value));
-  } catch {
-    return value;
-  }
-};
+const formatMoney = (cents: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+const nightsBetweenIso = (checkIn: string, checkOut: string) =>
+  Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000);
+
+const statusPillClass = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
+  booking.status === "PAID"
+    ? "bg-emerald-50 text-emerald-700"
+    : booking.status === "CANCELLED"
+      ? "bg-red-50 text-red-700"
+      : booking.holdExpired
+        ? "bg-gray-100 text-gray-600"
+        : "bg-amber-50 text-amber-700";
+
+const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
+  booking.status === "PAID"
+    ? "Paid"
+    : booking.status === "CANCELLED"
+      ? "Cancelled"
+      : booking.holdExpired
+        ? "Abandoned checkout"
+        : "Awaiting payment";
+
 
 export default function AdminMessagesPage() {
   const [authState, setAuthState] = useState<AuthState>("checking");
@@ -69,12 +99,13 @@ export default function AdminMessagesPage() {
   const [threadsError, setThreadsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
-  const [conversationSnapshots, setConversationSnapshots] = useState<Record<number, { snippet: string | null; timestamp: string | null }>>({});
 
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const res = await fetch("/api/admin/session", { credentials: "include" });
+        const res = await fetch("/api/admin/session", {
+          credentials: "include",
+        });
         setAuthState(res.ok ? "authenticated" : "unauthenticated");
       } catch (err) {
         console.error("Failed to check admin session", err);
@@ -97,7 +128,9 @@ export default function AdminMessagesPage() {
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        throw new Error((payload as { error?: string }).error ?? "Invalid credentials");
+        throw new Error(
+          (payload as { error?: string }).error ?? "Invalid credentials",
+        );
       }
       setAuthState("authenticated");
     } catch (err) {
@@ -110,7 +143,10 @@ export default function AdminMessagesPage() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    await fetch("/api/admin/logout", {
+      method: "POST",
+      credentials: "include",
+    });
     setAuthState("unauthenticated");
     setThreads([]);
     setActiveThreadId(null);
@@ -126,7 +162,12 @@ export default function AdminMessagesPage() {
           credentials: "include",
         });
         const text = await res.text();
-        const data = text ? (JSON.parse(text) as { threads?: AdminThreadSummary[]; error?: string }) : null;
+        const data = text
+          ? (JSON.parse(text) as {
+              threads?: AdminThreadSummary[];
+              error?: string;
+            })
+          : null;
         if (!res.ok) {
           throw new Error((data?.error ?? text) || "Failed to load bookings");
         }
@@ -157,20 +198,12 @@ export default function AdminMessagesPage() {
     }
   }, [authState, fetchThreads]);
 
-  const handleSearchThreads = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSearchThreads = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     await fetchThreads(searchQuery.trim() || undefined);
   };
-
-  const handleThreadSummaryUpdate = useCallback(
-    (threadId: number, summary: { lastMessageSnippet: string | null; lastMessageAt?: string | null }) => {
-      setConversationSnapshots((prev) => ({
-        ...prev,
-        [threadId]: { snippet: summary.lastMessageSnippet, timestamp: summary.lastMessageAt ?? null },
-      }));
-    },
-    [],
-  );
 
   const activeThread = useMemo(() => {
     if (!threads.length) return null;
@@ -183,114 +216,50 @@ export default function AdminMessagesPage() {
   const hostThreadSummaries: MessageThreadSummary[] = useMemo(() => {
     return threads.map((thread) => {
       const property = getPropertyBySlug(thread.property.slug);
-      const snapshot = conversationSnapshots[thread.id];
-      const snippet = snapshot?.snippet ?? thread.lastMessage?.body ?? null;
-      const timestamp = snapshot?.timestamp ?? thread.lastMessage?.sentAt ?? null;
       return {
         id: thread.id,
         title: thread.guestName,
         subtitle: thread.property.name,
-        meta: formatStayRange(thread.checkInDate, thread.checkOutDate),
+        meta: `${formatStayRange(thread.checkInDate, thread.checkOutDate)} · ${bookingStatusLabel(thread)}`,
         badge: thread.referenceCode,
         mediaUrl: property?.image ?? property?.images?.[0] ?? null,
-        lastMessageSnippet: snippet,
-        lastMessageAtLabel: formatThreadTimestamp(timestamp),
+        // Messaging is email-only, so the list shows bookings without chat previews.
+        lastMessageSnippet: null,
+        lastMessageAtLabel: null,
       } as MessageThreadSummary;
     });
-  }, [threads, conversationSnapshots]);
+  }, [threads]);
 
-  const activePropertyDetails = activeThread ? getPropertyBySlug(activeThread.property.slug) ?? null : null;
+  const activePropertyDetails = activeThread
+    ? (getPropertyBySlug(activeThread.property.slug) ?? null)
+    : null;
 
-  const handleActiveThreadSummaryChange = useCallback(
-    (summary: { lastMessageSnippet: string | null; lastMessageAt?: string | null }) => {
-      if (activeThread) {
-        handleThreadSummaryUpdate(activeThread.id, summary);
-      }
-    },
-    [activeThread, handleThreadSummaryUpdate],
-  );
-
-  const conversationPanel = activeThread ? (
-    <BookingMessages
-      variant="panel"
-      viewerRole="host"
-      bookingId={activeThread.id}
-      bookingReference={activeThread.referenceCode}
-      guestEmail={activeThread.guestEmail}
-      guestName={activeThread.guestName}
-      propertyName={activeThread.property.name}
-      hostSupportEmail={activeThread.property.hostSupportEmail ?? "ops@bunks.com"}
-      onConversationSummaryChange={handleActiveThreadSummaryChange}
-    />
-  ) : (
-    <div className="rounded-[32px] border border-dashed border-slate-200 bg-white/90 p-6 text-sm text-slate-500">
-      Select a booking on the left to open the message thread.
-    </div>
-  );
-
-  const reservationPanel = activeThread ? (
-    <div className="flex h-full flex-col gap-6">
-      <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-        {activePropertyDetails?.image && (
-          <div className="relative h-44 w-full">
-            <Image src={activePropertyDetails.image} alt={activeThread.property.name} fill className="object-cover" sizes="320px" />
-          </div>
-        )}
-        <div className="p-6 space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Reservation</p>
-            <h3 className="font-serif text-2xl text-slate-900">{activeThread.property.name}</h3>
-            <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-              <MapPin className="h-4 w-4" /> {activePropertyDetails?.location ?? activeThread.property.slug}
-            </p>
-          </div>
-          <div className="grid gap-4 text-sm text-slate-600">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Guest</p>
-              <p className="font-semibold text-slate-900">{activeThread.guestName}</p>
-              <a href={`mailto:${activeThread.guestEmail}`} className="text-xs text-slate-500 underline">
-                {activeThread.guestEmail}
-              </a>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-in</p>
-                <p className="font-semibold text-slate-900">{stayDateFormatter.format(new Date(activeThread.checkInDate))}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-out</p>
-                <p className="font-semibold text-slate-900">{stayDateFormatter.format(new Date(activeThread.checkOutDate))}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
-              <span>Reference</span>
-              <span className="font-semibold text-slate-900">{activeThread.referenceCode ?? "Pending"}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 text-sm text-slate-600">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Property support</p>
-        <p className="mt-2 font-semibold text-slate-900">{activeThread.property.hostSupportEmail ?? "ops@bunks.com"}</p>
-        <p className="text-xs text-slate-500">Use this escalation channel if messaging doesn&apos;t get a reply within 5 minutes.</p>
-      </div>
-    </div>
-  ) : (
-    <div className="rounded-[32px] border border-dashed border-slate-200 bg-white/90 p-6 text-sm text-slate-500">
-      Choose a booking to see reservation context.
-    </div>
-  );
+  if (authState === "checking") {
+    return <AdminCheckingShell active="messages" />;
+  }
 
   if (authState !== "authenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-700">
-              <Lock className="w-5 h-5" />
-            </div>
-            <h1 className="text-2xl font-serif text-slate-900">Messaging console</h1>
-            <p className="text-sm text-slate-500">Hosts only. Use your admin credentials to continue.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="max-w-md w-full bg-white rounded-xl border border-gray-200 p-8 sm:p-10 space-y-6">
+          <div className="text-center space-y-4">
+            <Link
+              href="/"
+              className="inline-flex mb-4 grayscale"
+              aria-label="Bunks home"
+            >
+              <Image
+                src="/bunks-logo.svg"
+                alt="Bunks"
+                width={120}
+                height={36}
+              />
+            </Link>
+
+            <h1 className="page-title   text-gray-900">Messaging console</h1>
+            <p className="text-sm text-gray-500">
+              Hosts only. Use your admin credentials to continue.
+            </p>
           </div>
           {authError && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -299,28 +268,34 @@ export default function AdminMessagesPage() {
           )}
           <form className="space-y-4" onSubmit={handleLogin}>
             <div>
-              <label className="text-sm font-medium text-slate-700">Email</label>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
+                aria-label="Email"
+                autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 focus:border-slate-500 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 focus:border-gray-500 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">Password</label>
+              <label className="text-sm font-medium text-gray-700">
+                Password
+              </label>
               <input
                 type="password"
+                aria-label="Password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 focus:border-slate-500 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 focus:border-gray-500 focus:outline-none"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full rounded-xl bg-slate-900 text-white py-3 font-medium hover:bg-slate-800 transition"
+              className="w-full rounded-full bg-gray-900 text-white py-3 font-medium hover:bg-gray-800 transition"
               disabled={authLoading}
             >
               {authLoading ? "Signing in..." : "Sign in"}
@@ -336,53 +311,70 @@ export default function AdminMessagesPage() {
       <AdminTopNav
         active="messages"
         actions={
-          <Button onClick={handleLogout} className="inline-flex items-center gap-2">
+          <Button
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2"
+          >
             <LogOut className="w-4 h-4" /> Logout
           </Button>
         }
       />
 
       <main className="flex min-h-0 flex-1 flex-col">
-        <div className="w-full px-6 py-6 lg:px-12 border-b border-slate-100 bg-white z-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bunks Ops</p>
-          <h1 className="text-2xl font-serif text-slate-900 mt-1">Guest messaging console</h1>
-          <p className="text-sm text-slate-500">Look up any booking and reply without leaving the ops console.</p>
+        <div className="w-full px-6 py-6 lg:px-12 border-b border-gray-100 bg-white z-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+            Bunks Ops
+          </p>
+          <h1 className="page-title   text-gray-900 mt-1">
+            Bookings & guests
+          </h1>
+          <p className="text-sm text-gray-500">
+            Look up any booking, see its details, and email the guest.
+          </p>
         </div>
 
         {threadsError && (
-          <div className="m-4 rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="m-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="mr-2 inline h-4 w-4" /> {threadsError}
           </div>
         )}
-        <MessagesLayout
-          variant="full-bleed"
-          sidebar={(
+        <div className="flex flex-col bg-white lg:h-[calc(100vh-80px)] lg:flex-row lg:divide-x lg:divide-gray-200">
+          <aside className="flex flex-col lg:w-[400px] lg:flex-shrink-0 lg:overflow-y-auto">
             <div className="flex h-full flex-col bg-white">
-              <div className="border-b border-slate-100 p-6">
+              <div className="border-b border-gray-100 p-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Messages</p>
-                    <h2 className="mt-1 text-2xl font-serif text-slate-900">All bookings</h2>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                      Bookings
+                    </p>
+                    <h2 className="mt-1 text-2xl font-sans font-semibold text-gray-900">
+                      All bookings
+                    </h2>
                   </div>
-                  <Button variant="ghost" type="button" onClick={() => void fetchThreads()} className="gap-1 px-3 py-2 text-sm">
-                    <RefreshCw className="h-4 w-4" /> Sync
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => void fetchThreads()}
+                    className="gap-1 px-3 py-2 text-sm"
+                  >
+                    <RefreshCw className="h-4 w-4" /> Refresh
                   </Button>
                 </div>
                 <form className="mt-4" onSubmit={handleSearchThreads}>
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-3 h-4 w-4 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-4 top-3 h-4 w-4 text-gray-500" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="Search name, email, or ref"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm focus:border-slate-900 focus:bg-white focus:outline-none"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm focus:border-gray-900 focus:bg-white focus:outline-none"
                     />
                   </div>
                 </form>
                 {threadsLoading && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Syncing latest threads...
+                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading bookings…
                   </div>
                 )}
               </div>
@@ -391,86 +383,109 @@ export default function AdminMessagesPage() {
                   threads={hostThreadSummaries}
                   activeThreadId={activeThread?.id ?? null}
                   onSelect={(thread) => setActiveThreadId(Number(thread.id))}
-                  emptyState={(
-                    <div className="p-8 text-center text-sm text-slate-500">
+                  emptyState={
+                    <div className="p-8 text-center text-sm text-gray-500">
                       No bookings match your search yet.
                     </div>
-                  )}
+                  }
                 />
               </div>
             </div>
-          )}
-          conversation={activeThread ? (
-            <BookingMessages
-              variant="clean"
-              viewerRole="host"
-              bookingId={activeThread.id}
-              bookingReference={activeThread.referenceCode}
-              guestEmail={activeThread.guestEmail}
-              guestName={activeThread.guestName}
-              propertyName={activeThread.property.name}
-              hostSupportEmail={activeThread.property.hostSupportEmail ?? "ops@bunks.com"}
-              onConversationSummaryChange={handleActiveThreadSummaryChange}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
-              Select a booking on the left to open the message thread.
-            </div>
-          )}
-          reservation={activeThread ? (
-            <div className="flex h-full flex-col overflow-y-auto bg-white">
-              {activePropertyDetails?.image && (
-                <div className="relative h-64 w-full shrink-0">
-                  <Image src={activePropertyDetails.image} alt={activeThread.property.name} fill className="object-cover" sizes="320px" />
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent p-6 flex items-end">
-                    <h3 className="font-serif text-2xl text-white shadow-sm">{activeThread.property.name}</h3>
-                  </div>
-                </div>
-              )}
-              <div className="p-8 space-y-8">
-                <div>
-                  <p className="flex items-center gap-2 text-sm text-slate-500">
-                    <MapPin className="h-4 w-4" /> {activePropertyDetails?.location ?? activeThread.property.slug}
+          </aside>
+          <section className="min-w-0 flex-1 lg:overflow-y-auto">
+            {activeThread ? (
+            <div className="mx-auto max-w-3xl space-y-8 p-6 sm:p-10">
+              <header className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                    {activeThread.property.name}
                   </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-6 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-in</p>
-                      <p className="font-semibold text-slate-900">{stayDateFormatter.format(new Date(activeThread.checkInDate))}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Check-out</p>
-                      <p className="font-semibold text-slate-900">{stayDateFormatter.format(new Date(activeThread.checkOutDate))}</p>
-                    </div>
+                  <h2 className="mt-2 font-serif text-3xl text-gray-900">{activeThread.guestName}</h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(activeThread)}`}>
+                      {bookingStatusLabel(activeThread)}
+                    </span>
+                    <span className="text-gray-500">Ref {activeThread.referenceCode ?? "—"}</span>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Guest details</p>
-                  <div>
-                    <p className="font-semibold text-slate-900">{activeThread.guestName}</p>
-                    <a href={`mailto:${activeThread.guestEmail}`} className="text-sm text-slate-500 underline">
-                      {activeThread.guestEmail}
+                {activePropertyDetails?.image && (
+                  <div className="relative hidden h-24 w-36 shrink-0 overflow-hidden rounded-xl sm:block">
+                    <Image
+                      src={activePropertyDetails.image}
+                      alt={activeThread.property.name}
+                      fill
+                      className="object-cover"
+                      sizes="144px"
+                    />
+                  </div>
+                )}
+              </header>
+
+              <dl className="grid grid-cols-2 gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-4">
+                {[
+                  ["Check-in", stayDateFormatter.format(new Date(activeThread.checkInDate))],
+                  ["Check-out", stayDateFormatter.format(new Date(activeThread.checkOutDate))],
+                  ["Nights", String(nightsBetweenIso(activeThread.checkInDate, activeThread.checkOutDate))],
+                  ["Total", formatMoney(activeThread.totalPriceCents)],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-xs uppercase tracking-[0.2em] text-gray-500">{label}</dt>
+                    <dd className="mt-1 font-semibold text-gray-900">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Guest</h3>
+                <p className="text-gray-900">
+                  {activeThread.guestName} ·{" "}
+                  <a href={`mailto:${activeThread.guestEmail}`} className="underline">
+                    {activeThread.guestEmail}
+                  </a>
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                    className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                  >
+                    Email guest
+                  </a>
+                  {activeThread.referenceCode && activeThread.status === "PAID" && (
+                    <a
+                      href={`/my-trips/${activeThread.referenceCode}/essential`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                    >
+                      Guest&apos;s trip page
                     </a>
-                  </div>
-                  <div className="border-t border-slate-100 pt-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Reference</p>
-                    <p className="font-semibold text-slate-900">{activeThread.referenceCode ?? "Pending"}</p>
-                  </div>
+                  )}
                 </div>
-                <div className="space-y-2 border-t border-slate-100 pt-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Internal support</p>
-                  <p className="font-semibold text-slate-900 text-sm">{activeThread.property.hostSupportEmail ?? "ops@bunks.com"}</p>
-                  <p className="text-xs text-slate-500">Use this for escalations.</p>
-                </div>
+                <p className="text-xs text-gray-500">
+                  Guest replies to booking emails go to{" "}
+                  {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}.
+                </p>
+              </section>
+
+              <section className="space-y-3 border-t border-gray-100 pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Cancellation</h3>
+                <CancelBookingControl
+                  key={activeThread.id}
+                  bookingId={activeThread.id}
+                  status={activeThread.status}
+                  totalPriceCents={activeThread.totalPriceCents}
+                  checkInDate={activeThread.checkInDate}
+                  onCancelled={() => void fetchThreads(searchQuery || undefined)}
+                />
+              </section>
+            </div>
+            ) : (
+              <div className="flex h-full items-center justify-center p-10 text-sm text-gray-500">
+                Choose a booking to see its details.
               </div>
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
-              Choose a booking to see reservation context.
-            </div>
-          )}
-        />
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );

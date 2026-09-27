@@ -1,57 +1,154 @@
 {
-  "name": "Airbnb-Inspired System",
-  "version": "1.0.0",
+  "name": "Bunks \u2014 Warm Editorial",
+  "version": "2.0.0",
   "tokens": {
     "colors": {
       "brand": {
-        "primary": { "value": "#03363d", "type": "color" },
-        "hover": { "value": "#022a30", "type": "color" },
-        "light": { "value": "#0a4e57", "type": "color" }
+        "primary": {
+          "value": "#252723",
+          "type": "color"
+        },
+        "hover": {
+          "value": "#454940",
+          "type": "color"
+        },
+        "light": {
+          "value": "#64705b",
+          "type": "color"
+        }
       },
       "text": {
-        "primary": { "value": "#222222", "type": "color" },
-        "secondary": { "value": "#717171", "type": "color" },
-        "inverted": { "value": "#FFFFFF", "type": "color" }
+        "primary": {
+          "value": "#252723",
+          "type": "color"
+        },
+        "secondary": {
+          "value": "#565852",
+          "type": "color"
+        },
+        "inverted": {
+          "value": "#FFFFFF",
+          "type": "color"
+        }
       },
       "ui": {
-        "border": { "value": "#DDDDDD", "type": "color" },
-        "borderHover": { "value": "#222222", "type": "color" },
-        "background": { "value": "#FFFFFF", "type": "color" },
-        "backgroundAlt": { "value": "#F7F7F7", "type": "color" },
-        "overlay": { "value": "rgba(255, 255, 255, 0.8)", "type": "color" }
+        "border": {
+          "value": "#deded5",
+          "type": "color"
+        },
+        "borderHover": {
+          "value": "#72786b",
+          "type": "color"
+        },
+        "background": {
+          "value": "#f8f7f4",
+          "type": "color"
+        },
+        "backgroundAlt": {
+          "value": "#eeede7",
+          "type": "color"
+        },
+        "overlay": {
+          "value": "rgba(248, 247, 244, 0.96)",
+          "type": "color"
+        }
       }
     },
     "typography": {
       "fontFamily": {
-        "base": { "value": "Poppins, sans-serif", "type": "fontFamily" }
+        "base": {
+          "value": "DM Sans, Arial, sans-serif",
+          "type": "fontFamily"
+        },
+        "editorial": {
+          "value": "Lora, Georgia, serif",
+          "type": "fontFamily"
+        }
       },
       "weights": {
-        "light": { "value": 300, "type": "fontWeight" },
-        "regular": { "value": 400, "type": "fontWeight" },
-        "medium": { "value": 500, "type": "fontWeight" },
-        "semibold": { "value": 600, "type": "fontWeight" },
-        "bold": { "value": 700, "type": "fontWeight" }
+        "light": {
+          "value": 300,
+          "type": "fontWeight"
+        },
+        "regular": {
+          "value": 400,
+          "type": "fontWeight"
+        },
+        "medium": {
+          "value": 500,
+          "type": "fontWeight"
+        },
+        "semibold": {
+          "value": 600,
+          "type": "fontWeight"
+        },
+        "bold": {
+          "value": 700,
+          "type": "fontWeight"
+        }
       },
       "sizes": {
-        "xs": { "value": "12px", "type": "fontSize" },
-        "sm": { "value": "14px", "type": "fontSize" },
-        "base": { "value": "16px", "type": "fontSize" },
-        "lg": { "value": "18px", "type": "fontSize" },
-        "xl": { "value": "20px", "type": "fontSize" },
-        "2xl": { "value": "24px", "type": "fontSize" },
-        "3xl": { "value": "32px", "type": "fontSize" }
+        "xs": {
+          "value": "12px",
+          "type": "fontSize"
+        },
+        "sm": {
+          "value": "14px",
+          "type": "fontSize"
+        },
+        "base": {
+          "value": "16px",
+          "type": "fontSize"
+        },
+        "lg": {
+          "value": "18px",
+          "type": "fontSize"
+        },
+        "xl": {
+          "value": "20px",
+          "type": "fontSize"
+        },
+        "2xl": {
+          "value": "24px",
+          "type": "fontSize"
+        },
+        "3xl": {
+          "value": "32px",
+          "type": "fontSize"
+        }
       }
     },
     "borderRadius": {
-      "sm": { "value": "4px", "type": "borderRadius" },
-      "md": { "value": "8px", "type": "borderRadius" },
-      "lg": { "value": "12px", "type": "borderRadius" },
-      "full": { "value": "9999px", "type": "borderRadius" }
+      "sm": {
+        "value": "4px",
+        "type": "borderRadius"
+      },
+      "md": {
+        "value": "8px",
+        "type": "borderRadius"
+      },
+      "lg": {
+        "value": "12px",
+        "type": "borderRadius"
+      },
+      "full": {
+        "value": "9999px",
+        "type": "borderRadius"
+      }
     },
     "shadows": {
-      "brand": { "value": "0 6px 16px rgba(3, 54, 61, 0.15)", "type": "boxShadow" },
-      "floating": { "value": "0 4px 10px rgba(3, 54, 61, 0.2)", "type": "boxShadow" },
-      "card": { "value": "0 2px 4px rgba(0,0,0,0.08)", "type": "boxShadow" }
+      "brand": {
+        "value": "0 2px 4px rgba(37,39,35,0.04)",
+        "type": "boxShadow"
+      },
+      "floating": {
+        "value": "0 12px 40px rgba(37,39,35,0.12)",
+        "type": "boxShadow"
+      },
+      "card": {
+        "value": "0 2px 8px rgba(37,39,35,0.04)",
+        "type": "boxShadow"
+      }
     }
   }
 }

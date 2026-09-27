@@ -17,7 +17,12 @@ interface ImageLightboxProps {
   title?: string;
 }
 
-export function ImageLightbox({ items, initialIndex = 0, onClose, title }: ImageLightboxProps) {
+export function ImageLightbox({
+  items,
+  initialIndex = 0,
+  onClose,
+  title,
+}: ImageLightboxProps) {
   const [index, setIndex] = useState(initialIndex);
 
   useEffect(() => {
@@ -39,7 +44,8 @@ export function ImageLightbox({ items, initialIndex = 0, onClose, title }: Image
     return null;
   }
 
-  const showPrev = () => setIndex((prev) => (prev - 1 + items.length) % items.length);
+  const showPrev = () =>
+    setIndex((prev) => (prev - 1 + items.length) % items.length);
   const showNext = () => setIndex((prev) => (prev + 1) % items.length);
   const activeItem = items[index] ?? items[0];
   const activeLabel = activeItem?.label ?? "Photo";
@@ -47,7 +53,11 @@ export function ImageLightbox({ items, initialIndex = 0, onClose, title }: Image
   const activeSrc = activeItem?.src ?? "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <button
         type="button"
         className="absolute inset-0 w-full h-full cursor-zoom-out"
@@ -55,15 +65,21 @@ export function ImageLightbox({ items, initialIndex = 0, onClose, title }: Image
         aria-label="Close"
       />
       <div className="relative max-w-5xl w-full">
-        <div className="bg-black/40 rounded-3xl overflow-hidden flex flex-col">
+        <div className="bg-black/40 rounded-xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between text-white px-6 py-4 border-b border-white/10">
             <div>
-              {title && <p className="text-xs uppercase tracking-wide text-white/60">{title}</p>}
+              {title && (
+                <p className="text-xs uppercase tracking-wide text-white/60">
+                  {title}
+                </p>
+              )}
               <p className="text-base font-semibold">
                 {activeLabel} · Photo {index + 1} / {items.length}
               </p>
               {activeDescription && (
-                <p className="text-xs text-white/70 mt-1 max-w-xl">{activeDescription}</p>
+                <p className="text-xs text-white/70 mt-1 max-w-xl">
+                  {activeDescription}
+                </p>
               )}
             </div>
             <button

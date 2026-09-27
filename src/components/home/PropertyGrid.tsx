@@ -15,7 +15,7 @@ export function PropertyGrid({ properties, onSelect }: PropertyGridProps) {
         <PropertyCard
           key={property.id}
           property={property}
-          onClick={() => onSelect?.(property)}
+          onClick={onSelect ? () => onSelect(property) : undefined}
         />
       ))}
     </div>

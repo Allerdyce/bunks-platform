@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { DM_Sans, Lora } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({
+const bodyFont = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-poppins",
+  variable: "--font-body",
+  display: "swap",
+});
+const editorialFont = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  variable: "--font-editorial",
   display: "swap",
 });
 
@@ -15,7 +21,8 @@ export const metadata: Metadata = {
     default: "Bunks | Repeat Stays & Savings",
     template: "%s | Bunks",
   },
-  description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
+  description:
+    "Return to homes you love. Book directly with your host and save 10% compared to other booking platforms.",
   applicationName: "Bunks",
   openGraph: {
     type: "website",
@@ -26,7 +33,8 @@ export const metadata: Metadata = {
       default: "Bunks | Repeat Stays & Savings",
       template: "%s | Bunks",
     },
-    description: "Book unique bunkhouses and boutique stays. Experience curated properties in top destinations.",
+    description:
+      "Return to homes you love. Book directly with your host and save 10% compared to other booking platforms.",
     images: [
       {
         url: "/og-image.jpg",
@@ -42,7 +50,8 @@ export const metadata: Metadata = {
       default: "Bunks | Repeat Stays & Savings",
       template: "%s | Bunks",
     },
-    description: "Book unique bunkhouses and boutique stays.",
+    description:
+      "Homes worth returning to. Book directly with your host for 10% less.",
     images: ["/og-image.jpg"],
     creator: "@bunks",
   },
@@ -52,9 +61,9 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   manifest: "/site.webmanifest",
@@ -74,11 +83,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const devBodyClassName = process.env.NODE_ENV === "development" ? "__text_mode_READY__" : undefined;
+  const devBodyClassName =
+    process.env.NODE_ENV === "development" ? "__text_mode_READY__" : undefined;
 
   return (
-    <html lang="en" className={poppins.variable} suppressHydrationWarning>
-      <body className={`${poppins.className} ${devBodyClassName ?? ""}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${bodyFont.variable} ${editorialFont.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className={`${bodyFont.className} ${devBodyClassName ?? ""}`}
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

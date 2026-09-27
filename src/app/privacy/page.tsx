@@ -49,7 +49,8 @@ const sections: SectionConfig[] = [
           "Support inquiries",
           "Guest preferences voluntarily shared (arrival time, accessibility needs, etc.)",
         ],
-        helper: "We do not collect or process: Government IDs, Background checks, Biometric data, Insurance or claims data, AI-inferred behavior profiles.",
+        helper:
+          "We do not collect or process: Government IDs, Background checks, Biometric data, Insurance or claims data, AI-inferred behavior profiles.",
       },
       {
         title: "2.2 Payment Information",
@@ -168,33 +169,49 @@ const sections: SectionConfig[] = [
 
 export const metadata: Metadata = {
   title: "Bunks — Privacy Policy",
-  description: "Learn how Bunks collects, uses, and protects your information across our direct-booking platform.",
+  description:
+    "Learn how Bunks collects, uses, and protects your information across our direct-booking platform.",
 };
 
 export default function PrivacyPage() {
   return (
     <StandaloneLayout>
       <div className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-xs uppercase tracking-[0.4em] text-stone-400 mb-4">Bunks — Privacy Policy</p>
-          <h1 className="font-serif text-4xl text-stone-900 mb-4">Privacy Policy</h1>
-          <p className="text-sm text-stone-500 mb-10">Last Updated: November 2025</p>
-          <p className="text-lg text-stone-700 leading-relaxed mb-12">
-            This Privacy Policy explains how Bunks LLC (“Bunks”, “we”, “our”, or “us”) collects, uses, discloses, and protects
-            information about you when you use our website, services, or direct-booking platform (collectively, the “Service”). By using
-            the Service, you agree to the terms of this Privacy Policy.
+        <div className="max-w-3xl mx-auto reading-copy">
+          <p className="text-xs uppercase tracking-[0.4em] text-gray-500 mb-4">
+            Bunks — Privacy Policy
+          </p>
+          <h1 className="page-title   text-gray-900 mb-4">Privacy Policy</h1>
+          <p className="text-sm text-gray-500 mb-10">
+            Last Updated: November 2025
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed mb-12">
+            This Privacy Policy explains how Bunks LLC (“Bunks”, “we”, “our”, or
+            “us”) collects, uses, discloses, and protects information about you
+            when you use our website, services, or direct-booking platform
+            (collectively, the “Service”). By using the Service, you agree to
+            the terms of this Privacy Policy.
           </p>
 
           <div className="space-y-10">
             {sections.map((section) => (
-              <section key={section.title} className="bg-white border border-stone-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-                <h2 className="font-serif text-2xl text-stone-900 mb-4">{section.title}</h2>
-                {section.intro && <p className="text-stone-600 mb-4">{section.intro}</p>}
-                {section.description && <p className="text-stone-600 mb-4">{section.description}</p>}
+              <section
+                key={section.title}
+                className="border-t border-gray-200 pt-8"
+              >
+                <h2 className="font-serif text-2xl text-gray-900 mb-4">
+                  {section.title}
+                </h2>
+                {section.intro && (
+                  <p className="text-gray-600 mb-4">{section.intro}</p>
+                )}
+                {section.description && (
+                  <p className="text-gray-600 mb-4">{section.description}</p>
+                )}
                 {section.body && (
                   <div className="space-y-2">
                     {section.body.map((item) => (
-                      <p key={item} className="text-stone-600">
+                      <p key={item} className="text-gray-600">
                         {item}
                       </p>
                     ))}
@@ -204,20 +221,30 @@ export default function PrivacyPage() {
                   <div className="mt-6 space-y-6">
                     {section.subsections.map((sub) => (
                       <div key={sub.title}>
-                        <h3 className="font-semibold text-stone-900 mb-3">{sub.title}</h3>
-                        {sub.description && <p className="text-stone-600 mb-3">{sub.description}</p>}
+                        <h3 className="font-semibold text-gray-900 mb-3">
+                          {sub.title}
+                        </h3>
+                        {sub.description && (
+                          <p className="text-gray-600 mb-3">
+                            {sub.description}
+                          </p>
+                        )}
                         {sub.body && (
-                          <ul className="list-disc pl-5 space-y-1 text-stone-600">
+                          <ul className="list-disc pl-5 space-y-1 text-gray-600">
                             {sub.body.map((item) => (
                               <li key={item}>{item}</li>
                             ))}
                           </ul>
                         )}
-                        {sub.helper && <p className="text-sm text-stone-500 mt-3">{sub.helper}</p>}
+                        {sub.helper && (
+                          <p className="text-sm text-gray-500 mt-3">
+                            {sub.helper}
+                          </p>
+                        )}
                         {sub.link && (
                           <a
                             href={sub.link}
-                            className="text-stone-900 underline mt-3 inline-block"
+                            className="text-gray-900 underline mt-3 inline-block"
                             target="_blank"
                             rel="noreferrer"
                           >

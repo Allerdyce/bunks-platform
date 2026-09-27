@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: "*",
             allow: "/",
-            disallow: ["/admin/", "/cleaner/", "/api/"],
+            // Trip pages and the Wi-Fi page are for guests, not search results.
+            disallow: ["/admin/", "/api/", "/my-trips", "/connect/"],
         },
         sitemap: `${BASE_URL}/sitemap.xml`,
     };

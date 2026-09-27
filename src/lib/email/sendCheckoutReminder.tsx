@@ -1,3 +1,6 @@
+import { notAClaim } from '@/lib/email/claims';
+import { propertyToday, resolvePropertyTimeZone } from '@/lib/stayRules';
+import { stayTimeLabels } from '@/lib/email/helpers';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { CheckoutReminderEmail } from '@/emails/CheckoutReminderEmail';
@@ -16,7 +19,6 @@ import {
 const EMAIL_TYPE = 'CHECKOUT_REMINDER' as const;
 
 const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
-const timeFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
 function getDateFormatter(timeZone: string) {
   if (!dateFormatterCache.has(timeZone)) {
@@ -33,71 +35,36 @@ function getDateFormatter(timeZone: string) {
   return dateFormatterCache.get(timeZone)!;
 }
 
-function getTimeFormatter(timeZone: string) {
-  if (!timeFormatterCache.has(timeZone)) {
-    timeFormatterCache.set(
-      timeZone,
-      new Intl.DateTimeFormat('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone,
-      }),
-    );
-  }
-  return timeFormatterCache.get(timeZone)!;
-}
-
 function formatCheckoutDate(date: Date, timeZone: string) {
   return getDateFormatter(timeZone).format(date);
 }
 
-function formatCheckoutTime(date: Date, timeZone: string) {
-  return getTimeFormatter(timeZone).format(date);
-}
-
-function defaultKeySteps(propertyName: string): CheckoutStep[] {
+// Generic checkout asks that hold for every home; property-specific steps can be passed in.
+function defaultKeySteps(): CheckoutStep[] {
   return [
-    {
-      label: 'Kitchen',
-      detail: 'Run the dishwasher (normal cycle) and leave counters crumb-free so chefs can reset quickly.',
-    },
-    {
-      label: 'Climate',
-      detail: `Set thermostats to 65°F so ${propertyName} is stable for the next arrival.`,
-    },
-    {
-      label: 'Gear',
-      detail: 'Stage rentals or add-on gear in the mudroom so ops can inventory.',
-    },
+    { label: 'Kitchen', detail: 'Load and start the dishwasher, and take perishables out of the fridge.' },
+    { label: 'Heating & cooling', detail: 'Turn the heating or air conditioning down before you leave.' },
   ];
 }
 
 function defaultKitchenReminders(): string[] {
-  return [
-    'Empty perishables from the fridge or bag them for us to toss.',
-    'Please rinse cookware and leave it in the drying rack if the dishwasher is full.',
-  ];
+  return ['Bag any perishables you leave behind so we can clear them.'];
 }
 
 function defaultLaundryReminders(): string[] {
-  return [
-    'Start one load of towels if you have time (normal, warm).',
-    'Leave extra linens/towels piled on the primary bed.',
-  ];
+  return ['Leave used towels in the bathroom.'];
 }
 
-function defaultLockupSteps(propertyName: string): string[] {
+function defaultLockupSteps(): string[] {
   return [
-    'Close and latch every deck door and window.',
-    'Arm the security keypad before you leave.',
-    `Double-check you have all personal items—anything left behind in ${propertyName} goes to the concierge locker.`,
+    'Close and lock every door and window.',
+    'Double-check you have all your belongings, including chargers.',
   ];
 }
 
 async function alreadySent(bookingId: number) {
   const log = await prisma.emailLog.findFirst({
-    where: { bookingId, type: EMAIL_TYPE, status: 'SENT' },
+    where: { bookingId, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
   });
   return Boolean(log);
 }
@@ -141,10 +108,13 @@ export async function sendCheckoutReminder(bookingId: number, options: CheckoutR
     }
   }
 
-  const timeZone = booking.property.timezone ?? 'UTC';
+  const timeZone = resolvePropertyTimeZone(booking.property);
   const checkoutDate = new Date(booking.checkOutDate);
-  const checkoutDateLabel = options.checkoutDateOverride ?? formatCheckoutDate(checkoutDate, timeZone);
-  const checkoutTimeLabel = options.checkoutTimeOverride ?? formatCheckoutTime(checkoutDate, timeZone);
+  // checkOutDate is a calendar date stored as UTC midnight; the time comes from the property.
+  const checkoutDateLabel = options.checkoutDateOverride ?? formatCheckoutDate(checkoutDate, 'UTC');
+  const checkoutTimeLabel = options.checkoutTimeOverride ?? stayTimeLabels(booking.property).checkOutTime;
+  const checkoutIsToday =
+    propertyToday(timeZone).getTime() === Date.UTC(checkoutDate.getUTCFullYear(), checkoutDate.getUTCMonth(), checkoutDate.getUTCDate());
 
   const support = {
     email: options.supportOverrides?.email ?? resolveHostSupportEmail(booking),
@@ -159,22 +129,22 @@ export async function sendCheckoutReminder(bookingId: number, options: CheckoutR
       propertyName={booking.property.name}
       checkoutDate={checkoutDateLabel}
       checkoutTime={checkoutTimeLabel}
-      cleanerArrivalWindow={options.cleanerArrivalWindow ?? 'Cleaners arrive ~30 minutes after checkout'}
+      cleanerArrivalWindow={options.cleanerArrivalWindow}
       lateCheckoutNote={options.lateCheckoutNote}
       propertyAddress={options.propertyAddress}
       directionsUrl={options.directionsUrl}
       parkingNote={options.parkingNote}
-      keySteps={options.keySteps ?? defaultKeySteps(booking.property.name)}
+      keySteps={options.keySteps ?? defaultKeySteps()}
       kitchenReminders={options.kitchenReminders ?? defaultKitchenReminders()}
       laundryReminders={options.laundryReminders ?? defaultLaundryReminders()}
-      lockupSteps={options.lockupSteps ?? defaultLockupSteps(booking.property.name)}
-      trashNote={options.trashNote ?? 'Bag trash + recycling and place it in the outdoor bins with lids latched.'}
+      lockupSteps={options.lockupSteps ?? defaultLockupSteps()}
+      trashNote={options.trashNote ?? 'Please bag trash and recycling and put it in the outdoor bins.'}
       support={support}
     />,
   );
 
   const to = options.toOverride ?? booking.guestEmail;
-  const subject = options.subjectOverride ?? `Checkout tomorrow · ${booking.property.name}`;
+  const subject = options.subjectOverride ?? `Checkout ${checkoutIsToday ? 'today' : 'tomorrow'} · ${booking.property.name}`;
   const replyTo = options.replyToOverride ?? support.email;
 
   const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {

@@ -264,8 +264,11 @@ const realApi = {
     const encodedRef = encodeURIComponent(bookingReference.trim());
     const res = await fetch(`/api/bookings/${encodedRef}?${params.toString()}`);
     if (!res.ok) {
-      const message = await res.text();
-      throw new Error(message || "Failed to load booking details");
+      throw new Error(
+        res.status === 404
+          ? "We couldn't find that booking. Check your 5-character reference and booking email, then try again."
+          : "We couldn't load your booking right now. Please try again in a moment.",
+      );
     }
     return res.json();
   },

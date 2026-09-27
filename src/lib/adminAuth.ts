@@ -1,21 +1,20 @@
 import crypto from "crypto";
 import type { NextRequest, NextResponse } from "next/server";
 
+// Used only until ADMIN_EMAILS is set in Vercel; ADMIN_EMAILS then replaces this list entirely.
 const DEFAULT_ADMIN_EMAILS = [
   "ali@bunks.com",
   "matt@bunks.com",
-  "trumandavies7@gmail.com",
   "alissa@bunks.com"
 ];
 const parseAdminEmails = () => {
-  const envEmails = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL;
-  const configured = envEmails
-    ? `${envEmails},${DEFAULT_ADMIN_EMAILS.join(",")}`
-    : DEFAULT_ADMIN_EMAILS.join(",");
+  const list = process.env.ADMIN_EMAILS?.trim()
+    ? process.env.ADMIN_EMAILS
+    : [...DEFAULT_ADMIN_EMAILS, process.env.ADMIN_EMAIL ?? ""].join(",");
 
   return Array.from(
     new Set(
-      configured
+      list
         .split(",")
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean)

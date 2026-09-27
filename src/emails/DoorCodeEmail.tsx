@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Column, Heading, Hr, Row, Section, Text } from '@react-email/components';
+import { Heading, Hr, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
 
 export interface DoorCodeInstruction {
@@ -14,6 +14,7 @@ export interface DoorCodeEmailProps {
   arrivalWindow: string;
   doorCode: string;
   codeValidWindow?: string;
+  codeLabel?: string;
   parkingInfo: DoorCodeInstruction[];
   entrySteps: DoorCodeInstruction[];
   wifi?: { network: string; password: string };
@@ -42,6 +43,7 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
     arrivalWindow,
     doorCode,
     codeValidWindow,
+    codeLabel,
     parkingInfo,
     entrySteps,
     wifi,
@@ -53,22 +55,21 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
   return (
     <EmailLayout previewText={`Secure door code for ${propertyName}`}>
       <Section className="mb-6">
-        <Text className="text-sm uppercase tracking-[0.35em] text-[#7F56D9]">Arrival secured</Text>
+        <Text className="text-sm uppercase tracking-[0.35em] text-[#7F56D9]">Your arrival</Text>
         <Heading as="h1" className="mt-2 text-3xl font-semibold text-[#101828]">
           Hey {guestName}, here&apos;s your code for {propertyName}
         </Heading>
         <Text className="mt-3 text-sm text-[#475467]">
-          This smart lock code is unique to your stay and rotates once you check out. Screenshot this email and
-          download the check-in guide in case the mountains steal your signal mid-drive.
+          Screenshot this email before you travel in case you lose signal on the way.
         </Text>
       </Section>
 
       <Section className="mb-6 rounded-3xl border border-[#D0D5DD] bg-[#101828] p-5 text-white">
-        <Text className="text-xs uppercase tracking-[0.35em] text-[#E4E7EC]">Secure entry</Text>
+        <Text className="text-xs uppercase tracking-[0.35em] text-[#E4E7EC]">{codeLabel ?? 'Entry code'}</Text>
         <Heading className="mt-2 text-3xl font-semibold">{doorCode}</Heading>
         {codeValidWindow && <Text className="text-sm text-[#E4E7EC]">{codeValidWindow}</Text>}
         <Text className="mt-3 text-sm text-[#F2F4F7]">
-          Do not share this code. It auto-expires and rotates per stay.
+          Please don&apos;t share this code with anyone outside your group.
         </Text>
       </Section>
 
@@ -79,41 +80,30 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
         <Text className="text-sm text-[#475467]">
           {propertyName} · {arrivalDate} · {arrivalWindow}
         </Text>
-        <Text className="mt-2 text-sm text-[#475467]">
-          Save these steps offline—cell service drops near the driveway. The keypad sits to the left of the mudroom door.
-        </Text>
       </Section>
 
-      <Section className="mb-6" style={cardStyle}>
-        <Row>
-          <Column style={{ width: '50%', paddingRight: 8, paddingBottom: 12, verticalAlign: 'top' }}>
-            <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-3">
-              Parking
-            </Heading>
-            <div className="space-y-3">
-              {parkingInfo.map((item) => (
-                <div key={item.title}>
-                  <Text className="text-sm font-semibold text-[#111827]">{item.title}</Text>
-                  <Text className="text-sm text-[#475467]">{item.detail}</Text>
-                </div>
-              ))}
-            </div>
-          </Column>
-          <Column style={{ width: '50%', paddingLeft: 8, paddingBottom: 12, verticalAlign: 'top' }}>
-            <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-3">
-              Entry steps
-            </Heading>
-            <div className="space-y-3">
-              {entrySteps.map((item) => (
-                <div key={item.title}>
-                  <Text className="text-sm font-semibold text-[#111827]">{item.title}</Text>
-                  <Text className="text-sm text-[#475467]">{item.detail}</Text>
-                </div>
-              ))}
-            </div>
-          </Column>
-        </Row>
-      </Section>
+      {parkingInfo.length || entrySteps.length ? (
+        <Section className="mb-6" style={cardStyle}>
+          {[
+            { heading: 'Entry', items: entrySteps },
+            { heading: 'Parking', items: parkingInfo },
+          ]
+            .filter((group) => group.items.length)
+            .map((group) => (
+              <div key={group.heading} style={{ paddingBottom: 12 }}>
+                <Heading as="h3" className="text-lg font-semibold text-[#101828] mb-3">
+                  {group.heading}
+                </Heading>
+                {group.items.map((item) => (
+                  <div key={item.title}>
+                    <Text className="text-sm font-semibold text-[#111827]">{item.title}</Text>
+                    <Text className="text-sm text-[#475467]">{item.detail}</Text>
+                  </div>
+                ))}
+              </div>
+            ))}
+        </Section>
+      ) : null}
 
       {wifi ? (
         <Section className="mb-6" style={cardStyle}>
@@ -174,9 +164,6 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
         </Text>
         {support.note && <Text className="mt-2 text-sm text-[#475467]">{support.note}</Text>}
         <Hr className="my-4 border-[#E4E7EC]" />
-        <Text className="text-xs text-[#98A2B3]">
-          Keep your photo ID handy—our ops team may verify it if the keypad flags anything unusual.
-        </Text>
       </Section>
     </EmailLayout>
   );

@@ -14,7 +14,17 @@ const optionalText = z
   .optional();
 
 const SettingsSchema = z.object({
-  airbnbIcalUrl: z.union([z.literal(""), z.string().trim().url()]).optional(),
+  // One calendar link per line (every Airbnb listing for the home, Vrbo, …).
+  airbnbIcalUrl: z
+    .string()
+    .trim()
+    .max(4000)
+    .refine(
+      (value) => value.split(/\s+/).filter(Boolean).every((line) => z.string().url().safeParse(line).success),
+      "Each calendar link must be a full https:// link, one per line.",
+    )
+    .transform((value) => value.split(/\s+/).filter(Boolean).join("\n"))
+    .optional(),
   maxGuests: z.number().int().min(1).max(50).optional(),
   timezone: z
     .string()

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import {
   createSessionToken,
   isAdminAuthConfigured,
@@ -10,6 +11,9 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, "admin-login", 10, 15 * 60_000);
+  if (limited) return limited;
+
   if (!isAdminAuthConfigured()) {
     logAdminAuthConfigError();
     return NextResponse.json({ error: "Admin login is not configured" }, { status: 503 });

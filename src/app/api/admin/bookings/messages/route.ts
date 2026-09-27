@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAdminAuth } from "@/lib/adminAuth";
+import { pendingHoldCutoff } from "@/lib/bookingAvailability";
 
 export const runtime = "nodejs";
 
@@ -54,6 +55,10 @@ export async function GET(request: NextRequest) {
       guestEmail: booking.guestEmail,
       checkInDate: booking.checkInDate.toISOString(),
       checkOutDate: booking.checkOutDate.toISOString(),
+      status: booking.status,
+      totalPriceCents: booking.totalPriceCents,
+      // A PENDING row past its hold is an abandoned checkout, not a booking.
+      holdExpired: booking.status === "PENDING" && booking.createdAt < pendingHoldCutoff(),
       property: {
         id: booking.property.id,
         name: booking.property.name,

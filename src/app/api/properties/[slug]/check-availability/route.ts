@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUnavailableNights, parseStayDate } from '@/lib/bookingAvailability';
+import { checkStayRules } from '@/lib/stayRules';
 
 export const runtime = 'nodejs';
 
@@ -60,6 +61,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Same rules as checkout, so the quote never says "available" for a stay checkout will reject.
+    const violation = checkStayRules(property, checkInDate, checkOutDate);
+    if (violation) {
+      return NextResponse.json({ available: false, reason: violation.error, message: violation.message, minimumNights: violation.minimumNights });
+    }
+
     // Checkout holds are enforced when the booking is created, not in the public quote.
     const unavailable = await getUnavailableNights(property.id, checkInDate, checkOutDate, {
       includePendingHolds: false,
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
     // Calculate pricing quote
     let quote = null;
     try {
-      const guests = body.guests || 1;
+      const guests = Math.max(1, Math.min(Number(body.guests) || 1, property.maxGuests ?? 16));
 
       const { calculatePricing } = await import('@/lib/pricing/calculator');
       quote = await calculatePricing(property.slug, checkInDate, checkOutDate, guests);

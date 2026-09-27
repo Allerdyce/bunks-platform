@@ -10,6 +10,11 @@ const isWeekendNight = (date: Date) => {
 
 const toISODate = (date: Date) => date.toISOString().split('T')[0];
 
+// Direct booking economics: 10% off the owner-set (Airbnb-equivalent) nightly rate,
+// plus a 5% Bunks service fee on the discounted nightly subtotal.
+export const DIRECT_DISCOUNT = 0.1;
+export const SERVICE_FEE_RATE = 0.05;
+
 export async function calculatePricing(
     propertySlug: string,
     checkInDate: Date,
@@ -24,24 +29,6 @@ export async function calculatePricing(
     if (!property) {
         throw new Error(`Property not found: ${propertySlug}`);
     }
-
-    // Fetch PriceLabs Rates
-    let priceLabsRates: any[] = [];
-    if ((prisma as any).propertyPricing) {
-        priceLabsRates = await (prisma as any).propertyPricing.findMany({
-            where: {
-                propertyId: property.id,
-                date: {
-                    gte: checkInDate,
-                    lt: checkOutDate,
-                },
-            },
-        });
-    }
-
-    const priceLabsByDate = new Map(
-        priceLabsRates.map((rate: any) => [toISODate(rate.date), rate])
-    );
 
     // Fetch Special Rates
     const specialRates = await specialRateClient.findMany({
@@ -69,26 +56,22 @@ export async function calculatePricing(
     while (cursor < checkOutDate) {
         const isoDate = toISODate(cursor);
         const special = specialByDate.get(isoDate);
-        const priceLabs = priceLabsByDate.get(isoDate);
 
         // Determine Source & Undiscounted Price
         let source: NightlyLineItem['source'] = 'WEEKDAY';
         let undiscountedCents = weekdayRateCents;
 
-        // Priority: Special (Admin Override) > PriceLabs (Dynamic) > Static Weekend/Weekday
+        // Owner-set rates (the Airbnb-equivalent price): date override > weekend > weekday.
         if (special && !special.isBlocked) {
             source = 'SPECIAL';
             undiscountedCents = special.price;
-        } else if (priceLabs) {
-            source = 'PRICELABS';
-            undiscountedCents = priceLabs.priceCents;
         } else if (isWeekendNight(cursor)) {
             source = 'WEEKEND';
             undiscountedCents = weekendRateCents;
         }
 
-        // Apply 10% Discount
-        const amountCents = Math.round(undiscountedCents * 0.90);
+        // Direct bookings are 10% below the owner-set rate.
+        const amountCents = Math.round(undiscountedCents * (1 - DIRECT_DISCOUNT));
 
         undiscountedNightlySubtotalCents += undiscountedCents;
         nightlyLineItems.push({ date: isoDate, amountCents, source });
@@ -100,20 +83,15 @@ export async function calculatePricing(
     const nights = nightlyLineItems.length;
 
     const cleaningFeeCents = Number(property.cleaningFee ?? 8500);
-    // Direct bookings carry no Bunks service fee: guests pay 10% less than the nightly rate.
-    const serviceFeeCents = 0;
+    const serviceFeeCents = Math.round(nightlySubtotalCents * SERVICE_FEE_RATE);
 
     let taxCents = 0;
-    // @ts-ignore - Property type inference with include is complex, but we known taxes are included
-    if (property.taxes) {
-        // @ts-ignore
-        for (const tax of property.taxes) {
-            let taxableBase = 0;
-            if (tax.appliesTo.includes('nightly')) taxableBase += nightlySubtotalCents;
-            if (tax.appliesTo.includes('cleaning')) taxableBase += cleaningFeeCents;
-            if (tax.appliesTo.includes('service')) taxableBase += serviceFeeCents;
-            taxCents += Math.round(taxableBase * tax.rate);
-        }
+    for (const tax of property.taxes) {
+        let taxableBase = 0;
+        if (tax.appliesTo.includes('nightly')) taxableBase += nightlySubtotalCents;
+        if (tax.appliesTo.includes('cleaning')) taxableBase += cleaningFeeCents;
+        if (tax.appliesTo.includes('service')) taxableBase += serviceFeeCents;
+        taxCents += Math.round(taxableBase * tax.rate);
     }
 
     const totalPriceCents = nightlySubtotalCents + cleaningFeeCents + serviceFeeCents + taxCents;

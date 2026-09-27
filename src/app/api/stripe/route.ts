@@ -8,10 +8,8 @@ import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
 import { sendGuestRefundIssued } from '@/lib/email/sendGuestRefundIssued';
 import { sendHostRefundAdjustment } from '@/lib/email/sendHostRefundAdjustment';
-import { sendPaymentFailure } from '@/lib/email/sendPaymentFailure';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
-import { PriceLabsService } from '@/lib/pricelabs/service';
 import { sendEmail } from '@/lib/email/sendEmail';
 import {
   blockBookingNights,
@@ -19,6 +17,12 @@ import {
   releaseBookingNights,
   withPropertyLock,
 } from '@/lib/bookingAvailability';
+import { OPS_ALERT_EMAIL } from '@/lib/contact';
+import { escapeHtml } from '@/lib/html';
+import { resolvePropertyTimeZone } from '@/lib/stayRules';
+import { sendDoorCodeIfDue } from '@/lib/email/doorCodeDelivery';
+import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
+import { formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from '@/lib/email/helpers';
 
 export const runtime = 'nodejs';
 
@@ -107,6 +111,16 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Re-read Airbnb (if not synced in the last minute) so a reservation made there while the
+      // guest was paying is seen before we confirm. Never throws; on failure we use the last import.
+      const bookingProperty = await prisma.property.findUnique({
+        where: { id: booking.propertyId },
+        select: { id: true, slug: true, airbnbIcalUrl: true },
+      });
+      if (bookingProperty) {
+        await syncAirbnbCalendarIfStale(bookingProperty, 60_000);
+      }
+
       // 1) Confirm the booking under the property lock: only a PENDING booking whose dates
       //    are still free becomes PAID. Stripe retries are no-ops once it is PAID.
       const outcome = await withPropertyLock(booking.propertyId, async (tx) => {
@@ -120,6 +134,9 @@ export async function POST(req: NextRequest) {
             current.propertyId,
             current.checkInDate,
             current.checkOutDate,
+            // Only confirmed bookings and blocks count here, not other guests' unpaid holds: money
+            // already taken beats a checkout that may never finish. If that other guest pays
+            // later, their payment is refunded with an explanation (the conflict path below).
             { excludeBookingIds: [current.id], includePendingHolds: false },
             tx
           ));
@@ -144,12 +161,12 @@ export async function POST(req: NextRequest) {
           { idempotencyKey: `conflict-refund-${booking.id}` }
         );
         const property = await prisma.property.findUnique({ where: { id: booking.propertyId } });
-        const alertTo = property?.hostSupportEmail || process.env.ADMIN_EMAIL || 'ali@bunks.com';
+        const alertTo = property?.hostSupportEmail || OPS_ALERT_EMAIL;
         try {
           await sendEmail({
             to: alertTo,
             subject: `Action needed: booking ${booking.publicReference ?? booking.id} refunded (dates unavailable)`,
-            html: `<p>${booking.guestName} (${booking.guestEmail}) paid for ${property?.name ?? 'a property'} ` +
+            html: `<p>${escapeHtml(booking.guestName)} (${escapeHtml(booking.guestEmail)}) paid for ${escapeHtml(property?.name ?? 'a property')} ` +
               `${booking.checkInDate.toISOString().slice(0, 10)} → ${booking.checkOutDate.toISOString().slice(0, 10)}, ` +
               `but those dates were no longer available when the payment completed. The payment was refunded automatically. ` +
               `Please contact the guest.</p>`,
@@ -157,23 +174,28 @@ export async function POST(req: NextRequest) {
         } catch (alertError) {
           console.error('Failed to send booking conflict alert', alertError);
         }
+        try {
+          await sendEmail({
+            to: booking.guestEmail,
+            subject: `We couldn't complete your booking${property?.name ? ` at ${property.name}` : ''}`,
+            html:
+              `<p>Hi ${escapeHtml(booking.guestName)},</p>` +
+              `<p>We're sorry: the dates you chose (${formatStayDates(booking.checkInDate, booking.checkOutDate)}) ` +
+              `were booked by someone else while your payment was going through, so we couldn't confirm your stay.</p>` +
+              `<p>Your payment of ${formatCurrencyFromCents(booking.totalPriceCents)} has been refunded in full. ` +
+              `It usually appears on your statement within 5–10 business days.</p>` +
+              `<p>Reply to this email and we'll help you find other dates.</p>`,
+          });
+        } catch (guestError) {
+          console.error('Failed to send booking conflict email to guest', guestError);
+        }
         return NextResponse.json({ received: true });
       }
 
       console.log(`✅ Booking ${booking.id} marked PAID and dates blocked`);
 
-      // PriceLabs Sync
-      try {
-        const updatedBooking = { ...booking, status: 'PAID' as const };
-        // Sync reservation (now PAID/Reserved status confirmed)
-        await PriceLabsService.syncReservation(updatedBooking);
-        // Sync calendar (blocked dates)
-        await PriceLabsService.syncCalendar(booking.propertyId);
-      } catch (plError) {
-        console.error("Failed to sync Stripe payment to PriceLabs", plError);
-      }
-
-      const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails');
+      // The booking is already PAID; a failed flag read must not stop the confirmation emails.
+      const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails').catch(() => true);
 
       try {
         await sendReceiptEmail(booking.id, {
@@ -204,6 +226,14 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error('Failed to send booking welcome email', err);
       }
+
+      // Last-minute stays: send the door code now rather than at tomorrow's cron run.
+      try {
+        const paidBooking = await prisma.booking.findUnique({ where: { id: booking.id }, include: { property: true } });
+        if (paidBooking) await sendDoorCodeIfDue(paidBooking);
+      } catch (err) {
+        console.error('Failed to send door code email', err);
+      }
     }
 
     if (event.type === 'charge.refunded') {
@@ -229,25 +259,23 @@ export async function POST(req: NextRequest) {
 
           console.log(`💸 Refund detected for booking ${booking.id}: ${formattedTotal}`);
 
+          // Refunds from an admin cancel or a booking conflict arrive for bookings we already
+          // CANCELLED; those flows email the guest and host themselves.
+          const alreadyCancelled = booking.status === 'CANCELLED';
+
           // A full refund cancels the stay and frees its dates.
-          if (charge.refunded && booking.status !== 'CANCELLED') {
+          if (charge.refunded && !alreadyCancelled) {
             await prisma.$transaction(async (tx) => {
               await tx.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } });
               await releaseBookingNights(booking, tx);
             });
-            try {
-              await PriceLabsService.syncReservation({ ...booking, status: 'CANCELLED' });
-              await PriceLabsService.syncCalendar(booking.propertyId);
-            } catch (plError) {
-              console.error('Failed to sync refund cancellation to PriceLabs', plError);
-            }
+          }
+
+          if (alreadyCancelled) {
+            return NextResponse.json({ received: true });
           }
 
           try {
-            // Import dynamically or ensure top-level import exists
-            // Since we are inside the route, let's assume imports are added.
-            // Using the imported function from top of file (need to add import first, doing in next step if needed, or assumming I can add it now).
-            // Wait, I need to add the import to the top of the file first.
             await sendGuestRefundIssued(booking.id, {
               refundTotal: formattedTotal,
               paymentMethod: describePaymentMethod(charge.payment_intent as Stripe.PaymentIntent) || 'Credit Card',
@@ -259,19 +287,28 @@ export async function POST(req: NextRequest) {
                 },
               ],
               expectedArrivalWindow: '5-10 business days',
-              initiatedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+              initiatedAt: new Date().toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: resolvePropertyTimeZone(booking.property),
+              }),
             });
             console.log(`✅ Sent refund email to guest for booking ${booking.id}`);
 
             // Notify Host/Ops about the adjustment
             try {
               await sendHostRefundAdjustment({
+                to: resolveHostSupportEmail(booking),
                 bookingId: booking.id,
                 logBookingId: booking.id,
                 hostName: 'Host',
                 propertyName: booking.property.name,
                 guestName: booking.guestName,
-                processedAt: new Date().toLocaleString('en-US', { timeZone: booking.property.timezone ?? 'America/Los_Angeles' }),
+                processedAt: new Date().toLocaleString('en-US', {
+                  timeZone: resolvePropertyTimeZone(booking.property),
+                  timeZoneName: 'short',
+                }),
                 guestRefund: formattedTotal,
                 payoutBefore: 'See Dashboard',
                 payoutAfter: 'See Dashboard',
@@ -303,34 +340,10 @@ export async function POST(req: NextRequest) {
 
 
     if (event.type === 'payment_intent.payment_failed') {
+      // Declines happen while the guest is on the payment form, which shows the error and lets
+      // them retry within their hold. No email: it would arrive mid-checkout with no way to pay.
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      const paymentIntentId = paymentIntent.id;
-
-      // Attempt to find booking by intent
-      const booking = await prisma.booking.findUnique({
-        where: { stripePaymentIntentId: paymentIntentId },
-      });
-
-      if (booking) {
-        console.log(`❌ Payment failed for booking ${booking.id}`);
-        try {
-          const formatter = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: paymentIntent.currency.toUpperCase(),
-          });
-          const formattedAmount = formatter.format(paymentIntent.amount / 100);
-
-          await sendPaymentFailure(booking.id, {
-            amountDue: formattedAmount,
-            dueBy: 'Immediately',
-            failureReason: paymentIntent.last_payment_error?.message ?? 'Payment declined by bank',
-            paymentLink: `https://bunks.com/my-trips/${booking.publicReference ?? booking.id}/essential`,
-          });
-          console.log(`✅ Sent payment failure email for booking ${booking.id}`);
-        } catch (err) {
-          console.error('Failed to send payment failure email', err);
-        }
-      }
+      console.log(`❌ Payment attempt failed for PaymentIntent ${paymentIntent.id}: ${paymentIntent.last_payment_error?.message ?? 'declined'}`);
     }
 
     // You can handle other event types here later

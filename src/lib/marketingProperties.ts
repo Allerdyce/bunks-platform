@@ -76,14 +76,16 @@ const mergeProperty = (marketing: Property, dbProperty: DbProperty): Property =>
     weekendRate: centsToDollars(dbProperty.weekendRate) ?? marketing.weekendRate,
     cleaningFee: centsToDollars(dbProperty.cleaningFee) ?? marketing.cleaningFee,
     serviceFee: centsToDollars(dbProperty.serviceFee) ?? marketing.serviceFee,
-    checkInTime: marketing.checkInTime ?? dbProperty.checkInTime ?? undefined,
-    checkOutTime: marketing.checkOutTime ?? dbProperty.checkOutTime ?? undefined,
-    wifiSsid: marketing.wifiSsid ?? dbProperty.wifiSsid ?? undefined,
-    wifiPassword: marketing.wifiPassword ?? dbProperty.wifiPassword ?? undefined,
-    quietHours: marketing.quietHours ?? dbProperty.quietHours ?? undefined,
-    parkingNotes: marketing.parkingNotes ?? dbProperty.parkingNotes ?? undefined,
-    houseRules: marketing.houseRules ?? coerceStringArray(dbProperty.houseRules),
-    emergencyContacts: marketing.emergencyContacts ?? coerceEmergencyContacts(dbProperty.emergencyContacts),
+    // Operational details are edited in Admin → Setup, so the database wins; the static
+    // listing data is only a fallback for fields that haven't been filled in yet.
+    checkInTime: dbProperty.checkInTime?.trim() || marketing.checkInTime || undefined,
+    checkOutTime: dbProperty.checkOutTime?.trim() || marketing.checkOutTime || undefined,
+    wifiSsid: dbProperty.wifiSsid?.trim() || marketing.wifiSsid || undefined,
+    wifiPassword: dbProperty.wifiPassword?.trim() || marketing.wifiPassword || undefined,
+    quietHours: dbProperty.quietHours?.trim() || marketing.quietHours || undefined,
+    parkingNotes: dbProperty.parkingNotes?.trim() || marketing.parkingNotes || undefined,
+    houseRules: coerceStringArray(dbProperty.houseRules) ?? marketing.houseRules,
+    emergencyContacts: coerceEmergencyContacts(dbProperty.emergencyContacts) ?? marketing.emergencyContacts,
   };
 
   return merged;

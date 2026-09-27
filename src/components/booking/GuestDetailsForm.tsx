@@ -30,7 +30,12 @@ export function GuestDetailsForm({
     <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="guest-first-name" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <label
+            htmlFor="guest-first-name"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            First Name
+          </label>
           <input
             id="guest-first-name"
             name="firstName"
@@ -39,11 +44,18 @@ export function GuestDetailsForm({
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
             value={value.firstName}
-            onChange={(event) => onChange({ ...value, firstName: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...value, firstName: event.target.value })
+            }
           />
         </div>
         <div>
-          <label htmlFor="guest-last-name" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <label
+            htmlFor="guest-last-name"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Last Name
+          </label>
           <input
             id="guest-last-name"
             name="lastName"
@@ -52,12 +64,19 @@ export function GuestDetailsForm({
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
             value={value.lastName}
-            onChange={(event) => onChange({ ...value, lastName: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...value, lastName: event.target.value })
+            }
           />
         </div>
       </div>
       <div>
-        <label htmlFor="guest-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+        <label
+          htmlFor="guest-email"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Email Address
+        </label>
         <input
           id="guest-email"
           name="email"
@@ -66,11 +85,18 @@ export function GuestDetailsForm({
           type="email"
           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
           value={value.email}
-          onChange={(event) => onChange({ ...value, email: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...value, email: event.target.value })
+          }
         />
       </div>
       <div>
-        <label htmlFor="guest-count" className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+        <label
+          htmlFor="guest-count"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Guests
+        </label>
         <div className="relative">
           <select
             id="guest-count"

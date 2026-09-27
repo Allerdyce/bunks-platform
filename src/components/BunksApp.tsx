@@ -1,16 +1,14 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type {
   BookingLookupPayload,
   BookingPortalSection,
   DateRange,
-  JournalPost,
   Property,
   ViewState,
 } from "@/types";
@@ -21,12 +19,9 @@ import { PropertyDetailView } from "@/components/properties/PropertyDetailView";
 import { BookingContainer } from "@/components/booking/BookingContainer";
 import { SuccessView } from "@/components/views/SuccessView";
 import { AboutView } from "@/components/views/AboutView";
-import { JournalView } from "@/components/views/JournalView";
-import { BlogPostView } from "@/components/views/BlogPostView";
 import { BookingDetailsView } from "@/components/views/BookingDetailsView";
 import { LoaderScreen } from "@/components/shared/LoaderScreen";
 import { PROPERTIES } from "@/data/properties";
-import { JOURNAL_POSTS } from "@/data/journal";
 
 interface BunksAppProps {
   properties?: Property[];
@@ -60,45 +55,12 @@ const getPathSlugFromCanonical = (slug: string | null) => {
   return CANONICAL_TO_PATH_SLUG[slug] ?? slug;
 };
 
-// --- Stripe + Firebase scaffolding ---
-// Stripe Elements is wired via `lib/stripePlaceholder`, which now wraps the real @stripe/* packages in sandbox mode.
-// Ensure NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, and STRIPE_WEBHOOK_SECRET are present in env files.
-// Firebase remains optional — provide NEXT_PUBLIC_FIREBASE_CONFIG to enable anonymous analytics.
-
-let auth: any;
-let signInAnonymously: any;
-
-try {
-  const { initializeApp } = require("firebase/app");
-  const { getAuth, signInAnonymously: signInAnon } = require("firebase/auth");
-  const { getFirestore } = require("firebase/firestore");
-
-  const rawConfig =
-    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FIREBASE_CONFIG
-      ? process.env.NEXT_PUBLIC_FIREBASE_CONFIG
-      : typeof (globalThis as any).__firebase_config !== "undefined"
-        ? (globalThis as any).__firebase_config
-        : null;
-
-  if (rawConfig) {
-    const config = typeof rawConfig === "string" ? JSON.parse(rawConfig) : rawConfig;
-    const app = initializeApp(config);
-    auth = getAuth(app);
-    getFirestore(app);
-    signInAnonymously = signInAnon;
-  }
-} catch (error) {
-  console.warn("Firebase not initialized (preview mode or missing config). Analytics disabled.", error);
-}
-
 const BOOKING_LOOKUP_STORAGE_KEY = "bunks:lastBookingLookup";
 
 export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
   const properties = useMemo(() => (hydratedProperties?.length ? hydratedProperties : PROPERTIES), [hydratedProperties]);
   const [view, setView] = useState<ViewState>("home");
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [selectedPost, setSelectedPost] = useState<JournalPost | null>(null);
-  const lastPostSlugRef = useRef<string | null>(null);
   const [bookingDates, setBookingDates] = useState<DateRange>(initialRange);
   const [guestCount, setGuestCount] = useState(1);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -112,7 +74,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     // /my-trips, /my-trips/<section> and /my-trips/<ref>/<section>
     const section = pathname.split("/").filter(Boolean).pop();
     if (section === "guide") return "guide";
-    if (section === "inbox") return "messages";
+    // Guest messaging is email-only; old /inbox links land on Essentials.
     return "essential";
   }, [isMessagesRoute, pathname]);
 
@@ -281,16 +243,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       }
 
       // Handle Params
-      const postSlug = params.get("post");
-      if (postSlug) {
-        const post = JOURNAL_POSTS.find(p => p.slug === postSlug);
-        if (post) {
-          setSelectedPost(post);
-          setView('blog-post');
-          return;
-        }
-      }
-
       const viewParam = params.get("view") as ViewState | null;
       if (viewParam) {
         setView(viewParam);
@@ -300,7 +252,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       // Default Home
       setView('home');
       setSelectedProperty(null);
-      setSelectedPost(null);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -346,32 +297,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     }
   }, [activePropertySlug, propertyIndex, resetBookingState, selectedProperty, updateUrlState, view]);
 
-  useEffect(() => {
-    if (!searchParams) return;
-    const postSlug = searchParams.get("post");
-    if (postSlug === lastPostSlugRef.current) {
-      return;
-    }
-    lastPostSlugRef.current = postSlug;
-
-    if (postSlug) {
-      if (activePropertySlug) {
-        updateUrlState({ slug: null }, "replace");
-        return;
-      }
-      const post = JOURNAL_POSTS.find((entry) => entry.slug === postSlug);
-      if (post) {
-        setSelectedPost(post);
-        setView("blog-post");
-      } else {
-        updateUrlState({ post: null }, "replace");
-      }
-      return;
-    }
-
-    setSelectedPost(null);
-    setView("journal");
-  }, [activePropertySlug, searchParams, updateUrlState]);
 
   useEffect(() => {
     if (isMessagesRoute) {
@@ -379,9 +304,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
         setSelectedProperty(null);
         // Don't reset booking state here unnecessarily if we want to return? 
         // Actually for messages route we probably don't care about the cart.
-      }
-      if (selectedPost) {
-        setSelectedPost(null);
       }
       const targetView: ViewState = bookingSection ? (`booking-${bookingSection}` as ViewState) : "booking-details";
       if (view !== targetView) {
@@ -391,7 +313,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     }
 
     if (!searchParams) return;
-    if (view === "blog-post") return;
     // Explicitly check param
     const viewParam = searchParams.get("view") as ViewState | null;
 
@@ -402,18 +323,15 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     if (activePropertySlug && !viewParam) {
       return;
     }
-    const allowedViews: ViewState[] = ["home", "about", "journal", "booking", "booking-details", "booking-essential", "booking-guide", "booking-messages"]; // Added "booking"
+    const allowedViews: ViewState[] = ["home", "about", "booking", "booking-details", "booking-essential", "booking-guide", "booking-messages"];
 
     if (viewParam && allowedViews.includes(viewParam)) {
       if (viewParam !== view) {
         // ... (Logic to clear other states)
-        if (viewParam === "home" || viewParam === "about" || viewParam === "journal" || viewParam === "booking-details") {
+        if (viewParam === "home" || viewParam === "about" || viewParam === "booking-details") {
           if (selectedProperty) {
             setSelectedProperty(null);
             resetBookingState();
-          }
-          if (viewParam !== "journal" && selectedPost) {
-            setSelectedPost(null);
           }
         }
         // Special handling for booking: ensure property is selected?
@@ -435,12 +353,9 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
         setSelectedProperty(null);
         resetBookingState();
       }
-      if (selectedPost) {
-        setSelectedPost(null);
-      }
       setView("home");
     }
-  }, [activePropertySlug, isMessagesRoute, searchParams, view, selectedProperty, selectedPost, resetBookingState, bookingSection, propertyIndex]);
+  }, [activePropertySlug, isMessagesRoute, searchParams, view, selectedProperty, resetBookingState, bookingSection, propertyIndex]);
 
   useEffect(() => {
     if (view === "booking") return;
@@ -449,12 +364,11 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     // However, the listings handler has a setTimeout which will override this immediate scroll (or happen after).
     // Standard navigation should scroll to top.
     window.scrollTo(0, 0);
-  }, [view, selectedProperty, selectedPost]);
+  }, [view, selectedProperty]);
 
   const handleNavigate = (target: ViewState, payload?: unknown) => {
-    if (["home", "listings", "about", "journal", "booking-details", "booking-essential", "booking-guide", "booking-messages"].includes(target)) {
+    if (["home", "listings", "about", "booking-details", "booking-essential", "booking-guide", "booking-messages"].includes(target)) {
       setSelectedProperty(null);
-      setSelectedPost(null);
       resetBookingState();
     }
 
@@ -480,10 +394,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       updateUrlState({ slug: null, view: "about", post: null }, "replace", { scroll: false });
     }
 
-    if (target === "journal") {
-      updateUrlState({ slug: null, view: "journal", post: null }, "replace", { scroll: false });
-    }
-
     if (
       target === "booking-details" ||
       target === "booking-essential" ||
@@ -491,12 +401,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       target === "booking-messages"
     ) {
       updateUrlState({ slug: null, view: target, post: null }, "replace", { scroll: false });
-    }
-
-    if (target === "blog-post" && payload) {
-      setSelectedPost(payload as JournalPost);
-      const postPayload = payload as JournalPost;
-      updateUrlState({ slug: null, view: null, post: postPayload.slug }, "push", { scroll: false });
     }
 
     if (target === "listings") {
@@ -523,6 +427,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     <Layout
       onNavigate={handleNavigate}
       currentView={view}
+      immersiveHeader={view === "home"}
       bookingSection={bookingSection}
       bookingRef={pathBookingRef}
       hideFooter={isBookingViewState}
@@ -535,23 +440,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       )}
 
       {view === "about" && <AboutView onNavigate={handleNavigate} />}
-
-      {view === "journal" && (
-        <JournalView
-          posts={JOURNAL_POSTS}
-          onNavigate={handleNavigate}
-          onOpenPost={(post) => handleNavigate("blog-post", post)}
-        />
-      )}
-
-      {view === "blog-post" && selectedPost && (
-        <BlogPostView
-          post={selectedPost}
-          relatedPosts={JOURNAL_POSTS.filter((post) => post.id !== selectedPost.id).slice(0, 2)}
-          onBack={() => handleNavigate("journal")}
-          onOpenPost={(post) => handleNavigate("blog-post", post)}
-        />
-      )}
 
       {view === "property" && selectedProperty && (
         <PropertyDetailView

@@ -18,9 +18,19 @@ export function parseStayDate(value: unknown): Date | null {
   if (typeof value !== "string") return null;
   const match = DATE_ONLY.exec(value.trim());
   if (!match) return null;
-  const [, y, m, d] = match;
-  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
-  return Number.isNaN(date.getTime()) ? null : date;
+  const [year, month, day] = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Reject dates that roll over (2026-02-30 → Mar 2) and implausible years.
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    year < 2000 ||
+    year > 2100
+  ) {
+    return null;
+  }
+  return date;
 }
 
 export const toISODate = (date: Date) => date.toISOString().slice(0, 10);
@@ -52,7 +62,7 @@ type UnavailableOptions = {
 
 /**
  * Returns every unavailable night (YYYY-MM-DD) for the property in [from, to).
- * Sources: Airbnb iCal + direct blocks, PriceLabs booked/unbookable nights,
+ * Sources: Airbnb iCal + direct blocks,
  * admin-blocked special rates, PAID bookings, and PENDING bookings still inside their hold.
  */
 export async function getUnavailableNights(
@@ -76,9 +86,8 @@ export async function getUnavailableNights(
     });
   }
 
-  const [blocked, pricingBlocked, specialBlocked, bookings] = await Promise.all([
+  const [blocked, specialBlocked, bookings] = await Promise.all([
     db.blockedDate.findMany({ where: { propertyId, date: range }, select: { date: true } }),
-    db.propertyPricing.findMany({ where: { propertyId, date: range, isBlocked: true }, select: { date: true } }),
     db.specialRate.findMany({ where: { propertyId, date: range, isBlocked: true }, select: { date: true } }),
     db.booking.findMany({
       where: {
@@ -93,7 +102,7 @@ export async function getUnavailableNights(
   ]);
 
   const nights = new Set<string>();
-  for (const row of [...blocked, ...pricingBlocked, ...specialBlocked]) {
+  for (const row of [...blocked, ...specialBlocked]) {
     nights.add(toISODate(row.date));
   }
   for (const booking of bookings) {
@@ -129,7 +138,7 @@ export async function withPropertyLock<T>(propertyId: number, fn: (tx: Prisma.Tr
   );
 }
 
-/** Block a paid booking's nights as DIRECT so iCal export and PriceLabs see them. */
+/** Block a paid booking's nights as DIRECT so the iCal export includes them. */
 export async function blockBookingNights(
   booking: { propertyId: number; checkInDate: Date; checkOutDate: Date },
   db: Db = prisma,

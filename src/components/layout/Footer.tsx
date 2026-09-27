@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { NavigateHandler } from "@/types";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 interface FooterProps {
   onNavigate: NavigateHandler;
@@ -10,18 +11,32 @@ interface FooterProps {
 
 export function Footer({ onNavigate }: FooterProps) {
   return (
-    <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 py-12">
+    <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-16">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-4 lg:px-8">
         <div className="col-span-1 md:col-span-2 space-y-4">
-          <Link href="/" className="flex items-center" aria-label="Bunks home" onClick={() => onNavigate("home")}>
-            <Image src="/bunks-logo.svg" alt="Bunks" width={140} height={40} className="h-10 w-auto" />
+          <Link
+            href="/"
+            className="flex items-center"
+            aria-label="Bunks home"
+            onClick={() => onNavigate("home")}
+          >
+            <Image
+              src="/bunks-logo.svg"
+              alt="Bunks"
+              width={140}
+              height={40}
+              className="h-8 w-auto grayscale"
+            />
           </Link>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
-            Boutique bunkhouses and host-led experiences inspired by the warmth of the mountains.
+            Homes worth returning to. Hosts you can book with directly. A more
+            personal way to stay, for 10% less.
           </p>
         </div>
         <div>
-          <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Company</h4>
+          <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">
+            Company
+          </h4>
           <ul className="mt-4 space-y-2 text-sm text-[var(--color-text-secondary)]">
             <li>
               <Link
@@ -34,20 +49,24 @@ export function Footer({ onNavigate }: FooterProps) {
             </li>
             <li>
               <Link
-                href="/?view=journal"
-                onClick={() => onNavigate("journal")}
+                href="/owners"
                 className="transition hover:text-[var(--color-text-primary)]"
               >
-                Journal
+                For owners
               </Link>
             </li>
           </ul>
         </div>
         <div>
-          <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">Support</h4>
+          <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">
+            Support
+          </h4>
           <ul className="mt-4 space-y-2 text-sm text-[var(--color-text-secondary)]">
             <li>
-              <a href="mailto:stay@bunks.com" className="transition hover:text-[var(--color-text-primary)]">
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="transition hover:text-[var(--color-text-primary)]"
+              >
                 Contact
               </a>
             </li>
@@ -61,7 +80,10 @@ export function Footer({ onNavigate }: FooterProps) {
               </Link>
             </li>
             <li>
-              <Link href="/privacy" className="transition hover:text-[var(--color-text-primary)]">
+              <Link
+                href="/privacy"
+                className="transition hover:text-[var(--color-text-primary)]"
+              >
                 Privacy Policy
               </Link>
             </li>

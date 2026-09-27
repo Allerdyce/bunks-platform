@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Heading, Hr, Row, Column, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 export interface ReceiptLineItem {
   label: string;
@@ -55,7 +56,7 @@ export function ReceiptEmail(props: ReceiptEmailProps) {
 
       <Hr className="my-6 border-[#EAECF0]" />
       <Text className="text-sm text-[#475467]">
-        Questions? Reply to this email or contact {supportEmail ?? 'hello@bunks.com'}.
+        Questions? Reply to this email or contact {supportEmail ?? SUPPORT_EMAIL}.
       </Text>
     </EmailLayout>
   );

@@ -1,0 +1,439 @@
+{
+  "at": "2026-09-27T20:52:57.263Z",
+  "pass": 54,
+  "total": 54,
+  "results": [
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-home",
+      "description": "desktop / loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-steamboat",
+      "description": "desktop /property/steamboat-downtown-townhome loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-summerland",
+      "description": "desktop /property/summerland-ocean-view-beach-bungalow loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-about",
+      "description": "desktop /?view=about loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-mytrips",
+      "description": "desktop /my-trips loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-privacy",
+      "description": "desktop /privacy loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-wifi",
+      "description": "desktop /connect/steamboat-downtown-townhome loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-desktop-owners",
+      "description": "desktop /owners loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-home",
+      "description": "mobile / loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-home-overflow",
+      "description": "/ has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-steamboat",
+      "description": "mobile /property/steamboat-downtown-townhome loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-steamboat-overflow",
+      "description": "/property/steamboat-downtown-townhome has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-summerland",
+      "description": "mobile /property/summerland-ocean-view-beach-bungalow loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-summerland-overflow",
+      "description": "/property/summerland-ocean-view-beach-bungalow has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-about",
+      "description": "mobile /?view=about loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-about-overflow",
+      "description": "/?view=about has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-mytrips",
+      "description": "mobile /my-trips loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-mytrips-overflow",
+      "description": "/my-trips has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-privacy",
+      "description": "mobile /privacy loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-privacy-overflow",
+      "description": "/privacy has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-wifi",
+      "description": "mobile /connect/steamboat-downtown-townhome loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-wifi-overflow",
+      "description": "/connect/steamboat-downtown-townhome has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-owners",
+      "description": "mobile /owners loads with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Public pages render cleanly",
+      "id": "UI-mobile-owners-overflow",
+      "description": "/owners has no horizontal scroll on a phone",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB1",
+      "description": "Airbnb-booked night (Oct 11) is shown as unavailable",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB2",
+      "description": "calendar blocks a 2-night checkout (3-night minimum)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB3",
+      "description": "overlay shows 4 nights",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB4",
+      "description": "sidebar quote shows the $1,647 total",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB5",
+      "description": "checkout created a PENDING hold for Oct 5–9 at $1,647",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB6",
+      "description": "no errors during the booking flow",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB7",
+      "description": "second guest sees 'those dates were just booked', not raw JSON",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB8",
+      "description": "trip page shows Oct 5 check-in and Oct 9 checkout",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB9",
+      "description": "trip page has no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Phone booking flow (Summerland)",
+      "id": "PH1",
+      "description": "phone: Summerland's Airbnb night Oct 21 shows unavailable",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Phone booking flow (Summerland)",
+      "id": "PH2",
+      "description": "phone checkout creates the Oct 12–15 hold",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Phone booking flow (Summerland)",
+      "id": "PH3",
+      "description": "phone checkout has no horizontal scroll",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Phone booking flow (Summerland)",
+      "id": "PH4",
+      "description": "no errors in the phone flow",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guests in other timezones book the right dates",
+      "id": "TZ-Asia/Tokyo",
+      "description": "guest browsing from Asia/Tokyo books Nov 9–12 exactly",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guests in other timezones book the right dates",
+      "id": "TZ-Pacific/Honolulu",
+      "description": "guest browsing from Pacific/Honolulu books Nov 9–12 exactly",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guests in other timezones book the right dates",
+      "id": "TZ-Europe/London",
+      "description": "guest browsing from Europe/London books Nov 9–12 exactly",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi page and My Trips edge cases",
+      "id": "WF1",
+      "description": "Wi-Fi page shows the network + password saved in Admin → Setup",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-UI-03"
+    },
+    {
+      "scenario": "Wi-Fi page and My Trips edge cases",
+      "id": "WF2",
+      "description": "the email is captured as a guest lead for Steamboat",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi page and My Trips edge cases",
+      "id": "MT1",
+      "description": "unknown booking shows a friendly not-found message",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi page and My Trips edge cases",
+      "id": "MT2",
+      "description": "no unexpected errors on a failed lookup",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owners page request form",
+      "id": "OWUI1",
+      "description": "owner form submits and shows a thank-you",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-details",
+      "description": "admin/details loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-pricing",
+      "description": "admin/pricing loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-setup",
+      "description": "admin/setup loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-messages",
+      "description": "admin/messages loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-emails",
+      "description": "admin/emails loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-marketing",
+      "description": "admin/marketing loads signed-in with no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-cancel-1",
+      "description": "policy suggests a full refund for a stay 70 days out",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-cancel-2",
+      "description": "admin cancel marks the booking CANCELLED and refunds in full",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin pages",
+      "id": "UA-cancel-3",
+      "description": "admin page shows Cancelled after refresh, no errors",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    }
+  ]
+}

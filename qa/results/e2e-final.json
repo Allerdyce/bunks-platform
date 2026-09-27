@@ -1,0 +1,1175 @@
+{
+  "at": "2026-09-27T20:53:52.107Z",
+  "pass": 146,
+  "total": 146,
+  "results": [
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q1",
+      "description": "quote available for open dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q2",
+      "description": "nightly subtotal is 10% below owner rate",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q3",
+      "description": "service fee is 5% of discounted nightly",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q4",
+      "description": "tax applied to nightly + cleaning",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q5",
+      "description": "total = nightly + cleaning + fee + tax",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q6",
+      "description": "Fri/Sat nights use weekend rate",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Quote matches pricing rules",
+      "id": "Q7",
+      "description": "quote rejects stays under the 3-night minimum",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-07"
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H1",
+      "description": "booking created (200) with clientSecret + 5-char reference",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H2",
+      "description": "server total matches quote",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H3",
+      "description": "booking is PENDING with a real PaymentIntent id",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H4",
+      "description": "PaymentIntent amount equals booking total",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H4b",
+      "description": "PaymentIntent accepts cards only (incl. Apple/Google Pay)",
+      "pass": true,
+      "detail": "",
+      "ticket": "Q3"
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H5",
+      "description": "webhook accepted",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H6",
+      "description": "booking becomes PAID",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H7",
+      "description": "exactly the 4 stay nights are blocked (not checkout day)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H8",
+      "description": "public calendar shows the booked nights",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H9",
+      "description": "guest receives receipt/confirmation emails",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H10",
+      "description": "host/ops receives a new-booking notification",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H11",
+      "description": "emails show stay dates as Oct 5 and Oct 9 (no timezone shift)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H12",
+      "description": "emails show the charged total $1,647.00",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H13",
+      "description": "receipt shows 5% service fee $63.00 (not a flat fee)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-09"
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H14",
+      "description": "receipt shows lodging tax $144.00",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-09"
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H15",
+      "description": "My Trips lookup works with ref + email (case-insensitive)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H16",
+      "description": "lookup with wrong email is 404",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H17",
+      "description": "Bunks export feed (for Airbnb) contains the paid stay 20261005→20261009",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H18",
+      "description": "export feed does not leak guest name/email",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H19",
+      "description": "export feed rejects a bad token",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Double booking protection",
+      "id": "D1",
+      "description": "second guest blocked while first holds the dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Double booking protection",
+      "id": "D2",
+      "description": "409 carries a human-readable message",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-05"
+    },
+    {
+      "scenario": "Double booking protection",
+      "id": "D3",
+      "description": "overlapping stay after payment is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Double booking protection",
+      "id": "D4",
+      "description": "back-to-back stay ending on check-in day is allowed",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Double booking protection",
+      "id": "D5",
+      "description": "stay starting on last night is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Parallel checkout race",
+      "id": "R1",
+      "description": "8 simultaneous checkouts for the same dates → exactly 1 hold",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Parallel checkout race",
+      "id": "R2",
+      "description": "exactly one PENDING row exists",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A1",
+      "description": "sync-ical with cron secret succeeds",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A2",
+      "description": "Airbnb fixture imports 8 nights (Oct 10–13, Nov 1–4)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A3",
+      "description": "imported nights are exact (DTEND exclusive)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A4",
+      "description": "booking over an Airbnb reservation is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A5",
+      "description": "check-in on Airbnb guest's checkout day is allowed",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb reservations block direct booking",
+      "id": "A6",
+      "description": "sync-ical without auth is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F1",
+      "description": "feed returns 404 → existing Airbnb blocks kept",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F2",
+      "description": "feed returns HTML → blocks kept",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F3",
+      "description": "truncated feed (cut mid-event) → blocks kept",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-01"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F4",
+      "description": "valid but empty feed while future reservations exist → blocks kept, sync reports EMPTY_FEED",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-01"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F4b",
+      "description": "an empty Airbnb feed doesn't pause checkout (old blocks kept, so only over-blocks)",
+      "pass": true,
+      "detail": "",
+      "ticket": "review-2"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F4c",
+      "description": "kept Airbnb blocks still stop bookings on those nights",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F5",
+      "description": "admin can confirm an empty Airbnb calendar to clear blocks",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-01"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F6",
+      "description": "cron secret alone cannot confirm an empty calendar",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F7",
+      "description": "daily import failure emails an ops alert",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-02"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F8",
+      "description": "checkout pauses (503, friendly message) while the Airbnb import is failing",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-02"
+    },
+    {
+      "scenario": "Airbnb feed failures never erase reservations",
+      "id": "F9",
+      "description": "checkout resumes once the import works again",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-02"
+    },
+    {
+      "scenario": "Airbnb booking that overlaps a paid direct stay raises an alarm",
+      "id": "DB1",
+      "description": "overlap with a paid direct booking emails an urgent alert",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-12"
+    },
+    {
+      "scenario": "Airbnb booking that overlaps a paid direct stay raises an alarm",
+      "id": "DB2",
+      "description": "the alert is sent once, not on every sync",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb booking that overlaps a paid direct stay raises an alarm",
+      "id": "DB3",
+      "description": "a 'Not available' block (e.g. Airbnb mirroring our own booking) is not an alarm",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC1",
+      "description": "nights from both calendars are blocked (Airbnb Oct 10–13 + Vrbo Oct 20–22)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC2",
+      "description": "a direct booking over the Vrbo stay is rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC3",
+      "description": "if one calendar fails, nothing is removed and the error names that calendar",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC4",
+      "description": "Check calendars lists each linked calendar with its stays, without guest names",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-15"
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC5",
+      "description": "Check calendars requires admin",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "A home listed in several places imports every calendar",
+      "id": "MC6",
+      "description": "saving a bad line in the calendar links is rejected with a clear message",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L1",
+      "description": "new guest can book once first hold expired",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L2",
+      "description": "late payment webhook handled",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L3",
+      "description": "late payer's booking is CANCELLED (no double booking)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L4",
+      "description": "late payer is refunded automatically",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L5",
+      "description": "only one PAID booking for the dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L6",
+      "description": "ops/host alerted about the refunded conflict",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Late payment after the hold expired",
+      "id": "L7",
+      "description": "late payer gets an explanation email",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-05"
+    },
+    {
+      "scenario": "A completed payment beats another guest's unpaid hold",
+      "id": "X1",
+      "description": "the guest whose payment went through keeps the stay",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-03 (revised)"
+    },
+    {
+      "scenario": "A completed payment beats another guest's unpaid hold",
+      "id": "X2",
+      "description": "the unpaid guest who pays afterwards is refunded and told why",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-AV-03 (revised)"
+    },
+    {
+      "scenario": "A completed payment beats another guest's unpaid hold",
+      "id": "X3",
+      "description": "exactly one PAID booking for the dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Failed restart keeps the guest's existing hold",
+      "id": "T1",
+      "description": "second tab gets 409 for unavailable dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Failed restart keeps the guest's existing hold",
+      "id": "T2",
+      "description": "first tab's hold is still PENDING",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-03"
+    },
+    {
+      "scenario": "Failed restart keeps the guest's existing hold",
+      "id": "T3",
+      "description": "same guest restarting same dates reuses their hold",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Webhook safety",
+      "id": "W1",
+      "description": "duplicate payment_intent.succeeded is a no-op",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Webhook safety",
+      "id": "W2",
+      "description": "unsigned/forged webhook rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Stripe outage releases the hold",
+      "id": "S1",
+      "description": "Stripe failure returns a friendly 5xx",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Stripe outage releases the hold",
+      "id": "S2",
+      "description": "no dates left held after Stripe failure",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Stripe outage releases the hold",
+      "id": "S3",
+      "description": "next guest can book the same dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C1",
+      "description": "admin cancel with full refund succeeds",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C2",
+      "description": "booking CANCELLED",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C3",
+      "description": "nights released",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C4",
+      "description": "Stripe refund issued for full amount",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C5",
+      "description": "guest gets one cancellation/refund email, not two",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-04"
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C6",
+      "description": "host alerts go to the support inbox, not hosts@bunks.com",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-11"
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C7",
+      "description": "cancelled dates can be booked again",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C8",
+      "description": "cancel without admin session is 401",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C10",
+      "description": "releasing a hold whose payment just succeeded is refused (webhook not yet processed)",
+      "pass": true,
+      "detail": "",
+      "ticket": "review-4"
+    },
+    {
+      "scenario": "Admin cancel + refund",
+      "id": "C9",
+      "description": "cancelling an unpaid hold sends no guest email",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-P2"
+    },
+    {
+      "scenario": "Declined card",
+      "id": "P1",
+      "description": "repeated declines during checkout don't spam the guest",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-06"
+    },
+    {
+      "scenario": "Declined card",
+      "id": "P2",
+      "description": "hold kept so guest can retry",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V1",
+      "description": "rejects stay under minimum (2 nights) with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V2",
+      "description": "rejects check-in in the past with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V3",
+      "description": "rejects checkout before check-in with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V4",
+      "description": "rejects impossible date 2026-02-30 with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-06"
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V5",
+      "description": "rejects absurd length (5 years) with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-04"
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V6",
+      "description": "rejects too many guests (20 for 6-guest home) with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-07"
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V7",
+      "description": "rejects non-string email with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-08"
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V8",
+      "description": "rejects malformed email with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-08"
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V9",
+      "description": "rejects unknown property with 404",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V10",
+      "description": "rejects missing name with 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Input validation",
+      "id": "V11",
+      "description": "malformed JSON → 400 not 500",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-08"
+    },
+    {
+      "scenario": "Trip access (door codes)",
+      "id": "TA1",
+      "description": "codes hidden while unpaid",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Trip access (door codes)",
+      "id": "TA2",
+      "description": "codes released for a paid stay starting tomorrow",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Trip access (door codes)",
+      "id": "TA3",
+      "description": "wrong email → 404",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Trip access (door codes)",
+      "id": "TA4",
+      "description": "response is no-store",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E1",
+      "description": "cron without secret is 401",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E2",
+      "description": "cron runs",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E3",
+      "description": "guest arriving tomorrow gets pre-arrival + door code",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E4",
+      "description": "two overlapping cron runs send each email once",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-01"
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E5",
+      "description": "unpaid holds get no automation emails",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E6",
+      "description": "door-code email has no invented details (7711 backup lockbox, elk, propane)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-07"
+    },
+    {
+      "scenario": "Daily email automations",
+      "id": "E7",
+      "description": "re-running the cron the same day sends nothing new",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Missed confirmation emails are caught up",
+      "id": "M1",
+      "description": "daily run re-sends the missed receipt + confirmation",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-03"
+    },
+    {
+      "scenario": "Missed confirmation emails are caught up",
+      "id": "M2",
+      "description": "catch-up doesn't repeat on the next run",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-03"
+    },
+    {
+      "scenario": "Missed confirmation emails are caught up",
+      "id": "M3",
+      "description": "bookings paid in the last hour are left to the webhook",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Guest messaging is email-only",
+      "id": "GM1",
+      "description": "guest can't post in-app messages (410 with support email)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-06"
+    },
+    {
+      "scenario": "Guest messaging is email-only",
+      "id": "GM2",
+      "description": "no host email triggered",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Last-minute booking gets its door code at payment",
+      "id": "LM1",
+      "description": "same-day check-in can be booked",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Last-minute booking gets its door code at payment",
+      "id": "LM2",
+      "description": "door code emailed immediately on payment",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-EM-12"
+    },
+    {
+      "scenario": "Last-minute booking gets its door code at payment",
+      "id": "LM3",
+      "description": "cron doesn't send the door code again",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Last-minute booking gets its door code at payment",
+      "id": "LM4",
+      "description": "far-future booking gets no door code at payment",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP1",
+      "description": "admin sets a $500 override for Oct 6",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP2",
+      "description": "quote uses the override (10% off $500) for that night",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP3",
+      "description": "admin blocks Oct 20–21",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP4",
+      "description": "owner-blocked nights can't be booked",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP5",
+      "description": "night after the block is bookable (block covers exactly the chosen nights)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner price overrides and blocks",
+      "id": "OP6",
+      "description": "owner block is exported to Airbnb (20261020→20261022)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Summerland booking (no taxes configured)",
+      "id": "SL1",
+      "description": "Summerland Airbnb nights are blocked",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Summerland booking (no taxes configured)",
+      "id": "SL2",
+      "description": "Summerland total = nights + 5% fee + cleaning, no tax",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Summerland booking (no taxes configured)",
+      "id": "SL3",
+      "description": "5 guests rejected for the 4-guest bungalow",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Partial refund on cancel",
+      "id": "PR1",
+      "description": "partial refund of $500 accepted",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Partial refund on cancel",
+      "id": "PR2",
+      "description": "Stripe refund is exactly $500",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Partial refund on cancel",
+      "id": "PR3",
+      "description": "dates freed after cancel",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Partial refund on cancel",
+      "id": "PR4",
+      "description": "a typo'd refund amount is rejected and the booking stays PAID",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-BK-10"
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW1",
+      "description": "a valid request emails the support inbox with the owner as reply-to",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW2",
+      "description": "owner-supplied text is escaped in the email",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW3",
+      "description": "invalid email rejected with a readable message",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Owner Home Hub requests",
+      "id": "OW4",
+      "description": "malformed body → 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi lead capture",
+      "id": "WL1",
+      "description": "valid lead accepted",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi lead capture",
+      "id": "WL2",
+      "description": "response doesn't expose internal user id",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-04"
+    },
+    {
+      "scenario": "Wi-Fi lead capture",
+      "id": "WL3",
+      "description": "invalid email rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi lead capture",
+      "id": "WL4",
+      "description": "absurdly long name rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-04"
+    },
+    {
+      "scenario": "Wi-Fi lead capture",
+      "id": "WL5",
+      "description": "guest CSV export neutralises formulas",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-03"
+    },
+    {
+      "scenario": "Admin endpoints require a session",
+      "id": "AD1",
+      "description": "all 14 admin API routes reject anonymous calls",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin endpoints require a session",
+      "id": "AD2",
+      "description": "wrong admin password → 401",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin endpoints require a session",
+      "id": "AD3",
+      "description": "forged session cookie rejected",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    }
+  ]
+}

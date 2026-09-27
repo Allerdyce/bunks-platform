@@ -24,8 +24,10 @@ type GuestAccumulator = {
 };
 
 const csvEscape = (value: string | number | boolean | null) => {
-  const text = value === null ? "" : String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  let text = value === null ? "" : String(value);
+  // Stop spreadsheet apps from running guest-supplied text as a formula.
+  if (typeof value === "string" && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
 async function loadGuests(): Promise<GuestListResponse> {

@@ -2,75 +2,239 @@
 
 @layer base {
   :root {
-    --color-brand-primary: #03363d;
-    --color-brand-hover: #022a30;
-    --color-brand-light: #0a4e57;
-    --color-text-primary: #222222;
-    --color-text-secondary: #717171;
+    --color-brand-primary: #252723;
+    --color-brand-hover: #454940;
+    --color-brand-light: #64705b;
+    --color-text-primary: #252723;
+    --color-text-secondary: #565852;
     --color-text-inverted: #ffffff;
-    --color-border: #dddddd;
-    --color-border-strong: #222222;
-    --color-surface: #ffffff;
-    --color-surface-alt: #f7f7f7;
-    --color-overlay: rgba(255, 255, 255, 0.85);
-    --shadow-brand: 0 6px 16px rgba(3, 54, 61, 0.15);
-    --shadow-floating: 0 4px 10px rgba(3, 54, 61, 0.2);
-    --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --color-border: #deded5;
+    --color-border-strong: #72786b;
+    --color-surface: #f8f7f4;
+    --color-surface-alt: #eeede7;
+    --color-overlay: rgba(248, 247, 244, 0.96);
+    --shadow-brand: 0 2px 4px rgba(37, 39, 35, 0.04);
+    --shadow-floating: 0 12px 40px rgba(37, 39, 35, 0.12);
+    --shadow-card: 0 2px 8px rgba(37, 39, 35, 0.04);
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
-    --radius-2xl: 32px;
+    --radius-2xl: 24px;
   }
-
   * {
     border-color: var(--color-border);
   }
-
+  html {
+    scroll-padding-top: 112px;
+  }
   body {
     background: var(--color-surface);
     color: var(--color-text-primary);
-    font-family: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif);
-    letter-spacing: -0.015em;
+    font-family: var(--font-body), Arial, sans-serif;
     font-weight: 400;
     min-height: 100vh;
   }
-
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-weight: 500;
+    letter-spacing: -0.025em;
   }
-
-  .font-serif {
-    font-family: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif) !important;
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
-
-  *[class*="shadow-sm"] {
-    box-shadow: none !important;
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
   }
-
-  p,
-  span,
-  li {
-    /* inherit color */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-light);
+    outline-offset: 4px;
   }
-
   ::selection {
-    background: var(--color-brand-primary);
-    color: var(--color-text-inverted, #ffffff);
-  }
-
-  a {
-    color: var(--color-text-primary);
+    background: #dbe0d2;
+    color: #252723;
   }
 }
 
 @theme inline {
-  --color-background: var(--color-surface-alt);
+  --color-background: var(--color-surface);
   --color-foreground: var(--color-text-primary);
-  --font-sans: var(--font-poppins, "Poppins", "Helvetica Neue", Arial, sans-serif);
+  --font-sans: var(--font-body), Arial, sans-serif;
+  --font-serif: var(--font-editorial), Georgia, serif;
+  /* Keep existing neutral utilities consistent across guest and operations screens. */
+  --color-gray-50: #f5f4f0;
+  --color-gray-100: #eeede7;
+  --color-gray-200: #deded5;
+  --color-gray-300: #c9cbc0;
+  --color-gray-400: #898d81;
+  --color-gray-500: #565852;
+  --color-gray-600: #3f423c;
+  --color-gray-700: #454940;
+  --color-gray-800: #343830;
+  --color-gray-900: #252723;
+  --color-gray-950: #191c17;
+}
+
+@layer components {
+  .marketing-container {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: clamp(24px, 5vw, 72px);
+  }
+  .marketing-section {
+    padding-block: clamp(64px, 7vw, 112px);
+  }
+  .marketing-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.16;
+    text-wrap: balance;
+  }
+  .marketing-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    border-radius: 999px;
+    background: #20211f;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 150ms;
+  }
+  .marketing-button:hover {
+    background: #454940;
+  }
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .editorial-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.045em;
+  }
+  .section-heading {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.015em;
+  }
+  .property-copy {
+    color: var(--color-text-primary);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    font-weight: 450;
+  }
+  .guest-surface {
+    background: var(--color-surface);
+  }
+  .soft-panel {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shared interior-page language. Operational screens keep a denser rhythm. */
+@layer components {
+  .page-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .reading-copy {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: var(--color-text-primary);
+  }
+  .reading-copy p + p {
+    margin-top: 1.25rem;
+  }
+  .reading-copy h2,
+  .reading-copy h3 {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .reading-copy ul,
+  .reading-copy ol {
+    padding-left: 1.5rem;
+    margin-block: 1.25rem;
+  }
+  .reading-copy ul {
+    list-style: disc;
+  }
+  .reading-copy ol {
+    list-style: decimal;
+  }
+  .ops-surface {
+    background: var(--color-surface);
+    min-height: 100vh;
+  }
+  .ops-surface h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(1.875rem, 3vw, 2.5rem);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    margin-bottom: 1rem;
+  }
+  .ops-surface h2,
+  .ops-surface h3 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .ops-surface main {
+    max-width: 1600px;
+    margin-inline: auto;
+  }
+  .ops-surface input:not([type="checkbox"]):not([type="radio"]),
+  .ops-surface select {
+    min-height: 44px;
+  }
+  .ops-surface button {
+    min-height: 40px;
+  }
+  .ops-surface table {
+    font-size: 0.875rem;
+  }
+  .ops-surface th {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+  .ops-surface td,
+  .ops-surface th {
+    padding-block: 1rem;
+  }
 }

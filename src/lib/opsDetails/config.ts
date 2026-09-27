@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@/lib/contact';
 export type OpsDetailsInput = {
   supportEmail: string;
   supportSmsNumber: string;
@@ -38,11 +39,11 @@ export type OpsReferenceLink = {
 };
 
 export const DEFAULT_OPS_DETAILS: OpsDetailsInput = {
-  supportEmail: 'ali@bunks.com',
+  supportEmail: SUPPORT_EMAIL,
   // No placeholder phone numbers or names: when a value isn't configured in Admin → Details,
   // guest emails omit that line instead of showing a fake contact.
   supportSmsNumber: '',
-  opsEmail: 'ops@bunks.com',
+  opsEmail: SUPPORT_EMAIL,
   opsPhone: '',
   opsDeskPhone: null,
   opsDeskHours: null,
@@ -51,11 +52,11 @@ export const DEFAULT_OPS_DETAILS: OpsDetailsInput = {
   conciergeNotes: null,
   emergencyContact: '911',
   emergencyDetails: null,
-  doorCodesDocUrl: '/guide/steamboat-alpenglow-2#essential-info',
-  arrivalNotesUrl: '/guide/steamboat-alpenglow-2#checkin',
-  liveInstructionsUrl: '/guide/steamboat-alpenglow-2#checkin',
-  recommendationsUrl: '/guide/steamboat-alpenglow-2#dining',
-  guestBookUrl: '/guide/steamboat-alpenglow-2',
+  doorCodesDocUrl: '/my-trips',
+  arrivalNotesUrl: '/my-trips',
+  liveInstructionsUrl: '/my-trips',
+  recommendationsUrl: '/my-trips',
+  guestBookUrl: '/my-trips',
   checkInWindow: 'Check-in after 3:00 p.m.',
   checkOutTime: 'Checkout by 10:00 a.m.',
 };
