@@ -117,6 +117,39 @@ scenario("Guest books through the UI");
   await page.context().close();
 }
 
+scenario("Phone booking flow (Summerland)");
+{
+  await forceSync(SL);
+  const page = await newPage({ width: 390, height: 844 });
+  await page.goto(`${BASE}/property/${SL}`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /check availability/i }).last().click();
+  await page.waitForTimeout(600);
+  const picker = page.locator("div.fixed.inset-0.z-50");
+  const airbnb = picker.getByRole("button", { name: `${dayLabel("2026-10-21")}, unavailable` }).first();
+  check("PH1", "phone: Summerland's Airbnb night Oct 21 shows unavailable", await airbnb.count() > 0, "not marked");
+  await picker.getByRole("button", { name: dayLabel("2026-10-12"), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel("2026-10-15"), exact: true }).first().click();
+  await shot(page, "phone-1-dates");
+  await page.getByRole("button", { name: /^save$/i }).click();
+  await page.waitForTimeout(800);
+  await shot(page, "phone-2-after-save");
+  await page.getByRole("button", { name: /^reserve$/i }).last().click();
+  await page.waitForTimeout(1200);
+  await page.fill("#guest-first-name", "Phone");
+  await page.fill("#guest-last-name", "Guest");
+  await page.fill("#guest-email", "phone@example.com");
+  await shot(page, "phone-3-details");
+  await page.getByRole("button", { name: /continue to payment/i }).first().click();
+  await page.waitForTimeout(2500);
+  await shot(page, "phone-4-payment");
+  const b = await db.booking.findFirst({ where: { guestEmail: "phone@example.com" } });
+  check("PH2", "phone checkout creates the Oct 12–15 hold", b?.checkInDate.toISOString().startsWith("2026-10-12") && b?.checkOutDate.toISOString().startsWith("2026-10-15"), JSON.stringify(b));
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check("PH3", "phone checkout has no horizontal scroll", overflow <= 1, `${overflow}px`);
+  check("PH4", "no errors in the phone flow", page.problems.length === 0, page.problems.join(" | "));
+  await page.context().close();
+}
+
 scenario("Guests in other timezones book the right dates");
 for (const tz of ["Asia/Tokyo", "Pacific/Honolulu", "Europe/London"]) {
   await resetData();
