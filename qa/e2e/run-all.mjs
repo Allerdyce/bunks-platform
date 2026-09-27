@@ -148,6 +148,29 @@ def("Airbnb feed failures never erase reservations", async () => {
   check("F9", "checkout resumes once the import works again", after.status === 200, `${after.status} ${after.text}`, "T-AV-02");
 });
 
+def("Airbnb booking that overlaps a paid direct stay raises an alarm", async () => {
+  await forceSync(SB);
+  const a = await book({ guestEmail: "direct@example.com" });
+  await pay(a);
+  clearEmails();
+  const base = fs.readFileSync(new URL("../fixtures/ical/steamboat.ics", import.meta.url), "utf8");
+  const clash = "BEGIN:VEVENT\r\nDTEND;VALUE=DATE:20261009\r\nDTSTART;VALUE=DATE:20261007\r\nUID:qa-clash@airbnb.com\r\nSUMMARY:Reserved\r\nEND:VEVENT\r\n";
+  writeIcal("steamboat.ics", base.replace("END:VCALENDAR", clash + "END:VCALENDAR"));
+  await forceSync(SB);
+  const alerts = emails().filter((m) => /possible double booking/i.test(m.subject));
+  check("DB1", "overlap with a paid direct booking emails an urgent alert", alerts.length === 1 && alerts[0].html.includes("2026-10-07"), emails().map((m) => m.subject).join(" | "), "T-AV-12");
+  await forceSync(SB);
+  check("DB2", "the alert is sent once, not on every sync", emails().filter((m) => /possible double booking/i.test(m.subject)).length === 1, "repeated");
+  restoreIcal();
+  const notAvail = "BEGIN:VEVENT\r\nDTEND;VALUE=DATE:20261009\r\nDTSTART;VALUE=DATE:20261007\r\nUID:qa-na@airbnb.com\r\nSUMMARY:Airbnb (Not available)\r\nEND:VEVENT\r\n";
+  await db.emailLog.deleteMany({ where: { type: "SYSTEM_CALENDAR_SYNC_ERROR" } });
+  clearEmails();
+  writeIcal("steamboat.ics", base.replace("END:VCALENDAR", notAvail + "END:VCALENDAR"));
+  await forceSync(SB);
+  check("DB3", "a 'Not available' block (e.g. Airbnb mirroring our own booking) is not an alarm", emails().filter((m) => /double booking/i.test(m.subject)).length === 0, emails().map((m) => m.subject).join(" | "));
+  restoreIcal();
+});
+
 def("Late payment after the hold expired", async () => {
   const a = await book({ guestEmail: "slow@example.com" });
   await expireHold(a.json.bookingId);

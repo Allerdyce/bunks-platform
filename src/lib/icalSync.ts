@@ -4,6 +4,10 @@ import crypto from "crypto";
 import * as ical from "ical";
 import { prisma } from "@/lib/prisma";
 import { eachNight, toISODate, withPropertyLock } from "@/lib/bookingAvailability";
+import { claimEmail, completeClaim, releaseClaim } from "@/lib/email/claims";
+import { sendEmail } from "@/lib/email/sendEmail";
+import { OPS_ALERT_EMAIL } from "@/lib/contact";
+import { escapeHtml } from "@/lib/html";
 
 type SyncableProperty = { id: number; slug: string; airbnbIcalUrl: string | null };
 
@@ -44,7 +48,16 @@ export function isUsableIcalUrl(url: string | null | undefined): url is string {
 
 /** Parses an iCal feed into booked nights (YYYY-MM-DD). Throws on anything that looks incomplete. */
 export function parseIcalNights(text: string) {
-  const trimmed = text.trim();
+  return parseIcalFeed(text).nights;
+}
+
+/**
+ * Like parseIcalNights, and also returns the nights covered by actual guest reservations
+ * (Airbnb's SUMMARY "Reserved"), as opposed to "Not available" blocks.
+ */
+export function parseIcalFeed(text: string) {
+  // Normalise line endings: the parser mis-reads feeds that mix CRLF and LF.
+  const trimmed = text.replace(/\r\n?/g, "\n").trim();
   if (!trimmed.startsWith("BEGIN:VCALENDAR") || !/END:VCALENDAR$/.test(trimmed)) {
     throw new IcalSyncError("Calendar feed is incomplete (missing BEGIN/END:VCALENDAR)", "MALFORMED_FEED");
   }
@@ -59,6 +72,7 @@ export function parseIcalNights(text: string) {
   }
 
   const nights = new Set<string>();
+  const reservedNights = new Set<string>();
   for (const event of events) {
     if (!event.start || Number.isNaN(new Date(event.start).getTime())) {
       throw new IcalSyncError(`Calendar event ${event.uid ?? ""} has no valid start date`, "MALFORMED_FEED");
@@ -66,11 +80,13 @@ export function parseIcalNights(text: string) {
     const start = toStayDay(event.start as IcalDate);
     // A missing DTEND on an all-day event means a single day.
     const end = event.end ? toStayDay(event.end as IcalDate) : new Date(start.getTime() + DAY_MS);
+    const isReservation = /reserved/i.test(String(event.summary ?? ""));
     for (const night of eachNight(start, end > start ? end : new Date(start.getTime() + DAY_MS))) {
       nights.add(toISODate(night));
+      if (isReservation) reservedNights.add(toISODate(night));
     }
   }
-  return nights;
+  return { nights, reservedNights };
 }
 
 /**
@@ -98,8 +114,9 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
   }
 
   let nights: Set<string>;
+  let reservedNights: Set<string>;
   try {
-    nights = parseIcalNights(text);
+    ({ nights, reservedNights } = parseIcalFeed(text));
   } catch (error) {
     recordSyncFailure(property);
     throw error;
@@ -136,7 +153,50 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
 
   lastSyncedAt.set(syncKey(property), Date.now());
   lastFailedAt.delete(syncKey(property));
+  await alertOnAirbnbOverlap(property, reservedNights).catch((error) =>
+    console.error("[ical] Failed to check for Airbnb/direct overlaps", error),
+  );
   return { ok: true as const, nights: nights.size };
+}
+
+/**
+ * Airbnb reads the Bunks calendar every few hours, so an Airbnb guest can still book nights a
+ * direct guest has just paid for. Nothing here can undo that, but it can be caught on the next
+ * import: email ops once per affected booking so someone can call the guests the same day.
+ */
+async function alertOnAirbnbOverlap(property: SyncableProperty, reservedNights: Set<string>) {
+  if (!reservedNights.size) return;
+  const today = new Date(`${toISODate(toUtcDay(new Date()))}T00:00:00.000Z`);
+  const bookings = await prisma.booking.findMany({
+    where: { propertyId: property.id, status: "PAID", checkOutDate: { gt: today } },
+    select: { id: true, publicReference: true, guestName: true, guestEmail: true, checkInDate: true, checkOutDate: true },
+  });
+  for (const booking of bookings) {
+    const clash = eachNight(booking.checkInDate, booking.checkOutDate)
+      .map(toISODate)
+      .filter((night) => reservedNights.has(night));
+    if (!clash.length) continue;
+    const target = { type: "SYSTEM_CALENDAR_SYNC_ERROR" as const, to: OPS_ALERT_EMAIL, bookingId: booking.id };
+    const claimId = await claimEmail(target);
+    if (claimId === null) continue; // already alerted for this booking
+    try {
+      await sendEmail({
+        to: OPS_ALERT_EMAIL,
+        subject: `Urgent: possible double booking at ${property.slug} (${booking.publicReference ?? booking.id})`,
+        html:
+          `<p>The Airbnb calendar now shows a reservation on nights already paid for directly on Bunks:</p>` +
+          `<p><strong>${escapeHtml(booking.guestName)}</strong> (${escapeHtml(booking.guestEmail)}), ` +
+          `booking ${escapeHtml(booking.publicReference ?? String(booking.id))}: ` +
+          `${toISODate(booking.checkInDate)} → ${toISODate(booking.checkOutDate)}.</p>` +
+          `<p>Overlapping nights: ${clash.join(", ")}.</p>` +
+          `<p>Check both reservations now and contact whichever guest needs to move.</p>`,
+      });
+      await completeClaim(claimId, target);
+    } catch (error) {
+      await releaseClaim(claimId);
+      throw error;
+    }
+  }
 }
 
 // After a failure, wait before retrying from page loads so a broken feed isn't hit on every request.

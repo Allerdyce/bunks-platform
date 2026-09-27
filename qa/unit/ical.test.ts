@@ -43,3 +43,8 @@ test("empty calendar parses to no nights", () => {
 test("HTML error page is rejected", () => {
   assert.throws(() => parseIcalNights("<html>Please log in</html>"));
 });
+
+test("mixed CRLF/LF line endings still parse every event", () => {
+  const text = "BEGIN:VCALENDAR\nVERSION:2.0\n" + event("a", "20261005", "20261008").replace(/\r\n/g, "\n") + event("b", "20261101", "20261103") + "END:VCALENDAR\n";
+  assert.equal(parseIcalNights(text).size, 5);
+});
