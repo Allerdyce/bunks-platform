@@ -51,9 +51,10 @@ export function BookingSummary({
   isContinueDisabled,
 }: BookingSummaryProps) {
   const hasBreakdown = Boolean(breakdown);
+  // Without a server quote, estimate from the discounted rate (the label says so).
   const nightlySubtotal = hasBreakdown
     ? centsToMajor(breakdown!.nightlySubtotalCents)
-    : property.price * nights;
+    : fallbackPricing.nightlyRate * nights;
   const cleaningFee = hasBreakdown
     ? centsToMajor(breakdown!.cleaningFeeCents)
     : fallbackPricing.cleaningFee;
@@ -82,7 +83,7 @@ export function BookingSummary({
 
   const perNightLabel = hasBreakdown
     ? "Nightly subtotal"
-    : `${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} ${nights === 1 ? "night" : "nights"}`;
+    : `Est. ${formatCurrency(fallbackPricing.nightlyRate, currency)} x ${nights} ${nights === 1 ? "night" : "nights"}`;
   const grandTotal = total;
 
   return (

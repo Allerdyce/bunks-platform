@@ -762,6 +762,12 @@ export function PropertyDetailView({
                     Direct booking rate
                   </p>
                 )}
+                {canBook && quote && (
+                  <p className="text-sm text-gray-600">
+                    {formatCurrency(displayTotal)} total for {confirmedNights}{" "}
+                    {confirmedNights === 1 ? "night" : "nights"}, incl. fees and taxes
+                  </p>
+                )}
               </div>
               {hasPropertyReviews && (
                 <button

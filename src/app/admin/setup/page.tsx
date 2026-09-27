@@ -58,8 +58,8 @@ const TEXT_FIELDS: {
   label: string;
   placeholder?: string;
 }[] = [
-  { key: "checkInTime", label: "Check-in time", placeholder: "4:00 PM" },
-  { key: "checkOutTime", label: "Check-out time", placeholder: "10:00 AM" },
+  { key: "checkInTime", label: "Check-in time", placeholder: "3:00 PM (used if left blank)" },
+  { key: "checkOutTime", label: "Check-out time", placeholder: "10:00 AM (used if left blank)" },
   {
     key: "hostSupportEmail",
     label: "Guest support email",

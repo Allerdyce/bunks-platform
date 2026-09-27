@@ -25,8 +25,6 @@ interface BookingContainerProps {
   }) => void;
 }
 
-const SERVICE_FEE = 20;
-
 const calculateNights = (range: DateRange) => {
   if (!range.start || !range.end) return 0;
   const diff = range.end.getTime() - range.start.getTime();
@@ -81,7 +79,7 @@ export function BookingContainer({
       undiscountedNightlyRate,
       discountedNightlyRate,
     };
-  }, [nights, property.price]);
+  }, [nights, property.price, property.cleaningFee]);
   // Fetch dynamic quote on mount to show correct pricing immediately
   useEffect(() => {
     let isMounted = true;
@@ -164,8 +162,7 @@ export function BookingContainer({
           ? error.message
           : "Could not initialize payment. Please try again.";
       setFormError(message);
-      setPricingBreakdown(null);
-      setQuoteTotals(null);
+      // Keep the last server quote on screen; the fallback estimate is less accurate.
       setClientSecret(null);
       setCreatedBookingReference(null);
     } finally {

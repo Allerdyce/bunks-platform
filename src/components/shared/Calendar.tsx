@@ -159,6 +159,8 @@ export function Calendar({
                   )
                 }
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                aria-label="Previous month"
+                type="button"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -173,6 +175,8 @@ export function Calendar({
                   )
                 }
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                aria-label="Next month"
+                type="button"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -274,9 +278,17 @@ export function Calendar({
                 )}
 
                 <button
+                  type="button"
                   onClick={() => handleDateClick(day, referenceDate)}
                   disabled={blocked || isRestricted}
                   className={buttonClass}
+                  aria-label={`${normalized.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}${blocked ? ", unavailable" : isRestricted ? `, below ${getMinStayForDate(startDate ?? normalized)}-night minimum` : ""}`}
+                  aria-pressed={Boolean(isStart || isEnd)}
                 >
                   {day}
                 </button>
