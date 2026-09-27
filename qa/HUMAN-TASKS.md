@@ -2,6 +2,13 @@
 
 Updated after your answers to Q1–Q7 (27 Sep). Work through the tasks in order and tick each box as you go. **Bold** tasks block a safe launch.
 
+## 0. Change the Steamboat codes (urgent)
+
+- [ ] **Change the garage code, lockbox code and ski-locker door code** at Steamboat, then enter the new ones in Admin → Setup.
+  - The Steamboat guide PDFs, which print those codes, were downloadable by anyone from bunks.com until this fix. They're private now, but anyone could have saved them, and they're in this repo's history.
+  - The PDFs still print the old codes. Until you re-export them without codes (or with the new ones), paid guests who open them will see stale codes; the trip page always shows the live codes from Setup.
+  - Summerland's guidebook had the address and Wi-Fi but no codes.
+
 ## 1. Vercel environment variables
 
 Where: vercel.com → bunks-platform (the Allerdyce project, not the old `bunks` one) → Settings → Environment Variables. For each variable:
@@ -17,6 +24,7 @@ When all of 1a–1c are done, redeploy once (step 1d).
 - [ ] **1b. Add `ICAL_FEED_SECRET`** (Q4). Use a **new** long random value, generated the same way as 1a. It must not be the same as any other secret.
   - This changes your Bunks calendar link. That's fine, because Airbnb hasn't imported it yet (task 3c).
   - Do 1b before 3c. If Airbnb has already imported the old link, paste the new link from Admin → Setup into Airbnb again.
+- [ ] 1b2. Optional: add `GUIDE_LINK_SECRET` (another new random value). It signs the guide PDF links in guest emails. Without it, `ADMIN_SESSION_SECRET` is used; changing that secret later would break links in emails already sent (guests can still open the guide from their trip page).
 - [ ] **1c. Add `ADMIN_EMAILS`** (Q6) with the value `ali@bunks.com,matt@bunks.com,alissa@bunks.com`.
   - This list is now the full admin list. Adding or removing someone later is just editing it and redeploying.
   - Until it's set, the code falls back to those same three. `trumandavies7@gmail.com` has been removed from the code.

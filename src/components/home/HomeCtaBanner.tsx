@@ -7,7 +7,7 @@ export function HomeCtaBanner({ onNavigate }: { onNavigate: NavigateHandler }) {
   return (
     <section className="relative isolate flex min-h-[420px] items-center justify-center overflow-hidden px-6 py-20 text-center text-white">
       <Image
-        src="/2211-lillie-ave/exterior/exterior-1.webp"
+        src="/summerland/exterior/exterior-1.webp"
         alt="A quiet place to watch the ocean from Summerland"
         fill
         sizes="100vw"

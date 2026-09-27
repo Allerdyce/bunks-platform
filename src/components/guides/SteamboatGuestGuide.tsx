@@ -3,23 +3,26 @@
 import Image from "next/image";
 import { FileDown, MapPin, ShieldCheck } from "lucide-react";
 import { STEAMBOAT_GUIDE } from "@/data/steamboatGuide";
+import type { BookingPrivateDetails } from "@/types";
 
 interface SteamboatGuestGuideProps {
   /**
-   * When true, Wi-Fi and host phone numbers render inline. Door/lock codes are never shown here;
+   * The address, Wi-Fi, directions and guide PDF, from the verified trip lookup (paid bookings
+   * only). Without it those render as placeholders. Door/lock codes are never shown here;
    * paid guests get them from their trip page.
-   * Keep this enabled only in authenticated or booking-specific contexts.
    */
-  showSecureDetails?: boolean;
+  secure?: BookingPrivateDetails | null;
   className?: string;
 }
 
 export function SteamboatGuestGuide({
-  showSecureDetails = false,
+  secure = null,
   className,
 }: SteamboatGuestGuideProps) {
   const guide = STEAMBOAT_GUIDE;
-  const pdfHref = "/Steamboat%20Brochure.pdf";
+  const showSecureDetails = Boolean(secure);
+  const pdfHref = secure?.brochureUrl ?? secure?.guideUrl ?? null;
+  const wifi = secure?.wifiSsid ? `${secure.wifiSsid} / ${secure.wifiPassword ?? ""}` : "";
 
   const secureValue = (value: string) =>
     showSecureDetails ? value : "Shared in your confirmed booking portal.";
@@ -76,7 +79,7 @@ export function SteamboatGuestGuide({
       <header className="bg-gray-100 text-gray-900 rounded-xl px-7 py-12 sm:p-16">
         <p className={`${subtleLabelClass} text-gray-600`}>Guest Guide</p>
         <h1 className="marketing-title text-3xl sm:text-5xl mt-4 text-gray-900">
-          Welcome to {guide.propertyBasics.name}
+          Welcome to {secure?.buildingName ?? guide.propertyBasics.name}
         </h1>
         <p className="mt-6 max-w-3xl text-lg leading-relaxed text-gray-600">
           Steps from the Yampa River and downtown Steamboat, this three-level
@@ -85,12 +88,16 @@ export function SteamboatGuestGuide({
           contacts.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href={pdfHref}
-            className="inline-flex items-center gap-2 rounded-full border border-gray-900 px-5 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-200"
-          >
-            <FileDown className="w-4 h-4" /> Download full PDF
-          </a>
+          {pdfHref && (
+            <a
+              href={pdfHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-900 px-5 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-200"
+            >
+              <FileDown className="w-4 h-4" /> Download full PDF
+            </a>
+          )}
           {!showSecureDetails && (
             <div className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600">
               <ShieldCheck className="w-4 h-4" /> Codes released after booking
@@ -112,9 +119,9 @@ export function SteamboatGuestGuide({
           {[
             {
               label: "Address",
-              value: guide.propertyBasics.address,
+              value: secure?.address ?? "",
               helper: "Downtown Steamboat Springs",
-              secure: false,
+              secure: true,
             },
             {
               label: "Check-in",
@@ -130,7 +137,7 @@ export function SteamboatGuestGuide({
             },
             {
               label: "Wi-Fi",
-              value: `${guide.propertyBasics.wifi.ssid} / ${guide.propertyBasics.wifi.password}`,
+              value: wifi,
               helper: "Townhouse network & password",
               secure: true,
             },
@@ -192,16 +199,17 @@ export function SteamboatGuestGuide({
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-[0.2em]">
               Directions
             </h3>
-            <ul className={`mt-3 space-y-3 ${bodyTextClass}`}>
-              <li>
-                <strong>From Denver:</strong>{" "}
-                {guide.checkinCheckout.directions.fromDenver}
-              </li>
-              <li>
-                <strong>From Hayden:</strong>{" "}
-                {guide.checkinCheckout.directions.fromHayden}
-              </li>
-            </ul>
+            {secure?.directions.length ? (
+              <ul className={`mt-3 space-y-3 ${bodyTextClass}`}>
+                {secure.directions.map((direction) => (
+                  <li key={direction.label}>
+                    <strong>{direction.label}:</strong> {direction.detail}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={`mt-3 ${bodyTextClass}`}>Shared once your booking is confirmed.</p>
+            )}
             <p className={`mt-4 ${bodyTextClass}`}>
               {guide.checkinCheckout.checkinNotes}
             </p>
@@ -236,7 +244,7 @@ export function SteamboatGuestGuide({
               Quiet hours: {guide.checkinCheckout.quietHours}
             </p>
             <p className={`mt-2 ${bodyTextClass}`}>
-              {guide.checkinCheckout.parking}
+              {secure?.parkingNotes ?? guide.checkinCheckout.parking}
             </p>
           </div>
         </div>
@@ -279,9 +287,9 @@ export function SteamboatGuestGuide({
           <p className={`${bodyTextClass}`}>
             {guide.amenities.skiLockerOverview}
           </p>
-          <p className="mt-4 text-sm font-medium text-gray-500">
-            {guide.propertyBasics.skiLocker.locationNotes}
-          </p>
+          {secure?.skiLockerNotes && (
+            <p className="mt-4 text-sm font-medium text-gray-500">{secure.skiLockerNotes}</p>
+          )}
         </div>
       </section>
 
@@ -580,12 +588,16 @@ export function SteamboatGuestGuide({
             </p>
           </div>
         </div>
-        <a
-          href={pdfHref}
-          className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10"
-        >
-          <FileDown className="w-4 h-4" /> Download the full brochure
-        </a>
+        {pdfHref && (
+          <a
+            href={pdfHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-white/40 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <FileDown className="w-4 h-4" /> Download the full brochure
+          </a>
+        )}
       </section>
     </div>
   );

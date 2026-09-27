@@ -10,6 +10,10 @@ const securityHeaders = [
 
 // trigger reload
 const nextConfig: NextConfig = {
+  // Guide PDFs are private (see src/data/guides.ts); bundle them with the route that serves them.
+  outputFileTracingIncludes: {
+    "/api/guides/[slug]/[kind]": ["./private/guides/**"],
+  },
   images: {
     remotePatterns: [
       {

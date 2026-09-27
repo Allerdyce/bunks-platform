@@ -23,6 +23,9 @@ import {
   getSteamboatPreStaySlice,
   getSteamboatCheckoutSlice,
 } from '@/lib/guides/steamboatEmailSlices';
+import { mapsUrlFor, privateDetailsFor } from '@/lib/privatePropertyDetails';
+
+const STEAMBOAT_PRIVATE = privateDetailsFor('steamboat-downtown-townhome');
 
 const CHECK_IN = new Date('2025-02-14T15:00:00Z');
 const CHECK_OUT = new Date('2025-02-18T10:00:00Z');
@@ -41,7 +44,7 @@ export function sampleBookingConfirmationProps(): BookingConfirmationEmailProps 
     guestBookUrl: 'https://bunks.com/guide/steamboat-alpenglow-2',
     hostSupportEmail: 'stay@bunks.com',
     hostPhoneNumber: STEAMBOAT_GUIDE.propertyBasics.hosts[0].phone,
-    mapUrl: 'https://maps.apple.com/?address=45%206th%20Street,%20Steamboat%20Springs',
+    mapUrl: STEAMBOAT_PRIVATE ? mapsUrlFor(STEAMBOAT_PRIVATE.address) : undefined,
     arrivalNotes: confirmationSlice.arrivalNotes,
     directions: confirmationSlice.directions,
     essentials: confirmationSlice.essentials,
@@ -585,9 +588,9 @@ export function sampleCheckoutReminderProps(): CheckoutReminderEmailProps {
     cleanerArrivalWindow: 'Cleaners arrive 10:30–11:00',
     lateCheckoutNote: 'Need a late checkout? Reply here and we’ll confirm availability.',
     weatherCallout: 'Snow showers expected tomorrow evening—allow extra time if you’re driving over Rabbit Ears Pass.',
-    propertyAddress: STEAMBOAT_GUIDE.propertyBasics.address,
-    directionsUrl: 'https://maps.apple.com/?address=45%206th%20Street,%20Steamboat%20Springs',
-    parkingNote: STEAMBOAT_GUIDE.checkinCheckout.parking,
+    propertyAddress: STEAMBOAT_PRIVATE?.address,
+    directionsUrl: STEAMBOAT_PRIVATE ? mapsUrlFor(STEAMBOAT_PRIVATE.address) : undefined,
+    parkingNote: STEAMBOAT_PRIVATE?.parkingNotes ?? STEAMBOAT_GUIDE.checkinCheckout.parking,
     keySteps: checkoutSlice.checkoutSteps,
     lockupSteps: checkoutSlice.lockupSteps,
     trashNote: checkoutSlice.trashNote,

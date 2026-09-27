@@ -76,8 +76,6 @@ const mockApi = {
           name: "Mock Property",
           slug: "mock-property",
           timezone: "America/Los_Angeles",
-          checkInGuideUrl: null,
-          guestBookUrl: null,
           hostSupportEmail: null,
         },
 

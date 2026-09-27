@@ -26,7 +26,7 @@ export function ExperienceBanner() {
         </div>
         <div className="relative min-h-[330px] md:min-h-[580px]">
           <Image
-            src="/2211-lillie-ave/living-room/living-room-4.webp"
+            src="/summerland/living-room/living-room-4.webp"
             alt="Light-filled seating and natural textures in the Summerland living room"
             fill
             sizes="(max-width: 768px) 100vw, 50vw"

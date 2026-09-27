@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T21:26:21.585Z",
-  "pass": 54,
-  "total": 54,
+  "at": "2026-09-27T22:59:16.274Z",
+  "pass": 56,
+  "total": 56,
   "results": [
     {
       "scenario": "Public pages render cleanly",
@@ -266,6 +266,22 @@
       "pass": true,
       "detail": "",
       "ticket": ""
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB10",
+      "description": "paid trip page shows the address and Wi-Fi (kept off public pages)",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-10"
+    },
+    {
+      "scenario": "Guest books through the UI",
+      "id": "UB11",
+      "description": "paid trip page links the signed guide PDF",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
     },
     {
       "scenario": "Phone booking flow (Summerland)",

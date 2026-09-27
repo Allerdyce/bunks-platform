@@ -7,7 +7,7 @@ Branch `claude/bold-curie-7laxza` (on top of the design branch `codex/kindred-ui
 - `qa/ui/smoke.mjs`: real-browser tests.
 - `qa/unit/*.test.ts`: unit tests, run under 4 server timezones.
 
-The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing. Final runs: `qa/results/e2e-final.json` (135/135), `qa/results/ui-final.json` (50/50), `qa/results/unit-final.txt` (17/17 × 4 timezones) and `qa/results/build-final.log` (production build OK).
+The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing. Final runs: `qa/results/e2e-final.json` (160/160), `qa/results/ui-final.json` (56/56), unit tests (18/18 × 4 timezones) and `qa/results/build-final.log` (production build OK).
 
 ## Calendar and availability
 
@@ -80,6 +80,8 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-SEC-07 | P2 | Admin emails were hard-coded; config could add admins but not remove them. | Fixed after Q6. `ADMIN_EMAILS` in Vercel is now the full list; the code fallback is ali@, matt@ and alissa@. | HUMAN-TASKS 1c |
 | T-SEC-08 | P2 | The seed script could overwrite live settings and contained an Airbnb calendar link. | Fixed. It refuses non-local databases. The old link is still in git history. | manual run |
 | T-SEC-09 | P3 | The Wi-Fi password is in the page source before the email is entered. | Won't fix. The gate is a convenience, not security. | — |
+| T-SEC-10 | P1 | (28 Sep) Both homes' street addresses, Wi-Fi and street-level directions were in every public page's data and the site's JavaScript. The Summerland photo folder was named after the street address. | Fixed. They live in a server-only module and reach only verified guests with a **paid** booking (trip page) and guest emails. The photo folder is renamed. The in-home Wi-Fi page still shows Wi-Fi, by design. | PV1, PV3, PV4, UB10; production bundle grep |
+| T-SEC-11 | **P0** | (28 Sep) The guide PDFs were public files on bunks.com. The Steamboat ones contain the **garage, lockbox and ski-locker codes**, the address and Wi-Fi. | Fixed. Moved out of `public/`, served only through a signed per-booking link that stops working 14 days after checkout or on cancellation. **Change those codes** (HUMAN-TASKS 0). | PV2, PV5–PV8, UB11 |
 
 ## UI and admin
 
