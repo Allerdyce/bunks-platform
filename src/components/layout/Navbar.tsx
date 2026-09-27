@@ -86,7 +86,6 @@ export function Navbar({
         href: "/#listings",
       },
       { label: "About", type: "route", target: "about", href: "/?view=about" },
-      { label: "For owners", type: "anchor", href: "/owners" },
       // { label: "SB Tax Tool", type: "route", target: "about", href: "/tools/sb-tot" }, // Moved to Footer
       {
         label: "My trips",
@@ -94,6 +93,7 @@ export function Navbar({
         target: "booking-details",
         href: "/my-trips",
       },
+      { label: "For owners", type: "anchor", href: "/owners" },
     ];
     // If we have a bookingRef, the 'Trips' link could go to that specific trip.
     // But typically 'Trips' implies a list or lookup if not currently in a trip view.

@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Loader2,
   LogOut,
-  MapPin,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -17,7 +16,6 @@ import { Button } from "@/components/shared/Button";
 import {
   MessageThreadList,
   type MessageThreadSummary,
-  MessagesLayout,
 } from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
 import { SUPPORT_EMAIL } from "@/lib/contact";
@@ -67,6 +65,18 @@ const formatStayRange = (checkIn: string, checkOut: string) => {
 
 const formatMoney = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+const nightsBetweenIso = (checkIn: string, checkOut: string) =>
+  Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000);
+
+const statusPillClass = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
+  booking.status === "PAID"
+    ? "bg-emerald-50 text-emerald-700"
+    : booking.status === "CANCELLED"
+      ? "bg-red-50 text-red-700"
+      : booking.holdExpired
+        ? "bg-gray-100 text-gray-600"
+        : "bg-amber-50 text-amber-700";
 
 const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
   booking.status === "PAID"
@@ -210,7 +220,7 @@ export default function AdminMessagesPage() {
         id: thread.id,
         title: thread.guestName,
         subtitle: thread.property.name,
-        meta: formatStayRange(thread.checkInDate, thread.checkOutDate),
+        meta: `${formatStayRange(thread.checkInDate, thread.checkOutDate)} · ${bookingStatusLabel(thread)}`,
         badge: thread.referenceCode,
         mediaUrl: property?.image ?? property?.images?.[0] ?? null,
         // Messaging is email-only, so the list shows bookings without chat previews.
@@ -328,9 +338,8 @@ export default function AdminMessagesPage() {
             <AlertCircle className="mr-2 inline h-4 w-4" /> {threadsError}
           </div>
         )}
-        <MessagesLayout
-          variant="full-bleed"
-          sidebar={
+        <div className="flex flex-col bg-white lg:h-[calc(100vh-80px)] lg:flex-row lg:divide-x lg:divide-gray-200">
+          <aside className="flex flex-col lg:w-[400px] lg:flex-shrink-0 lg:overflow-y-auto">
             <div className="flex h-full flex-col bg-white">
               <div className="border-b border-gray-100 p-6">
                 <div className="flex items-center justify-between gap-3">
@@ -348,7 +357,7 @@ export default function AdminMessagesPage() {
                     onClick={() => void fetchThreads()}
                     className="gap-1 px-3 py-2 text-sm"
                   >
-                    <RefreshCw className="h-4 w-4" /> Sync
+                    <RefreshCw className="h-4 w-4" /> Refresh
                   </Button>
                 </div>
                 <form className="mt-4" onSubmit={handleSearchThreads}>
@@ -365,8 +374,7 @@ export default function AdminMessagesPage() {
                 </form>
                 {threadsLoading && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Syncing latest
-                    threads...
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading bookings…
                   </div>
                 )}
               </div>
@@ -383,157 +391,101 @@ export default function AdminMessagesPage() {
                 />
               </div>
             </div>
-          }
-          conversation={
-            activeThread ? (
-              (
-              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
-                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
-                <p className="text-sm text-gray-600">
-                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
-                </p>
-                <a
-                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
-                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-                >
-                  Email {activeThread.guestEmail}
-                </a>
-              </div>
-            )
-            ) : (
-              <div className="flex h-full items-center justify-center p-6 text-sm text-gray-500">
-                Select a booking on the left to open the message thread.
-              </div>
-            )
-          }
-          reservation={
-            activeThread ? (
-              <div className="flex h-full flex-col overflow-y-auto bg-white">
+          </aside>
+          <section className="min-w-0 flex-1 lg:overflow-y-auto">
+            {activeThread ? (
+            <div className="mx-auto max-w-3xl space-y-8 p-6 sm:p-10">
+              <header className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                    {activeThread.property.name}
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-gray-900">{activeThread.guestName}</h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(activeThread)}`}>
+                      {bookingStatusLabel(activeThread)}
+                    </span>
+                    <span className="text-gray-500">Ref {activeThread.referenceCode ?? "—"}</span>
+                  </div>
+                </div>
                 {activePropertyDetails?.image && (
-                  <div className="relative h-64 w-full shrink-0">
+                  <div className="relative hidden h-24 w-36 shrink-0 overflow-hidden rounded-xl sm:block">
                     <Image
                       src={activePropertyDetails.image}
                       alt={activeThread.property.name}
                       fill
                       className="object-cover"
-                      sizes="320px"
+                      sizes="144px"
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent p-6 flex items-end">
-                      <h3 className="font-sans font-semibold text-2xl text-white ">
-                        {activeThread.property.name}
-                      </h3>
-                    </div>
                   </div>
                 )}
-                <div className="p-8 space-y-8">
-                  <div>
-                    <p className="flex items-center gap-2 text-sm text-gray-500">
-                      <MapPin className="h-4 w-4" />{" "}
-                      {activePropertyDetails?.location ??
-                        activeThread.property.slug}
-                    </p>
+              </header>
+
+              <dl className="grid grid-cols-2 gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-4">
+                {[
+                  ["Check-in", stayDateFormatter.format(new Date(activeThread.checkInDate))],
+                  ["Check-out", stayDateFormatter.format(new Date(activeThread.checkOutDate))],
+                  ["Nights", String(nightsBetweenIso(activeThread.checkInDate, activeThread.checkOutDate))],
+                  ["Total", formatMoney(activeThread.totalPriceCents)],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-xs uppercase tracking-[0.2em] text-gray-500">{label}</dt>
+                    <dd className="mt-1 font-semibold text-gray-900">{value}</dd>
                   </div>
-                  <div className="rounded-xl bg-gray-50 p-6 text-sm text-gray-600">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                          Check-in
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {stayDateFormatter.format(
-                            new Date(activeThread.checkInDate),
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                          Check-out
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {stayDateFormatter.format(
-                            new Date(activeThread.checkOutDate),
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
-                      Guest details
-                    </p>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {activeThread.guestName}
-                      </p>
-                      <a
-                        href={`mailto:${activeThread.guestEmail}`}
-                        className="text-sm text-gray-500 underline"
-                      >
-                        {activeThread.guestEmail}
-                      </a>
-                    </div>
-                    <div className="border-t border-gray-100 pt-4">
-                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                        Reference
-                      </p>
-                      <p className="font-semibold text-gray-900">
-                        {activeThread.referenceCode ?? "Pending"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                          Status
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {bookingStatusLabel(activeThread)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                          Total
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {formatMoney(activeThread.totalPriceCents)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-3 border-t border-gray-100 pt-6">
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                      Cancellation
-                    </p>
-                    <CancelBookingControl
-                      key={activeThread.id}
-                      bookingId={activeThread.id}
-                      status={activeThread.status}
-                      totalPriceCents={activeThread.totalPriceCents}
-                      checkInDate={activeThread.checkInDate}
-                      onCancelled={() => void fetchThreads(searchQuery || undefined)}
-                    />
-                  </div>
-                  <div className="space-y-2 border-t border-gray-100 pt-6">
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                      Internal support
-                    </p>
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {activeThread.property.hostSupportEmail ??
-                        SUPPORT_EMAIL}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Use this for escalations.
-                    </p>
-                  </div>
+                ))}
+              </dl>
+
+              <section className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Guest</h3>
+                <p className="text-gray-900">
+                  {activeThread.guestName} ·{" "}
+                  <a href={`mailto:${activeThread.guestEmail}`} className="underline">
+                    {activeThread.guestEmail}
+                  </a>
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                    className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                  >
+                    Email guest
+                  </a>
+                  {activeThread.referenceCode && activeThread.status === "PAID" && (
+                    <a
+                      href={`/my-trips/${activeThread.referenceCode}/essential`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                    >
+                      Guest&apos;s trip page
+                    </a>
+                  )}
                 </div>
-              </div>
+                <p className="text-xs text-gray-500">
+                  Guest replies to booking emails go to{" "}
+                  {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}.
+                </p>
+              </section>
+
+              <section className="space-y-3 border-t border-gray-100 pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Cancellation</h3>
+                <CancelBookingControl
+                  key={activeThread.id}
+                  bookingId={activeThread.id}
+                  status={activeThread.status}
+                  totalPriceCents={activeThread.totalPriceCents}
+                  checkInDate={activeThread.checkInDate}
+                  onCancelled={() => void fetchThreads(searchQuery || undefined)}
+                />
+              </section>
+            </div>
             ) : (
-              <div className="flex h-full items-center justify-center p-6 text-sm text-gray-500">
-                Choose a booking to see reservation context.
+              <div className="flex h-full items-center justify-center p-10 text-sm text-gray-500">
+                Choose a booking to see its details.
               </div>
-            )
-          }
-        />
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
