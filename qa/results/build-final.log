@@ -5,7 +5,7 @@
 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
- ✓ Compiled successfully in 16.6s
+ ✓ Compiled successfully in 15.8s
    Running TypeScript ...
    Collecting page data using 3 workers ...
 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
@@ -20,10 +20,10 @@ POSTMARK_API_KEY is not set. Email sending will be disabled.
 POSTMARK_API_KEY is not set. Email sending will be disabled.
    Generating static pages using 3 workers (10/40) 
 POSTMARK_API_KEY is not set. Email sending will be disabled.
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set; Stripe Elements will be disabled.
    Generating static pages using 3 workers (20/40) 
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set; Stripe Elements will be disabled.
    Generating static pages using 3 workers (30/40) 
- ✓ Generating static pages using 3 workers (40/40) in 1057.7ms
+ ✓ Generating static pages using 3 workers (40/40) in 1163.1ms
    Finalizing page optimization ...
    Collecting build traces ...
 

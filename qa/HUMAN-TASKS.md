@@ -2,12 +2,15 @@
 
 Updated after your answers to Q1–Q7 (27 Sep). Work through the tasks in order and tick each box as you go. **Bold** tasks block a safe launch.
 
-## 0. Change the Steamboat codes (urgent)
+## 0. Steamboat codes (owner is keeping them)
 
-- [ ] **Change the garage code, lockbox code and ski-locker door code** at Steamboat, then enter the new ones in Admin → Setup.
-  - The Steamboat guide PDFs, which print those codes, were downloadable by anyone from bunks.com until this fix. They're private now, but anyone could have saved them, and they're in this repo's history.
-  - The PDFs still print the old codes. Until you re-export them without codes (or with the new ones), paid guests who open them will see stale codes; the trip page always shows the live codes from Setup.
-  - Summerland's guidebook had the address and Wi-Fi but no codes.
+- [ ] **Check Admin → Setup (Steamboat) matches the codes printed in the guides.** The trip page shows what's in Setup; the PDFs show what's printed. They should agree:
+  - Garage 0409
+  - Lockbox 1009
+  - Ski locker: door 47754, locker #36, locker code 2482
+  - Wi-Fi: Townhouse2 / Steamboat
+- [ ] The brochure's first page says "10am Check-in time"; everything else says 3 p.m. check-in, 10 a.m. checkout. Worth fixing when it's next re-exported.
+- The guides open only for paid guests (trip page and emails) and for admins (Admin → Setup → Guide/Brochure links). Until this deploys, they're still public at bunks.com.
 
 ## 1. Vercel environment variables
 

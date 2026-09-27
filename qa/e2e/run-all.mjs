@@ -514,6 +514,11 @@ def("Address, Wi-Fi and guides only for paid guests", async () => {
     const r = await api(pdf);
     check("PV2", `old public guide ${decodeURIComponent(pdf)} is gone`, r.status === 404, r.status, "T-SEC-11");
   }
+  for (const kind of ["guide", "brochure"]) {
+    const anon = await api(`/api/guides/${SB}/${kind}`);
+    const admin = await fetch(`http://localhost:3000/api/guides/${SB}/${kind}`, { headers: { cookie: await adminCookie() } });
+    check("PV9", `Steamboat ${kind} PDF: admins can open it, anonymous visitors can't`, anon.status === 403 && admin.status === 200 && admin.headers.get("content-type") === "application/pdf", `${anon.status}/${admin.status}`, "T-SEC-11");
+  }
   const r = await book();
   const ref = r.json.bookingReference;
   const unpaid = await api(`/api/bookings/${ref}?email=guest1@example.com`);

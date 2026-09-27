@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T22:57:27.982Z",
-  "pass": 160,
-  "total": 160,
+  "at": "2026-09-27T23:31:00.261Z",
+  "pass": 162,
+  "total": 162,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -1199,6 +1199,22 @@
       "scenario": "Address, Wi-Fi and guides only for paid guests",
       "id": "PV2",
       "description": "old public guide /Lillie Guidebook.pdf is gone",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV9",
+      "description": "Steamboat guide PDF: admins can open it, anonymous visitors can't",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV9",
+      "description": "Steamboat brochure PDF: admins can open it, anonymous visitors can't",
       "pass": true,
       "detail": "",
       "ticket": "T-SEC-11"
