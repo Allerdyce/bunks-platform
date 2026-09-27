@@ -1,4 +1,4 @@
-export type EmailAudience = 'guest' | 'host' | 'system';
+export type EmailAudience = 'guest' | 'host';
 export type EmailStatus = 'shipped' | 'in-progress' | 'planned' | 'parked';
 
 export interface EmailTemplateSpec {
@@ -84,7 +84,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     serviceFunction: 'sendDoorCodeEmail',
   },
 
-
   // Guest — During Stay
   {
     slug: 'mid-stay-check-in',
@@ -96,28 +95,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     status: 'shipped',
     templatePath: 'src/emails/MidStayCheckInEmail.tsx',
     serviceFunction: 'sendMidStayCheckIn',
-  },
-  {
-    slug: 'issue-report-confirmation',
-    name: 'Issue / Maintenance Report Confirmation',
-    audience: 'guest',
-    category: 'During Stay',
-    trigger: 'Guest submits maintenance/damage report',
-    description: 'Acknowledges report receipt and outlines next steps.',
-    status: 'shipped',
-    templatePath: 'src/emails/IssueReportConfirmationEmail.tsx',
-    serviceFunction: 'sendIssueReportConfirmation',
-  },
-  {
-    slug: 'noise-warning',
-    name: 'Noise Warning / Courtesy Notification',
-    audience: 'guest',
-    category: 'During Stay',
-    trigger: 'Manual send or noise monitoring alert',
-    description: 'Polite reminder to reduce noise and respect community guidelines.',
-    status: 'shipped',
-    templatePath: 'src/emails/NoiseWarningEmail.tsx',
-    serviceFunction: 'sendNoiseWarning',
   },
 
   // Guest — Departure & Post-Stay
@@ -131,17 +108,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     status: 'shipped',
     templatePath: 'src/emails/CheckoutReminderEmail.tsx',
     serviceFunction: 'sendCheckoutReminder',
-  },
-  {
-    slug: 'post-stay-thank-you',
-    name: 'Post-Stay Thank You',
-    audience: 'guest',
-    category: 'Departure & Post-Stay',
-    trigger: 'Within 12 hours after checkout',
-    description: 'Thank you note plus rebooking incentives or referral links.',
-    status: 'shipped',
-    templatePath: 'src/emails/PostStayThankYouEmail.tsx',
-    serviceFunction: 'sendPostStayThankYou',
   },
   {
     slug: 'review-request',
@@ -179,28 +145,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     serviceFunction: 'sendCancellationConfirmation',
   },
   {
-    slug: 'booking-modification-confirmation',
-    name: 'Booking Modification Confirmation',
-    audience: 'guest',
-    category: 'Edge Cases',
-    trigger: 'Booking update (dates, guests, payouts)',
-    description: 'Confirms the change and updated totals.',
-    status: 'shipped',
-    templatePath: 'src/emails/BookingModificationEmail.tsx',
-    serviceFunction: 'sendBookingModificationConfirmation',
-  },
-  {
-    slug: 'no-show-notification',
-    name: 'No-Show Notification',
-    audience: 'guest',
-    category: 'Edge Cases',
-    trigger: 'Booking flagged as no-show',
-    description: 'Outlines charges incurred and rebooking options.',
-    status: 'shipped',
-    templatePath: 'src/emails/NoShowNotificationEmail.tsx',
-    serviceFunction: 'sendNoShowNotification',
-  },
-  {
     slug: 'payment-failure',
     name: 'Payment Failure / Retry Request',
     audience: 'guest',
@@ -210,17 +154,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     status: 'shipped',
     templatePath: 'src/emails/PaymentFailureEmail.tsx',
     serviceFunction: 'sendPaymentFailure',
-  },
-  {
-    slug: 'deposit-release',
-    name: 'Hold Deposit Release Confirmation',
-    audience: 'guest',
-    category: 'Edge Cases',
-    trigger: 'Security deposit released',
-    description: 'Confirms deposit release and expected bank timing.',
-    status: 'shipped',
-    templatePath: 'src/emails/DepositReleaseEmail.tsx',
-    serviceFunction: 'sendDepositRelease',
   },
 
   // Host — Booking Notifications
@@ -234,18 +167,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     status: 'shipped',
     templatePath: 'src/emails/HostNotificationEmail.tsx',
     serviceFunction: 'sendHostNotification',
-  },
-
-  {
-    slug: 'host-booking-modified',
-    name: 'Booking Modification Alert',
-    audience: 'host',
-    category: 'Booking Notifications',
-    trigger: 'Booking updated',
-    description: 'Highlights changed dates, pricing, or guest counts.',
-    status: 'shipped',
-    templatePath: 'src/emails/HostBookingModifiedEmail.tsx',
-    serviceFunction: 'sendHostBookingModified',
   },
 
   // Host — Pre-Stay Prep
@@ -271,17 +192,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     templatePath: 'src/emails/HostPrepSameDayEmail.tsx',
     serviceFunction: 'sendHostPrepSameDay',
   },
-  {
-    slug: 'host-door-code-reminder',
-    name: 'Door Code Setup Reminder',
-    audience: 'host',
-    category: 'Pre-Stay Prep',
-    trigger: 'Dynamic lock workflows',
-    description: 'Ensures smart lock credentials are ready.',
-    status: 'shipped',
-    templatePath: 'src/emails/HostDoorCodeReminderEmail.tsx',
-    serviceFunction: 'sendHostDoorCodeReminder',
-  },
 
   // Host — Edge Cases
   {
@@ -296,17 +206,6 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     serviceFunction: 'sendHostGuestCancelled',
   },
   {
-    slug: 'host-no-show',
-    name: 'No-Show Guest',
-    audience: 'host',
-    category: 'Edge Cases',
-    trigger: 'No-show flagged',
-    description: 'Summarizes charges and next steps.',
-    status: 'shipped',
-    templatePath: 'src/emails/HostNoShowEmail.tsx',
-    serviceFunction: 'sendHostNoShow',
-  },
-  {
     slug: 'host-refund-adjustment',
     name: 'Refund Adjustment Notice',
     audience: 'host',
@@ -317,19 +216,4 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     templatePath: 'src/emails/HostRefundAdjustmentEmail.tsx',
     serviceFunction: 'sendHostRefundAdjustment',
   },
-  {
-    slug: 'host-chargeback',
-    name: 'Chargeback / Dispute Alert',
-    audience: 'host',
-    category: 'Edge Cases',
-    trigger: 'Stripe dispute webhook',
-    description: 'Warns host about dispute timeline and required action.',
-    status: 'shipped',
-    templatePath: 'src/emails/HostChargebackEmail.tsx',
-    serviceFunction: 'sendHostChargebackAlert',
-  },
-
-
-
-
 ];

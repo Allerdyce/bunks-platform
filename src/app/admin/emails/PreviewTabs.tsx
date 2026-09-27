@@ -27,9 +27,6 @@ const TAB_COPY: Record<Exclude<TabId, "all">, { label: string }> = {
   host: {
     label: "Host & Ops",
   },
-  system: {
-    label: "System Alerts",
-  },
 };
 
 interface PreviewTabsProps {
@@ -45,7 +42,7 @@ export function PreviewTabs({ previews }: PreviewTabsProps) {
         acc[preview.spec.audience] += 1;
         return acc;
       },
-      { guest: 0, host: 0, system: 0 },
+      { guest: 0, host: 0 },
     );
   }, [previews]);
 
@@ -56,7 +53,7 @@ export function PreviewTabs({ previews }: PreviewTabsProps) {
         label: "All templates",
         count: previews.length,
       },
-      ...(["guest", "host", "system"] as EmailAudience[]).map((audience) => ({
+      ...(["guest", "host"] as EmailAudience[]).map((audience) => ({
         id: audience,
         label: TAB_COPY[audience].label,
         count: audienceCounts[audience],
