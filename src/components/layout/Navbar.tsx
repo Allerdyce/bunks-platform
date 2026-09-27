@@ -74,13 +74,6 @@ export function Navbar({
           target: "booking-guide",
           section: "guide",
         },
-        {
-          label: "Messages",
-          type: "booking",
-          href: `${base}/inbox`,
-          target: "booking-messages",
-          section: "messages",
-        },
         { label: "Exit", type: "route", href: "/", target: "home" },
       ];
     }

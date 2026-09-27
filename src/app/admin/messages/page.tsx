@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
-import { BookingMessages } from "@/components/messaging/BookingMessages";
 import { Button } from "@/components/shared/Button";
 import {
   MessageThreadList,
@@ -260,19 +259,21 @@ export default function AdminMessagesPage() {
   );
 
   const conversationPanel = activeThread ? (
-    <BookingMessages
-      variant="panel"
-      viewerRole="host"
-      bookingId={activeThread.id}
-      bookingReference={activeThread.referenceCode}
-      guestEmail={activeThread.guestEmail}
-      guestName={activeThread.guestName}
-      propertyName={activeThread.property.name}
-      hostSupportEmail={
-        activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL
-      }
-      onConversationSummaryChange={handleActiveThreadSummaryChange}
-    />
+    (
+              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
+                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
+                <p className="text-sm text-gray-600">
+                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
+                </p>
+                <a
+                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  Email {activeThread.guestEmail}
+                </a>
+              </div>
+            )
   ) : (
     <div className="rounded-[32px] border border-dashed border-gray-200 bg-white/90 p-6 text-sm text-gray-500">
       Select a booking on the left to open the message thread.
@@ -527,19 +528,21 @@ export default function AdminMessagesPage() {
           }
           conversation={
             activeThread ? (
-              <BookingMessages
-                variant="clean"
-                viewerRole="host"
-                bookingId={activeThread.id}
-                bookingReference={activeThread.referenceCode}
-                guestEmail={activeThread.guestEmail}
-                guestName={activeThread.guestName}
-                propertyName={activeThread.property.name}
-                hostSupportEmail={
-                  activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL
-                }
-                onConversationSummaryChange={handleActiveThreadSummaryChange}
-              />
+              (
+              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
+                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
+                <p className="text-sm text-gray-600">
+                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
+                </p>
+                <a
+                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  Email {activeThread.guestEmail}
+                </a>
+              </div>
+            )
             ) : (
               <div className="flex h-full items-center justify-center p-6 text-sm text-gray-500">
                 Select a booking on the left to open the message thread.

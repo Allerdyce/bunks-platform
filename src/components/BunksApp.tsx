@@ -106,7 +106,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     // /my-trips, /my-trips/<section> and /my-trips/<ref>/<section>
     const section = pathname.split("/").filter(Boolean).pop();
     if (section === "guide") return "guide";
-    if (section === "inbox") return "messages";
+    // Guest messaging is email-only; old /inbox links land on Essentials.
     return "essential";
   }, [isMessagesRoute, pathname]);
 
