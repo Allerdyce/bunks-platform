@@ -11,8 +11,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 // External hosts (Stripe.js, fonts, map tiles, images) are unreachable in the sandbox; ignore their failures.
 const IGNORED = /Failed to load Stripe\.js|js\.stripe\.com|m\.stripe|fonts\.(googleapis|gstatic)|unsplash|googletagmanager|vercel-insights|_vercel|open-meteo|images\.|api\.mapbox/;
 
-async function newPage(viewport) {
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, timezoneId: "America/Denver" });
+async function newPage(viewport, timezoneId = "America/Denver") {
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, timezoneId });
   const page = await context.newPage();
   page.problems = [];
   page.on("pageerror", (e) => { if (!IGNORED.test(e.message)) page.problems.push(`pageerror: ${e.message}`); });
@@ -25,6 +25,8 @@ const dayLabel = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US
 
 await resetData();
 await forceSync(SB);
+// Set before any page loads: public pages cache property details for 5 minutes.
+await db.property.update({ where: { slug: SB }, data: { wifiSsid: "Bunks-Guest", wifiPassword: "mountain-air" } });
 
 scenario("Public pages render cleanly");
 for (const [label, viewport] of [["desktop", { width: 1280, height: 900 }], ["mobile", { width: 390, height: 844 }]]) {
@@ -115,6 +117,60 @@ scenario("Guest books through the UI");
   await page.context().close();
 }
 
+scenario("Guests in other timezones book the right dates");
+for (const tz of ["Asia/Tokyo", "Pacific/Honolulu", "Europe/London"]) {
+  await resetData();
+  await forceSync(SB);
+  const page = await newPage({ width: 1280, height: 900 }, tz);
+  await page.goto(`${BASE}/property/${SB}`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /check availability/i }).first().click();
+  await page.waitForTimeout(600);
+  const picker = page.locator("div.fixed.inset-0.z-50");
+  await picker.getByRole("button", { name: dayLabel("2026-11-09"), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel("2026-11-12"), exact: true }).first().click();
+  await page.getByRole("button", { name: /^save$/i }).click();
+  await page.waitForTimeout(800);
+  await page.getByRole("button", { name: /^reserve$/i }).first().click();
+  await page.waitForTimeout(1000);
+  await page.fill("#guest-first-name", "Far");
+  await page.fill("#guest-last-name", "Away");
+  await page.fill("#guest-email", `tz-${tz.replace(/\W/g, "")}@example.com`.toLowerCase());
+  await page.getByRole("button", { name: /continue to payment/i }).first().click();
+  await page.waitForTimeout(2500);
+  const b = await db.booking.findFirst({ where: { guestEmail: `tz-${tz.replace(/\W/g, "")}@example.com`.toLowerCase() } });
+  check(`TZ-${tz}`, `guest browsing from ${tz} books Nov 9–12 exactly`, b && b.checkInDate.toISOString().startsWith("2026-11-09") && b.checkOutDate.toISOString().startsWith("2026-11-12"), JSON.stringify(b && [b.checkInDate, b.checkOutDate]));
+  await page.context().close();
+}
+
+scenario("Wi-Fi page and My Trips edge cases");
+{
+  const page = await newPage({ width: 390, height: 844 });
+  await page.goto(`${BASE}/connect/${SB}`, { waitUntil: "networkidle" });
+  await page.fill('input[type="email"]', "wifi-ui@example.com");
+  await page.locator('button[type="submit"]').first().click();
+  await page.waitForTimeout(1500);
+  const text = await page.locator("body").innerText();
+  await shot(page, "wifi-after-submit");
+  const lead = await db.guestLead.findFirst({ where: { email: "wifi-ui@example.com" } });
+  check("WF1", "Wi-Fi page shows the network + password saved in Admin → Setup", /mountain-air/.test(text) && /Bunks-Guest/.test(text), text.slice(0, 300), "T-UI-03");
+  check("WF2", "the email is captured as a guest lead for Steamboat", lead?.propertySlug === SB, JSON.stringify(lead));
+
+  const trips = await newPage({ width: 390, height: 844 });
+  await trips.goto(`${BASE}/my-trips`, { waitUntil: "networkidle" });
+  await trips.getByLabel(/booking reference/i).first().fill("ZZZZZ");
+  await trips.getByLabel(/email used on booking/i).first().fill("nobody@example.com");
+  await trips.getByRole("button", { name: /view booking/i }).first().click();
+  await trips.waitForTimeout(1500);
+  const tripText = await trips.locator("body").innerText();
+  await shot(trips, "mytrips-not-found");
+  check("MT1", "unknown booking shows a friendly not-found message", /couldn.t find|not found|check the reference/i.test(tripText) && !/Internal|undefined|\{"/.test(tripText), tripText.slice(0, 300));
+  // The 404 and the app's own "couldn't find that booking" log line are expected here.
+  const unexpected = trips.problems.filter((p) => !/404|couldn't find that booking/.test(p));
+  check("MT2", "no unexpected errors on a failed lookup", unexpected.length === 0, unexpected.join(" | "));
+  await page.context().close();
+  await trips.context().close();
+}
+
 scenario("Admin pages");
 {
   const page = await newPage({ width: 1280, height: 900 });
@@ -155,6 +211,7 @@ scenario("Admin pages");
 }
 
 await browser.close();
+await db.property.update({ where: { slug: SB }, data: { wifiSsid: null, wifiPassword: null } });
 await resetData();
 const pass = results.filter((r) => r.pass).length;
 console.log(`\n${pass}/${results.length} UI checks passed`);
