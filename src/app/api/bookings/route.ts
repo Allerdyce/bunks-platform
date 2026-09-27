@@ -1,5 +1,6 @@
 // src/app/api/bookings/route.ts
 import { Prisma } from '@prisma/client';
+import { rateLimitResponse } from '@/lib/rateLimit';
 import { randomInt, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -123,6 +124,9 @@ const bookingRequestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, 'booking-create', 12, 10 * 60_000);
+  if (limited) return limited;
+
   try {
     const rawBody = await req.json().catch(() => null);
     if (!rawBody || typeof rawBody !== 'object') {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 import type { TripAccessCodes, TripAccessResponse } from "@/types";
 
@@ -30,6 +31,9 @@ const unavailable = (body: TripAccessResponse = { available: false }) =>
  * and the current time to be within [check-in - 24h, end of check-out day].
  */
 export async function GET(req: NextRequest, context: { params: Promise<{ ref: string }> }) {
+  const limited = rateLimitResponse(req, "trip-lookup", 30, 10 * 60_000);
+  if (limited) return limited;
+
   try {
     const { ref } = await context.params;
     const bookingReference = normalizeBookingReference(ref);

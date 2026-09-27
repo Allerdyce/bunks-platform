@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -18,6 +19,9 @@ export async function GET(
   req: NextRequest,
   context: { params: { bookingId?: string } } | { params: Promise<{ bookingId?: string }> },
 ) {
+  const limited = rateLimitResponse(req, "trip-lookup", 30, 10 * 60_000);
+  if (limited) return limited;
+
   try {
     const resolvedParams = typeof (context.params as Promise<{ bookingId?: string }>).then === "function"
       ? await (context.params as Promise<{ bookingId?: string }>)

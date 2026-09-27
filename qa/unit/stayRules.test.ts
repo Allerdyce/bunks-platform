@@ -41,3 +41,13 @@ test("strict date parsing", () => {
   assert.equal(parseStayDate("2028-02-29")?.toISOString(), "2028-02-29T00:00:00.000Z");
   assert.equal(parseStayDate(20261005), null);
 });
+
+import { hitRateLimit } from "@/lib/rateLimit";
+
+test("rate limiter blocks after the limit and resets after the window", () => {
+  const t0 = 1_000_000;
+  for (let i = 0; i < 3; i += 1) assert.equal(hitRateLimit("unit:a", 3, 60_000, t0 + i), 0);
+  assert.ok(hitRateLimit("unit:a", 3, 60_000, t0 + 10) > 0);
+  assert.equal(hitRateLimit("unit:b", 3, 60_000, t0 + 10), 0, "other keys unaffected");
+  assert.equal(hitRateLimit("unit:a", 3, 60_000, t0 + 60_001), 0, "window resets");
+});
