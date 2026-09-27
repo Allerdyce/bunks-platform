@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import type { OpsDetails, OpsDetailsInput } from "@/lib/opsDetails/config";
 import { DEFAULT_OPS_DETAILS } from "@/lib/opsDetails/config";
 
@@ -388,6 +389,10 @@ export default function AdminOpsDetailsPage() {
     () => JSON.stringify(form) !== JSON.stringify(initialForm),
     [form, initialForm],
   );
+
+  if (authState === "checking") {
+    return <AdminCheckingShell active="details" />;
+  }
 
   if (authState !== "authenticated") {
     return (

@@ -5,6 +5,7 @@ import { AlertCircle, LogOut, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { PropertyCard } from "@/components/admin/PropertyCard";
 import type { AdminFeatureToggle, AdminProperty } from "@/types";
 
@@ -225,6 +226,10 @@ export default function AdminPricingPage() {
 
     await fetchProperties();
   };
+
+  if (authState === "checking") {
+    return <AdminCheckingShell active="pricing" />;
+  }
 
   if (authState !== "authenticated") {
     return (

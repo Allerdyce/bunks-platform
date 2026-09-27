@@ -16,6 +16,7 @@ import {
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
 import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
+import { PAUSED_EMAIL_TYPES } from '@/lib/email/deliverySettings';
 
 export const runtime = 'nodejs';
 
@@ -51,9 +52,6 @@ type DailyJob = {
   eligible?: (booking: BookingWithProperty) => boolean;
   send: (booking: BookingWithProperty, opsDetails: OpsDetailsResult) => Promise<unknown>;
 };
-
-// Paused for launch: host prep emails and the mid-stay check-in. Remove a type to turn it back on.
-const PAUSED_EMAIL_TYPES = new Set<EmailType>(['HOST_PREP_THREE_DAY', 'HOST_PREP_SAME_DAY', 'MID_STAY_CONCIERGE']);
 
 const DAILY_JOBS: DailyJob[] = [
   {

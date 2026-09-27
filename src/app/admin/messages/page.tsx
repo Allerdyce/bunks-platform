@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
 import {
   MessageThreadList,
@@ -225,10 +226,6 @@ export default function AdminMessagesPage() {
   const hostThreadSummaries: MessageThreadSummary[] = useMemo(() => {
     return threads.map((thread) => {
       const property = getPropertyBySlug(thread.property.slug);
-      const snapshot = conversationSnapshots[thread.id];
-      const snippet = snapshot?.snippet ?? thread.lastMessage?.body ?? null;
-      const timestamp =
-        snapshot?.timestamp ?? thread.lastMessage?.sentAt ?? null;
       return {
         id: thread.id,
         title: thread.guestName,
@@ -236,11 +233,12 @@ export default function AdminMessagesPage() {
         meta: formatStayRange(thread.checkInDate, thread.checkOutDate),
         badge: thread.referenceCode,
         mediaUrl: property?.image ?? property?.images?.[0] ?? null,
-        lastMessageSnippet: snippet,
-        lastMessageAtLabel: formatThreadTimestamp(timestamp),
+        // Messaging is email-only, so the list shows bookings without chat previews.
+        lastMessageSnippet: null,
+        lastMessageAtLabel: null,
       } as MessageThreadSummary;
     });
-  }, [threads, conversationSnapshots]);
+  }, [threads]);
 
   const activePropertyDetails = activeThread
     ? (getPropertyBySlug(activeThread.property.slug) ?? null)
@@ -370,6 +368,10 @@ export default function AdminMessagesPage() {
     </div>
   );
 
+  if (authState === "checking") {
+    return <AdminCheckingShell active="messages" />;
+  }
+
   if (authState !== "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -478,7 +480,7 @@ export default function AdminMessagesPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                      Messages
+                      Bookings
                     </p>
                     <h2 className="mt-1 text-2xl font-sans font-semibold text-gray-900">
                       All bookings

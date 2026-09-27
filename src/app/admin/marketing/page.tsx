@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
 import {
   AlertCircle,
@@ -174,6 +175,10 @@ export default function AdminMarketingPage() {
     }
   };
 
+  if (authState === "checking") {
+    return <AdminCheckingShell active="marketing" />;
+  }
+
   if (authState !== "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -192,11 +197,7 @@ export default function AdminMarketingPage() {
               />
             </Link>
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-700">
-              {authState === "checking" ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Lock className="w-5 h-5" />
-              )}
+              <Lock className="w-5 h-5" />
             </div>
             <h1 className="page-title   text-gray-900">Guests & campaigns</h1>
             <p className="text-sm text-gray-500">
@@ -238,7 +239,7 @@ export default function AdminMarketingPage() {
             <button
               type="submit"
               className="w-full rounded-full bg-gray-900 text-white py-3 font-medium hover:bg-gray-800 transition"
-              disabled={authLoading || authState === "checking"}
+              disabled={authLoading}
             >
               {authLoading ? "Signing in..." : "Sign in"}
             </button>

@@ -13,6 +13,7 @@ import { TemplateControls } from "./TemplateControls";
 import type { TemplatePreview } from "./types";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { EmailPageActions } from "./EmailPageActions";
+import { templateDeliveryState } from "@/lib/email/deliverySettings";
 
 const STATUS_ORDER: EmailTemplateSpec["status"][] = [
   "shipped",
@@ -63,6 +64,7 @@ export default async function EmailPreviewGallery() {
       status,
       trigger,
       category,
+      delivery: templateDeliveryState(slug),
     }),
   );
   const previewMap = previews.reduce<Record<string, TemplatePreview>>(

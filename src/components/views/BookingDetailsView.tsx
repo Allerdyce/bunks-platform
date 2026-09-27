@@ -62,6 +62,7 @@ const formatThreadTimestamp = (value?: string | null) => {
 };
 
 import { SUPPORT_EMAIL } from "@/lib/contact";
+import { guideUrlFor } from "@/data/guides";
 
 type EssentialMapProps = {
   propertyName: string;
@@ -102,12 +103,11 @@ function normalizeBookingReferenceInput(raw: string) {
 }
 
 export function BookingDetailsView({
-  onNavigate: _onNavigate,
+  onNavigate,
   initialLookup,
   onPersistLookup,
   section = "essential",
 }: BookingDetailsViewProps) {
-  void _onNavigate;
   const [lookupReference, setLookupReference] = useState(
     initialLookup?.bookingReference ?? "",
   );
@@ -371,12 +371,9 @@ export function BookingDetailsView({
     return items;
   }, [booking, propertyDetails, hostContacts, isPaidBooking, accessCodes]);
 
-  const guideUrl =
-    booking?.property.checkInGuideUrl ??
-    booking?.property.guestBookUrl ??
-    (booking?.property.slug === "steamboat-downtown-townhome"
-      ? "/Steamboat%20Brochure.pdf"
-      : null);
+  const guideUrl = booking
+    ? guideUrlFor(booking.property.slug, booking.property.checkInGuideUrl, booking.property.guestBookUrl)
+    : null;
 
   const sectionCopy: Record<
     BookingPortalSection,
@@ -421,12 +418,35 @@ export function BookingDetailsView({
     setIsLookupModalOpen(true);
   };
 
+  // Outside click / Escape: close over a loaded booking, otherwise leave for home.
+  const dismissLookupModal = useCallback(() => {
+    if (canDismissLookupModal) {
+      setIsLookupModalOpen(false);
+    } else {
+      onNavigate("home");
+    }
+  }, [canDismissLookupModal, onNavigate]);
+
+  useEffect(() => {
+    if (!isLookupModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dismissLookupModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isLookupModalOpen, dismissLookupModal]);
+
   const renderLookupModal = () => {
     if (!isLookupModalOpen) {
       return null;
     }
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-8 backdrop-blur">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-8 backdrop-blur"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) dismissLookupModal();
+        }}
+      >
         <div className="relative w-full max-w-lg rounded-xl border border-gray-200 bg-[var(--color-surface)] p-6 sm:p-10 shadow-[var(--shadow-floating)]">
           {canDismissLookupModal && (
             <button

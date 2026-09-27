@@ -7,6 +7,7 @@ import {
   WifiConnectForm,
   type WifiTheme,
 } from "@/components/wifi/WifiConnectForm";
+import { PROPERTY_GUIDES } from "@/data/guides";
 
 // 5 minute cache
 export const revalidate = 300;
@@ -85,17 +86,8 @@ export default async function WifiConnectPage({
   const slug = ALIAS_MAP[rawSlug] || rawSlug;
 
   // Guide shown on the page, and the one linked from the success screen after unlocking.
-  const GUIDES: Record<string, { page: string; success: string }> = {
-    "steamboat-downtown-townhome": {
-      page: "/Steamboat Welcome Guide.pdf",
-      success: "/Steamboat Brochure.pdf",
-    },
-    "summerland-ocean-view-beach-bungalow": {
-      page: "/Lillie Guidebook.pdf",
-      success: "/Lillie Guidebook.pdf",
-    },
-  };
-  const guide = GUIDES[slug];
+  const guideEntry = PROPERTY_GUIDES[slug];
+  const guide = guideEntry ? { page: guideEntry.guide, success: guideEntry.afterWifi } : undefined;
 
   const properties = await fetchMarketingProperties();
   const property = properties.find((p) => p.slug === slug);

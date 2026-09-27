@@ -5,8 +5,8 @@ import type { EmailTemplateSpec } from "@/lib/email/catalog";
 import { getEmailSubject } from "@/lib/email/subjects";
 import type { TemplatePreview } from "./types";
 import { EmailPreviewModal } from "./EmailPreviewModal";
+import type { EmailDeliveryState } from "@/lib/email/deliverySettings";
 
-const STORAGE_KEY = "bunks-email-template-toggles";
 const AUDIENCE_ORDER: EmailTemplateSpec["audience"][] = [
   "guest",
   "host",
@@ -28,52 +28,10 @@ const AUDIENCE_META: Record<
 };
 type ToggleTab = "all" | EmailTemplateSpec["audience"];
 
-const STATUS_BADGES: Record<
-  EmailTemplateSpec["status"],
-  { background: string; border: string; color: string }
-> = {
-  shipped: {
-    background: "#ECFDF3",
-    border: "#BBF7D0",
-    color: "#166534",
-  },
-  "in-progress": {
-    background: "#EEF2FF",
-    border: "#C7D2FE",
-    color: "#4338CA",
-  },
-  planned: {
-    background: "#F8FAFC",
-    border: "#E2E8F0",
-    color: "#0F172A",
-  },
-  parked: {
-    background: "#F4F3FF",
-    border: "#DDD6FE",
-    color: "#5B21B6",
-  },
-};
-
-const readStoredToggles = (): Record<string, boolean> => {
-  if (typeof window === "undefined") {
-    return {};
-  }
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return {};
-  }
-  try {
-    return JSON.parse(stored) as Record<string, boolean>;
-  } catch (error) {
-    console.warn("Failed to parse template toggles from storage", error);
-    return {};
-  }
-};
-
 export type TemplateControl = Pick<
   EmailTemplateSpec,
   "slug" | "name" | "audience" | "status" | "trigger" | "category"
->;
+> & { delivery: EmailDeliveryState };
 
 interface TemplateControlsProps {
   templates: TemplateControl[];
@@ -84,31 +42,11 @@ export function TemplateControls({
   templates,
   previewMap,
 }: TemplateControlsProps) {
-  const [toggles, setToggles] = useState<Record<string, boolean>>(() =>
-    readStoredToggles(),
-  );
   const [activeTab, setActiveTab] = useState<ToggleTab>("guest");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
-  const enabledCount = useMemo(() => {
-    const values = templates.map((template) => toggles[template.slug]);
-    return values.filter((value) => value !== false).length;
-  }, [templates, toggles]);
-
-  const disabledCount = templates.length - enabledCount;
-
-  const statusCounts = useMemo(() => {
-    const counts = {
-      shipped: 0,
-      "in-progress": 0,
-      planned: 0,
-      parked: 0,
-    };
-    templates.forEach((t) => {
-      if (counts[t.status] !== undefined) counts[t.status]++;
-    });
-    return counts;
-  }, [templates]);
+  const sendingCount = templates.filter((template) => template.delivery === "sending").length;
+  const pausedCount = templates.length - sendingCount;
 
   const tabMap = useMemo(() => {
     const base: Record<ToggleTab, TemplateControl[]> = {
@@ -135,14 +73,6 @@ export function TemplateControls({
 
   const visibleTemplates = tabMap[activeTab];
 
-  const handleToggle = (slug: string) => {
-    setToggles((current) => {
-      const next = { ...current, [slug]: current[slug] === false };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-
   const handlePreview = (slug: string) => {
     setSelectedSlug(slug);
   };
@@ -163,47 +93,30 @@ export function TemplateControls({
             Messages for every stay
           </h2>
           <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-            {templates.length}-email catalog. Implemented templates render in
-            the preview table.
+            The {templates.length} emails the app sends automatically. Click a
+            name to preview it. Paused emails are switched off in code; ask
+            your developer to turn one back on.
           </p>
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            {(Object.keys(STATUS_BADGES) as EmailTemplateSpec["status"][]).map(
-              (status) => (
-                <div
-                  key={status}
-                  className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    borderColor: STATUS_BADGES[status].border,
-                    backgroundColor: STATUS_BADGES[status].background,
-                    color: STATUS_BADGES[status].color,
-                  }}
-                >
-                  {status}: {statusCounts[status]}
-                </div>
-              ),
-            )}
-          </div>
         </section>
 
         {/* Filters & Toggles Card */}
         <section className="rounded-xl border border-gray-200 bg-white p-6  space-y-6">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-gray-900">
-              Filter & Controls
+              Delivery
             </h2>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <span className="flex h-2 w-2 rounded-full bg-gray-900"></span>
                 <span className="font-medium text-gray-900">
-                  {enabledCount}
+                  {sendingCount}
                 </span>
-                <span className="text-gray-500">enabled</span>
+                <span className="text-gray-500">sending</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="flex h-2 w-2 rounded-full bg-gray-200"></span>
                 <span className="font-medium text-gray-900">
-                  {disabledCount}
+                  {pausedCount}
                 </span>
                 <span className="text-gray-500">paused</span>
               </div>
@@ -251,13 +164,12 @@ export function TemplateControls({
                 {activeTab === "all" && <th className="px-6 py-4">Audience</th>}
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4">Trigger</th>
-                <th className="px-6 py-4 text-right">Enabled</th>
+                <th className="px-6 py-4 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {visibleTemplates.map((template) => {
                 const preview = previewMap[template.slug];
-                const isEnabled = toggles[template.slug] !== false;
                 const canPreview = Boolean(preview?.html);
 
                 return (
@@ -297,21 +209,15 @@ export function TemplateControls({
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={isEnabled}
-                          onClick={() => handleToggle(template.slug)}
-                          className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${
-                            isEnabled ? "bg-gray-900" : "bg-gray-200"
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            template.delivery === "sending"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-gray-100 text-gray-500"
                           }`}
                         >
-                          <span
-                            className={`pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                              isEnabled ? "translate-x-5" : "translate-x-0"
-                            }`}
-                          />
-                        </button>
+                          {template.delivery === "sending" ? "Sending" : "Paused"}
+                        </span>
                       </div>
                     </td>
                   </tr>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
 import {
   AlertCircle,
@@ -465,6 +466,10 @@ export default function AdminSetupPage() {
     setProperties(null);
   };
 
+  if (authState === "checking") {
+    return <AdminCheckingShell active="setup" />;
+  }
+
   if (authState !== "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -474,11 +479,7 @@ export default function AdminSetupPage() {
         >
           <div className="text-center space-y-2">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-700">
-              {authState === "checking" ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Lock className="w-5 h-5" />
-              )}
+              <Lock className="w-5 h-5" />
             </div>
             <h1 className="page-title text-gray-900">Property setup</h1>
           </div>
@@ -501,7 +502,7 @@ export default function AdminSetupPage() {
           />
           <button
             type="submit"
-            disabled={authState === "checking"}
+           
             className="w-full rounded-full bg-gray-900 text-white py-3 font-medium hover:bg-gray-800"
           >
             Sign in
