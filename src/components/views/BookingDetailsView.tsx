@@ -61,17 +61,6 @@ const formatThreadTimestamp = (value?: string | null) => {
   }
 };
 
-import "ol/ol.css";
-import Map from "ol/Map";
-import View from "ol/View";
-import TileLayer from "ol/layer/Tile";
-import OSM from "ol/source/OSM";
-import { fromLonLat } from "ol/proj";
-import { Feature } from "ol";
-import { Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import { Icon, Style } from "ol/style";
 import { SUPPORT_EMAIL } from "@/lib/contact";
 
 type EssentialMapProps = {
@@ -81,82 +70,23 @@ type EssentialMapProps = {
   className?: string;
 };
 
-// Simple mock geocoding for demo purposes
-const MOCK_COORDS: Record<string, [number, number]> = {
-  steamboat: [-106.8317, 40.485],
-  summerland: [-119.5965, 34.4208],
-};
-
-function EssentialMap({
-  propertyName,
-  location,
-  address,
-  className = "h-[520px] w-full",
-}: EssentialMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<Map | null>(null);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Detect location based on string content for demo
-    let center = fromLonLat([-106.8317, 40.485]); // Default Steamboat
-    const locLower = (location || "").toLowerCase();
-    const addrLower = (address || "").toLowerCase();
-
-    if (locLower.includes("summerland") || addrLower.includes("summerland")) {
-      center = fromLonLat(MOCK_COORDS["summerland"]);
-    } else if (
-      locLower.includes("steamboat") ||
-      addrLower.includes("steamboat")
-    ) {
-      center = fromLonLat(MOCK_COORDS["steamboat"]);
-    }
-
-    const vectorSource = new VectorSource();
-    const iconFeature = new Feature({
-      geometry: new Point(center),
-    });
-
-    const iconStyle = new Style({
-      image: new Icon({
-        anchor: [0.5, 1],
-        src: "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg", // Simple pin
-        scale: 1.5,
-      }),
-    });
-
-    iconFeature.setStyle(iconStyle);
-    vectorSource.addFeature(iconFeature);
-
-    const vectorLayer = new VectorLayer({
-      source: vectorSource,
-    });
-
-    const map = new Map({
-      target: mapRef.current,
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-        vectorLayer,
-      ],
-      view: new View({
-        center: center,
-        zoom: 14,
-      }),
-    });
-
-    mapInstance.current = map;
-
-    return () => {
-      map.setTarget(undefined);
-    };
-  }, [location, address]);
-
+// Lightweight location card: opens the address in the guest's maps app instead of
+// shipping an interactive map library to every trip page.
+function EssentialMap({ propertyName, location, address, className = "w-full" }: EssentialMapProps) {
+  const query = address || [propertyName, location].filter(Boolean).join(", ");
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return (
-    <div className={className}>
-      <div ref={mapRef} className="h-full w-full" />
+    <div className={`${className} flex flex-col justify-end gap-3 rounded-[28px] bg-[var(--color-surface-muted,#f3efe8)] p-6`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Getting there</p>
+      <p className="font-serif text-2xl text-gray-900">{address || location || propertyName}</p>
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex w-fit items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+      >
+        <MapPin className="h-4 w-4" /> Open in Google Maps
+      </a>
     </div>
   );
 }

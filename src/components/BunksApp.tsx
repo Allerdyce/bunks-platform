@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -55,37 +54,6 @@ const getPathSlugFromCanonical = (slug: string | null) => {
   if (!slug) return null;
   return CANONICAL_TO_PATH_SLUG[slug] ?? slug;
 };
-
-// --- Stripe + Firebase scaffolding ---
-// Stripe Elements is wired via `lib/stripePlaceholder`, which now wraps the real @stripe/* packages in sandbox mode.
-// Ensure NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, and STRIPE_WEBHOOK_SECRET are present in env files.
-// Firebase remains optional — provide NEXT_PUBLIC_FIREBASE_CONFIG to enable anonymous analytics.
-
-let auth: any;
-let signInAnonymously: any;
-
-try {
-  const { initializeApp } = require("firebase/app");
-  const { getAuth, signInAnonymously: signInAnon } = require("firebase/auth");
-  const { getFirestore } = require("firebase/firestore");
-
-  const rawConfig =
-    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FIREBASE_CONFIG
-      ? process.env.NEXT_PUBLIC_FIREBASE_CONFIG
-      : typeof (globalThis as any).__firebase_config !== "undefined"
-        ? (globalThis as any).__firebase_config
-        : null;
-
-  if (rawConfig) {
-    const config = typeof rawConfig === "string" ? JSON.parse(rawConfig) : rawConfig;
-    const app = initializeApp(config);
-    auth = getAuth(app);
-    getFirestore(app);
-    signInAnonymously = signInAnon;
-  }
-} catch (error) {
-  console.warn("Firebase not initialized (preview mode or missing config). Analytics disabled.", error);
-}
 
 const BOOKING_LOOKUP_STORAGE_KEY = "bunks:lastBookingLookup";
 

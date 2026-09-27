@@ -52,6 +52,9 @@ type DailyJob = {
   send: (booking: BookingWithProperty, opsDetails: OpsDetailsResult) => Promise<unknown>;
 };
 
+// Paused for launch: host prep emails and the mid-stay check-in. Remove a type to turn it back on.
+const PAUSED_EMAIL_TYPES = new Set<EmailType>(['HOST_PREP_THREE_DAY', 'HOST_PREP_SAME_DAY', 'MID_STAY_CONCIERGE']);
+
 const DAILY_JOBS: DailyJob[] = [
   {
     // Host heads-up three days before arrival (catch up until check-in day).
@@ -170,7 +173,7 @@ async function runAutomations(request: Request) {
   });
 
   const summary: Record<string, BatchSummary> = {};
-  for (const job of DAILY_JOBS) {
+  for (const job of DAILY_JOBS.filter((entry) => !PAUSED_EMAIL_TYPES.has(entry.type))) {
     summary[job.key] = await runDailyJob(job, bookings, now, opsDetails);
   }
   summary.wifiBookDirect = await handleWiFiBookDirect(now);
