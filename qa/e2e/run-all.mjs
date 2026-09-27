@@ -126,6 +126,10 @@ def("Airbnb feed failures never erase reservations", async () => {
   const emptySync = await forceSync(SB);
   const afterEmpty = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
   check("F4", "valid but empty feed while future reservations exist → blocks kept, sync reports EMPTY_FEED", afterEmpty === before && emptySync.json?.reason === "EMPTY_FEED", `${before} → ${afterEmpty} ${emptySync.text}`, "T-AV-01");
+  const duringEmpty = await book({ guestEmail: "during-empty@example.com", checkIn: "2026-10-20", checkOut: "2026-10-23" });
+  check("F4b", "an empty Airbnb feed doesn't pause checkout (old blocks kept, so only over-blocks)", duringEmpty.status === 200, `${duringEmpty.status} ${duringEmpty.text}`, "review-2");
+  const stillBlocked = await book({ guestEmail: "on-kept-block@example.com", checkIn: "2026-10-11", checkOut: "2026-10-15" });
+  check("F4c", "kept Airbnb blocks still stop bookings on those nights", stillBlocked.status === 409, stillBlocked.status);
   const confirmed = await api(`/api/properties/${SB}/sync-ical`, { method: "POST", body: { allowEmpty: true }, headers: { cookie: await adminCookie() } });
   const afterConfirm = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
   check("F5", "admin can confirm an empty Airbnb calendar to clear blocks", confirmed.status === 200 && afterConfirm === 0, `${confirmed.status} ${afterConfirm}`, "T-AV-01");
@@ -191,17 +195,19 @@ def("Late payment after the hold expired", async () => {
   check("L7", "late payer gets an explanation email", m.some((x) => x.to === "slow@example.com"), m.map((x) => `${x.to}:${x.subject}`).join(" | "), "T-EM-05");
 });
 
-def("Expired hold must not beat an active hold", async () => {
+def("A completed payment beats another guest's unpaid hold", async () => {
   const a = await book({ guestEmail: "expired@example.com" });
   await expireHold(a.json.bookingId);
   const b = await book({ guestEmail: "active@example.com" });
-  await pay(a); // A pays late while B's hold is active
-  const bRow = await db.booking.findUnique({ where: { id: b.json.bookingId } });
+  await pay(a); // A's payment lands after A's hold expired, while B is on the payment form
   const aRow = await db.booking.findUnique({ where: { id: a.json.bookingId } });
-  check("X1", "late payer does not take dates from a guest with an active hold", aRow.status === "CANCELLED" && bRow.status === "PENDING", `A=${aRow.status} B=${bRow.status}`, "T-AV-03");
+  check("X1", "the guest whose payment went through keeps the stay", aRow.status === "PAID", `A=${aRow.status}`, "T-AV-03 (revised)");
+  clearEmails();
   await pay(b);
-  const bAfter = await db.booking.findUnique({ where: { id: b.json.bookingId } });
-  check("X2", "active-hold guest can complete payment", bAfter.status === "PAID", bAfter.status, "T-AV-03");
+  const bRow = await db.booking.findUnique({ where: { id: b.json.bookingId } });
+  const st = await stripe("/__test/state");
+  check("X2", "the unpaid guest who pays afterwards is refunded and told why", bRow.status === "CANCELLED" && st.refunds.some((r) => r.payment_intent === bRow.stripePaymentIntentId) && emails().some((m) => m.to === "active@example.com"), `B=${bRow.status}`, "T-AV-03 (revised)");
+  check("X3", "exactly one PAID booking for the dates", (await db.booking.count({ where: { status: "PAID" } })) === 1, "count");
 });
 
 def("Failed restart keeps the guest's existing hold", async () => {
@@ -258,6 +264,11 @@ def("Admin cancel + refund", async () => {
   const noauth = await api(`/api/bookings/${a.json.bookingId}/cancel`, { method: "POST", body: {} });
   check("C8", "cancel without admin session is 401", noauth.status === 401, noauth.status);
   const pend = await book({ guestEmail: "abandon@example.com", checkIn: "2026-11-10", checkOut: "2026-11-13" });
+  const racing = await book({ guestEmail: "racing@example.com", checkIn: "2026-12-01", checkOut: "2026-12-04" });
+  await stripe(`/__test/mark-succeeded/${racing.json.clientSecret.split("_secret")[0]}`);
+  const raced = await api(`/api/bookings/${racing.json.bookingId}/cancel`, { method: "POST", body: { refund: "none" }, headers: { cookie } });
+  const racedRow = await db.booking.findUnique({ where: { id: racing.json.bookingId } });
+  check("C10", "releasing a hold whose payment just succeeded is refused (webhook not yet processed)", raced.status === 409 && racedRow.status === "PENDING", `${raced.status} ${racedRow.status}`, "review-4");
   clearEmails();
   await api(`/api/bookings/${pend.json.bookingId}/cancel`, { method: "POST", body: { refund: "full" }, headers: { cookie } });
   check("C9", "cancelling an unpaid hold sends no guest email", emails().filter((m) => m.to === "abandon@example.com").length === 0, emails().map((m) => m.subject).join(" | "), "T-EM-P2");

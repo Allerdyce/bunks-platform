@@ -51,3 +51,13 @@ test("rate limiter blocks after the limit and resets after the window", () => {
   assert.equal(hitRateLimit("unit:b", 3, 60_000, t0 + 10), 0, "other keys unaffected");
   assert.equal(hitRateLimit("unit:a", 3, 60_000, t0 + 60_001), 0, "window resets");
 });
+
+import { resolvePropertyTimeZone } from "@/lib/stayRules";
+
+test("schema-default London timezone is treated as unset", () => {
+  assert.equal(resolvePropertyTimeZone({ timezone: "Europe/London", slug: "summerland-ocean-view-beach-bungalow" }), "America/Los_Angeles");
+  assert.equal(resolvePropertyTimeZone({ timezone: null, slug: "steamboat-downtown-townhome" }), "America/Denver");
+  // 6pm in LA on Oct 1 is already Oct 2 in London: check-in "today" (Oct 1) must still be allowed.
+  const evening = new Date("2026-10-02T01:00:00Z");
+  assert.equal(checkStayRules({ slug: "summerland-ocean-view-beach-bungalow", timezone: "Europe/London" }, parseStayDate("2026-10-01")!, parseStayDate("2026-10-04")!, evening), null);
+});

@@ -19,6 +19,7 @@ import {
 } from '@/lib/bookingAvailability';
 import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { escapeHtml } from '@/lib/html';
+import { resolvePropertyTimeZone } from '@/lib/stayRules';
 import { sendDoorCodeIfDue } from '@/lib/email/doorCodeDelivery';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 import { formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from '@/lib/email/helpers';
@@ -133,9 +134,10 @@ export async function POST(req: NextRequest) {
             current.propertyId,
             current.checkInDate,
             current.checkOutDate,
-            // Other guests' active holds count: a payment after this hold expired must not
-            // take dates another guest is paying for right now.
-            { excludeBookingIds: [current.id] },
+            // Only confirmed bookings and blocks count here, not other guests' unpaid holds: money
+            // already taken beats a checkout that may never finish. If that other guest pays
+            // later, their payment is refunded with an explanation (the conflict path below).
+            { excludeBookingIds: [current.id], includePendingHolds: false },
             tx
           ));
         if (!stillAvailable) {
@@ -289,7 +291,7 @@ export async function POST(req: NextRequest) {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
-                timeZone: booking.property.timezone || 'America/Denver',
+                timeZone: resolvePropertyTimeZone(booking.property),
               }),
             });
             console.log(`✅ Sent refund email to guest for booking ${booking.id}`);
@@ -304,7 +306,7 @@ export async function POST(req: NextRequest) {
                 propertyName: booking.property.name,
                 guestName: booking.guestName,
                 processedAt: new Date().toLocaleString('en-US', {
-                  timeZone: booking.property.timezone || 'America/Denver',
+                  timeZone: resolvePropertyTimeZone(booking.property),
                   timeZoneName: 'short',
                 }),
                 guestRefund: formattedTotal,

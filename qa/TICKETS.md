@@ -7,7 +7,7 @@ Branch `claude/bold-curie-7laxza` (on top of the design branch `codex/kindred-ui
 - `qa/ui/smoke.mjs`: real-browser tests.
 - `qa/unit/*.test.ts`: unit tests, run under 4 server timezones.
 
-The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing.
+The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing. Final runs: `qa/results/e2e-final.json` (135/135), `qa/results/ui-final.json` (50/50), `qa/results/unit-final.txt` (17/17 × 4 timezones) and `qa/results/build-final.log` (production build OK).
 
 ## Calendar and availability
 
@@ -15,13 +15,16 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 |---|---|---|---|---|
 | T-AV-01 | P0 | A cut-off or partly parsed Airbnb feed was read as "no reservations" and **deleted every Airbnb block**. A valid but empty feed did the same. | Fixed. Incomplete feeds are rejected. An empty feed while upcoming Airbnb nights exist is refused until an admin confirms it in Setup. | F3, F4, F5, F6; unit `ical.test.ts` |
 | T-AV-02 | P1 | If the Airbnb import broke (link reset, Airbnb outage), checkout kept taking payments against stale data, and nobody was told. | **Default taken.** Checkout pauses with a friendly message while the Airbnb calendar can't be read, and the daily import emails an alert. | F7, F8, F9 |
-| T-AV-03 | P1 | A guest paying after their 30-minute hold expired could take dates another guest was paying for at that moment. The second guest was then refunded. | Fixed. The late payer is refunded instead, and gets an explanation email. | X1, X2, L1–L7 |
+| T-AV-03 | P1 | Late payments versus other guests' holds. | **Revised after independent review** (see HANDOFF). A guest whose payment has gone through keeps the stay. An unpaid guest who pays afterwards is refunded automatically and emailed why. | X1–X3, L1–L7 |
 | T-AV-04 | P1 | The payment webhook confirmed bookings without re-reading Airbnb. | Fixed. It re-syncs if the last sync is over 60s old. What remains is the delay on Airbnb's own side. | code, A-series |
 | T-AV-05 | P1 | All-day Airbnb dates shift a day early when the server timezone is east of UTC (a risk if the app is ever run outside Vercel). | Fixed. | unit, 4 timezones |
 | T-AV-06 | P1 | Admin block/override picker also blocked the **checkout night**, and shifted dates for admins outside the US. | Fixed (UI now sends the last night, in local dates). | OP3–OP5 (API); picker change reviewed, not browser-tested |
 | T-AV-07 | P2 | The public quote said "available" for stays checkout would reject (minimum stay, past dates). | Fixed. The same rules now apply to both. | Q7 |
 | T-AV-08 | P1 | Calendar counted a Halloween→Nov 2 stay as 3 nights (DST), letting 2-night stays through to a checkout error. | Fixed. | unit (stay rules) |
 | T-AV-09 | P1 | If availability failed to load, the calendar silently showed every date as free. | Fixed. It now shows a warning. | not browser-tested |
+| T-AV-12 | P1 | Airbnb reads the Bunks calendar only every few hours, so an Airbnb guest can still book nights just paid for directly. This can't be fully prevented. | Mitigated. Each import compares Airbnb "Reserved" nights with paid direct stays and emails an urgent alert once per booking. | DB1–DB3 |
+| T-AV-13 | P1 | (review) An empty Airbnb feed paused checkout for up to a day, and only the daily job sent an alert. | Fixed. An empty feed keeps the old blocks, which can only over-block, so checkout continues. Any failed import emails an alert, at most every 4 hours. | F4b, F4c, F8 |
+| T-AV-14 | P2 | (review) The iCal parser merges events that share an ID, which could drop a reservation or trip the "malformed" guard. | Fixed. Each event is parsed on its own. | unit |
 | T-AV-10 | P2 | `BlockedDate` has no unique constraint, so concurrent imports can duplicate rows (harmless for availability). | Parked. Needs a schema migration. | — |
 | T-AV-11 | P2 | The Bunks→Airbnb feed token is derived from `ADMIN_SESSION_SECRET` when `ICAL_FEED_SECRET` is unset. Rotating the admin secret would silently break Airbnb's import of Bunks bookings. | Parked. See HANDOFF Q4. | — |
 
@@ -40,6 +43,8 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-BK-11 | P2 | An admin cancel racing a payment could keep the money and cancel the stay. | Fixed with a conditional update. | reviewed; race not reproduced |
 | T-BK-12 | P1 | Admin had no way to cancel or refund a booking. A partial refund in the Stripe dashboard left the dates blocked on both sites. | **Default taken.** Admin → Bookings shows status and total, and has a Cancel control with the policy refund pre-selected. | UA-cancel-1..3, C1–C9, PR1–PR3 |
 | T-BK-13 | P2 | The payment form showed success for "processing" payments (bank transfers). | Fixed. See HANDOFF Q3 on payment methods. | code |
+| T-BK-15 | P2 | (review) A property still on the schema's "Europe/London" default timezone would reject same-day evening bookings and send the door code a day early. | Fixed. One shared rule gives each property its real timezone. | unit |
+| T-BK-16 | P2 | (review) Releasing an "unpaid" hold whose payment had just gone through, and a refund racing its own webhook. | Fixed. Stripe is checked first; the refund race returns success. | C10 |
 | T-BK-14 | P3 | The guest count is not stored on the booking. | Parked (schema). | — |
 
 ## Emails

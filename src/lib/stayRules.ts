@@ -15,6 +15,25 @@ export function minimumNightsFor(slug: string) {
   return PROPERTY_MINIMUM_NIGHTS[slug] ?? DEFAULT_MINIMUM_NIGHTS;
 }
 
+const isValidTimeZone = (timeZone: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The property's real timezone. Property.timezone defaults to "Europe/London" in the schema,
+ * which is wrong for every listing, so treat that (and invalid values) as unset.
+ */
+export function resolvePropertyTimeZone(property: { timezone?: string | null; slug: string }) {
+  const tz = property.timezone?.trim();
+  if (tz && tz !== 'Europe/London' && isValidTimeZone(tz)) return tz;
+  return property.slug.toLowerCase().startsWith('summerland') ? 'America/Los_Angeles' : 'America/Denver';
+}
+
 /** Today's calendar date at the property (UTC midnight), so "today" means the guest-facing local day. */
 export function propertyToday(timezone: string | null | undefined, now = new Date()) {
   let local: string;
@@ -42,7 +61,7 @@ export function checkStayRules(
   if (checkOut <= checkIn) {
     return { error: 'INVALID_RANGE', message: 'Check-out must be after check-in.' };
   }
-  const today = propertyToday(property.timezone, now);
+  const today = propertyToday(resolvePropertyTimeZone(property), now);
   if (checkIn < today) {
     return { error: 'PAST_DATE', message: 'Check-in date is in the past.' };
   }

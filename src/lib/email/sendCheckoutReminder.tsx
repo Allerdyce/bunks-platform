@@ -1,5 +1,5 @@
 import { notAClaim } from '@/lib/email/claims';
-import { propertyToday } from '@/lib/stayRules';
+import { propertyToday, resolvePropertyTimeZone } from '@/lib/stayRules';
 import { stayTimeLabels } from '@/lib/email/helpers';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
@@ -108,7 +108,7 @@ export async function sendCheckoutReminder(bookingId: number, options: CheckoutR
     }
   }
 
-  const timeZone = booking.property.timezone || 'America/Denver';
+  const timeZone = resolvePropertyTimeZone(booking.property);
   const checkoutDate = new Date(booking.checkOutDate);
   // checkOutDate is a calendar date stored as UTC midnight; the time comes from the property.
   const checkoutDateLabel = options.checkoutDateOverride ?? formatCheckoutDate(checkoutDate, 'UTC');

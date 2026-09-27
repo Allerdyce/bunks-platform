@@ -85,6 +85,12 @@ http.createServer(async (req, res) => {
       pi.payment_method = { card: { brand: "visa", last4: "4242" } };
       return send(res, 200, await deliver("payment_intent.succeeded", pi));
     }
+    if ((m = p.match(/^\/__test\/mark-succeeded\/(pi_\w+)$/))) {
+      // Payment succeeds at Stripe but the webhook hasn't been delivered yet.
+      const pi = pis.get(m[1]);
+      pi.status = "succeeded"; pi.amount_received = pi.amount;
+      return send(res, 200, pi);
+    }
     if ((m = p.match(/^\/__test\/fail\/(pi_\w+)$/))) {
       const pi = pis.get(m[1]);
       return send(res, 200, await deliver("payment_intent.payment_failed", { ...pi, last_payment_error: { message: "Your card was declined." } }));

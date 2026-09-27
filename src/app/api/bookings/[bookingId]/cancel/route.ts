@@ -7,6 +7,7 @@ import { sendHostGuestCancelled } from "@/lib/email/sendHostGuestCancelled";
 import { getStripeClient } from "@/lib/stripe";
 import { releaseBookingNights } from "@/lib/bookingAvailability";
 import { formatStayDates, resolveHostSupportEmail } from "@/lib/email/helpers";
+import { resolvePropertyTimeZone } from "@/lib/stayRules";
 
 export const runtime = "nodejs";
 
@@ -73,7 +74,18 @@ export async function POST(
                 { idempotencyKey: `cancel-refund-${booking.id}-${refundCents}` }
             );
         } else if (booking.status === "PENDING" && booking.stripePaymentIntentId.startsWith("pi_")) {
-            await getStripeClient().paymentIntents.cancel(booking.stripePaymentIntentId).catch(() => undefined);
+            // The guest may have just paid (webhook not processed yet): never release a paid hold.
+            const stripe = getStripeClient();
+            const intent = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
+            if (intent.status === "succeeded" || intent.status === "processing") {
+                return NextResponse.json(
+                    { error: "This guest's payment has just gone through. Refresh in a minute; it will show as Paid." },
+                    { status: 409 }
+                );
+            }
+            if (intent.status !== "canceled") {
+                await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
+            }
         }
         const refundLabel = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(refundCents / 100);
 
@@ -88,6 +100,11 @@ export async function POST(
             return true;
         });
         if (!cancelled) {
+            const latest = await prisma.booking.findUnique({ where: { id: booking.id }, select: { status: true } });
+            if (refundCents > 0 && latest?.status === "CANCELLED") {
+                // The refund's own webhook cancelled it first (and emailed the guest about the refund).
+                return NextResponse.json({ ok: true, refundCents });
+            }
             return NextResponse.json(
                 { error: "This booking just changed (it may have been paid). Refresh and try again." },
                 { status: 409 }
@@ -117,7 +134,7 @@ export async function POST(
                     propertyName: booking.property.name,
                     stayDates: formatStayDates(booking.checkInDate, booking.checkOutDate),
                     cancelledAt: new Date().toLocaleString("en-US", {
-                        timeZone: booking.property.timezone || "America/Denver",
+                        timeZone: resolvePropertyTimeZone(booking.property),
                         timeZoneName: "short",
                     }),
                     policyApplied: "Host Cancelled",

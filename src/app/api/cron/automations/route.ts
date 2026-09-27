@@ -1,5 +1,6 @@
 import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
 import { resolveDoorCode } from '@/lib/email/doorCodeDelivery';
+import { resolvePropertyTimeZone } from '@/lib/stayRules';
 import { NextResponse } from 'next/server';
 import type { Booking, EmailType, Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -245,28 +246,6 @@ async function runDailyJob(
 
 function anchorDate(booking: Booking, anchor: Anchor) {
   return anchor === 'checkIn' ? booking.checkInDate : booking.checkOutDate;
-}
-
-// Property.timezone defaults to "Europe/London" in the schema, which is wrong for every listing.
-function resolvePropertyTimeZone(property: Pick<Property, 'timezone' | 'slug'>) {
-  const tz = property.timezone?.trim();
-  if (tz && tz !== 'Europe/London' && isValidTimeZone(tz)) {
-    return tz;
-  }
-  const slug = property.slug.toLowerCase();
-  if (slug.startsWith('summerland')) {
-    return 'America/Los_Angeles';
-  }
-  return 'America/Denver';
-}
-
-function isValidTimeZone(timeZone: string) {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // Stay dates are stored as UTC midnight of the calendar date → day number from the UTC date parts.

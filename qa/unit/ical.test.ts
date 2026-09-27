@@ -32,8 +32,9 @@ test("event cut off inside the calendar is rejected", () => {
   assert.throws(() => parseIcalNights(broken));
 });
 
-test("duplicate UIDs (merged by the parser) are rejected instead of silently dropped", () => {
-  assert.throws(() => parseIcalNights(feed(event("same", "20261005", "20261008") + event("same", "20261101", "20261105"))));
+test("events sharing a UID are both imported (the parser would otherwise merge them)", () => {
+  const nights = parseIcalNights(feed(event("same", "20261005", "20261008") + event("same", "20261101", "20261103")));
+  assert.deepEqual([...nights].sort(), ["2026-10-05", "2026-10-06", "2026-10-07", "2026-11-01", "2026-11-02"]);
 });
 
 test("empty calendar parses to no nights", () => {

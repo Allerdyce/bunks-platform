@@ -35,7 +35,11 @@ export function CancelBookingControl({ bookingId, status, totalPriceCents, check
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
   if (status === "CANCELLED") {
-    return <p className="text-sm text-gray-500">This booking is cancelled.</p>;
+    return (
+      <p role="status" className={`text-sm ${message?.type === "success" ? "text-emerald-700" : "text-gray-500"}`}>
+        {message?.type === "success" ? message.text : "This booking is cancelled."}
+      </p>
+    );
   }
 
   const isPaid = status === "PAID";

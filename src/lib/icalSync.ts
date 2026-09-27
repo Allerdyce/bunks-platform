@@ -63,8 +63,13 @@ export function parseIcalFeed(text: string) {
   }
   const declaredEvents = (trimmed.match(/^BEGIN:VEVENT\s*$/gm) ?? []).length;
   const closedEvents = (trimmed.match(/^END:VEVENT\s*$/gm) ?? []).length;
-  const events = Object.values(ical.parseICS(trimmed)).filter((event) => event?.type === "VEVENT");
-  if (declaredEvents !== closedEvents || events.length !== declaredEvents) {
+  // Parse each VEVENT on its own: the parser merges events that share a UID, which would
+  // silently drop a reservation.
+  const blocks = trimmed.match(/^BEGIN:VEVENT\s*$[\s\S]*?^END:VEVENT\s*$/gm) ?? [];
+  const events = blocks.flatMap((block) =>
+    Object.values(ical.parseICS(`BEGIN:VCALENDAR\n${block}\nEND:VCALENDAR`)).filter((event) => event?.type === "VEVENT"),
+  );
+  if (declaredEvents !== closedEvents || blocks.length !== declaredEvents || events.length !== declaredEvents) {
     throw new IcalSyncError(
       `Calendar feed has ${declaredEvents} events but ${events.length} parsed; refusing to import`,
       "MALFORMED_FEED",
@@ -108,7 +113,7 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
       throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug} (HTTP ${res.status})`, "FETCH_FAILED");
     }
   } catch (error) {
-    recordSyncFailure(property);
+    recordSyncFailure(property, error);
     if (error instanceof IcalSyncError) throw error;
     throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug}: ${(error as Error).message}`, "FETCH_FAILED");
   }
@@ -118,7 +123,7 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
   try {
     ({ nights, reservedNights } = parseIcalFeed(text));
   } catch (error) {
-    recordSyncFailure(property);
+    recordSyncFailure(property, error);
     throw error;
   }
 
@@ -147,12 +152,12 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
       })),
     });
   }).catch((error) => {
-    recordSyncFailure(property);
+    recordSyncFailure(property, error);
     throw error;
   });
 
   lastSyncedAt.set(syncKey(property), Date.now());
-  lastFailedAt.delete(syncKey(property));
+  lastFailure.delete(syncKey(property));
   await alertOnAirbnbOverlap(property, reservedNights).catch((error) =>
     console.error("[ical] Failed to check for Airbnb/direct overlaps", error),
   );
@@ -201,16 +206,45 @@ async function alertOnAirbnbOverlap(property: SyncableProperty, reservedNights: 
 
 // After a failure, wait before retrying from page loads so a broken feed isn't hit on every request.
 const FAILURE_BACKOFF_MS = 2 * 60_000;
-const lastFailedAt = new Map<string, number>();
-const recordSyncFailure = (property: SyncableProperty) => lastFailedAt.set(syncKey(property), Date.now());
+type SyncFailure = { at: number; reason: IcalSyncError["reason"] };
+const lastFailure = new Map<string, SyncFailure>();
+const recordSyncFailure = (property: SyncableProperty, error?: unknown) =>
+  lastFailure.set(syncKey(property), {
+    at: Date.now(),
+    reason: error instanceof IcalSyncError ? error.reason : "FETCH_FAILED",
+  });
+
+// Email ops when an import fails, at most every few hours per property and server instance.
+const ALERT_INTERVAL_MS = 4 * 60 * 60_000;
+const lastAlertAt = new Map<string, number>();
+async function alertSyncFailure(property: SyncableProperty, error: unknown) {
+  const key = syncKey(property);
+  if (Date.now() - (lastAlertAt.get(key) ?? 0) < ALERT_INTERVAL_MS) return;
+  lastAlertAt.set(key, Date.now());
+  const reason = error instanceof IcalSyncError ? error.reason : "FETCH_FAILED";
+  const consequence =
+    reason === "EMPTY_FEED"
+      ? "Bookings continue; the existing Airbnb blocks are kept until you confirm in Admin → Setup."
+      : "Direct checkout for this home is paused until the import works again.";
+  await sendEmail({
+    to: OPS_ALERT_EMAIL,
+    subject: `Action needed: Airbnb calendar import failed for ${property.slug}`,
+    html:
+      `<p>${escapeHtml((error as Error)?.message ?? String(error))}</p><p>${consequence}</p>` +
+      `<p>Check the Airbnb calendar link in Admin → Setup and press "Sync now".</p>`,
+  }).catch((sendError) => console.error("[ical] Failed to send sync alert", sendError));
+}
 
 
-export type StaleSyncResult = "fresh" | "synced" | "failed" | "no-url";
+export type StaleSyncResult = "fresh" | "synced" | "kept-existing" | "failed" | "no-url";
 
 /**
  * Syncs if this instance hasn't synced the property recently. State is per server instance
- * (and per route bundle), so a cold instance always syncs first. Never throws. Returns "failed" when
- * the latest attempt failed (including during the retry backoff), so callers can fail closed.
+ * (and per route bundle), so a cold instance always syncs first. Never throws.
+ * - "failed": the feed couldn't be read or parsed, so recent Airbnb reservations may be missing
+ *   (callers taking payment should stop).
+ * - "kept-existing": the feed came back empty while upcoming Airbnb nights are blocked; the old
+ *   blocks were kept, which can only over-block, so it's safe to continue.
  */
 export async function syncAirbnbCalendarIfStale(
   property: SyncableProperty,
@@ -219,11 +253,14 @@ export async function syncAirbnbCalendarIfStale(
 ): Promise<StaleSyncResult> {
   if (!isUsableIcalUrl(property.airbnbIcalUrl)) return "no-url";
   const last = lastSyncedAt.get(syncKey(property)) ?? 0;
-  const failedAt = lastFailedAt.get(syncKey(property)) ?? 0;
-  if (failedAt > last) {
+  const failure = lastFailure.get(syncKey(property));
+  const outcomeOf = (reason: SyncFailure["reason"]) => (reason === "EMPTY_FEED" ? "kept-existing" : "failed");
+  if (failure && failure.at > last) {
     // The latest attempt failed: report it until a retry (after the backoff) succeeds.
     // Checkout retries straight away; page loads back off so a broken feed isn't hammered.
-    if (!retryImmediately && Date.now() - failedAt < Math.min(maxAgeMs, FAILURE_BACKOFF_MS)) return "failed";
+    if (!retryImmediately && Date.now() - failure.at < Math.min(maxAgeMs, FAILURE_BACKOFF_MS)) {
+      return outcomeOf(failure.reason);
+    }
   } else if (Date.now() - last < maxAgeMs) {
     return "fresh";
   }
@@ -232,7 +269,8 @@ export async function syncAirbnbCalendarIfStale(
     return "synced";
   } catch (error) {
     console.error("[ical] Airbnb calendar sync failed", error);
-    return "failed";
+    await alertSyncFailure(property, error);
+    return outcomeOf(error instanceof IcalSyncError ? error.reason : "FETCH_FAILED");
   }
 }
 

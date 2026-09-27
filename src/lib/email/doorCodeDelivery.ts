@@ -1,7 +1,7 @@
 import type { Booking, Property } from '@prisma/client';
 import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
 import { sendDoorCodeEmail } from '@/lib/email/sendDoorCodeEmail';
-import { propertyToday } from '@/lib/stayRules';
+import { propertyToday, resolvePropertyTimeZone } from '@/lib/stayRules';
 
 const DAY_MS = 86_400_000;
 
@@ -18,7 +18,7 @@ export function resolveDoorCode(property: Pick<Property, 'lockboxCode' | 'garage
 export async function sendDoorCodeIfDue(booking: Booking & { property: Property }) {
   const code = resolveDoorCode(booking.property);
   if (!code) return null;
-  const today = propertyToday(booking.property.timezone).getTime();
+  const today = propertyToday(resolvePropertyTimeZone(booking.property)).getTime();
   const firstDay = booking.checkInDate.getTime() - DAY_MS;
   const lastDay = booking.checkOutDate.getTime() - DAY_MS;
   if (today < firstDay || today > lastDay) return null;
