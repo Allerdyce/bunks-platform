@@ -1,3 +1,4 @@
+import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
 import { NextResponse } from 'next/server';
 import type { Booking, EmailType, Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -208,10 +209,26 @@ async function runDailyJob(
       continue;
     }
 
+    // Claim first so an overlapping run (retry, manual trigger) can't send it twice.
+    const target = { type: job.type, to: booking.guestEmail, bookingId: booking.id };
+    const claimId = await claimEmail(target);
+    if (claimId === null) {
+      summary.skipped += 1;
+      continue;
+    }
+
     try {
-      await job.send(booking, opsDetails);
+      const result = await job.send(booking, opsDetails);
+      if (result === null || result === undefined) {
+        // Nothing sent (e.g. no door code yet): release so a later run can send it.
+        await releaseClaim(claimId);
+        summary.skipped += 1;
+        continue;
+      }
+      await completeClaim(claimId, target);
       summary.sent += 1;
     } catch (error) {
+      await releaseClaim(claimId);
       summary.errors += 1;
       console.error(`[cron][${job.type}] Failed to send automation`, { bookingId: booking.id, error });
     }
@@ -224,8 +241,9 @@ function anchorDate(booking: Booking, anchor: Anchor) {
   return anchor === 'checkIn' ? booking.checkInDate : booking.checkOutDate;
 }
 
+// The building entry code; ski-locker codes are listed inside the email, not used as the door code.
 function resolveDoorCode(property: Property) {
-  return property.lockboxCode || property.garageCode || property.skiLockerDoorCode || null;
+  return property.lockboxCode || property.garageCode || null;
 }
 
 // Property.timezone defaults to "Europe/London" in the schema, which is wrong for every listing.
@@ -365,23 +383,22 @@ async function handleWiFiBookDirect(now: Date): Promise<BatchSummary> {
       continue;
     }
 
+    const target = { type: 'CAMPAIGN_BOOK_DIRECT_WIFI' as const, to: user.email };
+    const claimId = await claimEmail(target);
+    if (claimId === null) {
+      summary.skipped += 1;
+      continue;
+    }
+
     try {
       await sendWifiLeadCampaign({
         email: user.email,
         name: user.name && user.name !== LEGACY_WIFI_USER_NAME ? user.name : undefined,
       });
-
-      await prisma.emailLog.create({
-        data: {
-          to: user.email,
-          type: 'CAMPAIGN_BOOK_DIRECT_WIFI',
-          status: 'SENT',
-          sentAt: new Date(),
-        },
-      });
-
+      await completeClaim(claimId, target);
       summary.sent += 1;
     } catch (error) {
+      await releaseClaim(claimId);
       summary.errors += 1;
       console.error('[cron][wifi-campaign] Failed to send', { email: user.email, error });
     }

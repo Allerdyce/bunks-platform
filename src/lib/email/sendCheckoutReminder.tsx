@@ -1,3 +1,4 @@
+import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { CheckoutReminderEmail } from '@/emails/CheckoutReminderEmail';
@@ -97,7 +98,7 @@ function defaultLockupSteps(propertyName: string): string[] {
 
 async function alreadySent(bookingId: number) {
   const log = await prisma.emailLog.findFirst({
-    where: { bookingId, type: EMAIL_TYPE, status: 'SENT' },
+    where: { bookingId, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
   });
   return Boolean(log);
 }

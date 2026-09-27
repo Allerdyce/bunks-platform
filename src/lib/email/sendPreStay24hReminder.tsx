@@ -1,3 +1,4 @@
+import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -63,7 +64,7 @@ export async function sendPreStay24hReminder(
   // Check EmailLog for dedupe once Prisma client is regenerated after schema update
   if (!options.force) {
     const alreadySent = await prisma.emailLog.findFirst({
-      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT' },
+      where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
     });
     if (alreadySent) {
       return null;

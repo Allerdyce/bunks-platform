@@ -1,3 +1,4 @@
+import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
@@ -33,6 +34,7 @@ async function hasWelcomeAlreadySent(bookingId: number) {
       bookingId,
       type: EMAIL_TYPE,
       status: 'SENT',
+      ...notAClaim,
     },
   });
 
