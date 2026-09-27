@@ -19,6 +19,7 @@ import {
 } from '@/lib/bookingAvailability';
 import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { escapeHtml } from '@/lib/html';
+import { sendDoorCodeIfDue } from '@/lib/email/doorCodeDelivery';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 import { formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from '@/lib/email/helpers';
 
@@ -222,6 +223,14 @@ export async function POST(req: NextRequest) {
         await sendBookingWelcomeEmail(booking.id);
       } catch (err) {
         console.error('Failed to send booking welcome email', err);
+      }
+
+      // Last-minute stays: send the door code now rather than at tomorrow's cron run.
+      try {
+        const paidBooking = await prisma.booking.findUnique({ where: { id: booking.id }, include: { property: true } });
+        if (paidBooking) await sendDoorCodeIfDue(paidBooking);
+      } catch (err) {
+        console.error('Failed to send door code email', err);
       }
     }
 

@@ -296,10 +296,10 @@ def("Daily email automations", async () => {
   const [y, mo, da] = local.split("-").map(Number);
   const d = (n) => new Date(Date.UTC(y, mo - 1, da + n)).toISOString().slice(0, 10);
   await db.property.update({ where: { slug: SB }, data: { lockboxCode: "1234" } });
-  const a = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "tomorrow@example.com" });
-  await pay(a);
-  const p = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "unpaid@example.com", propertySlug: SL });
   clearEmails();
+  const a = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "tomorrow@example.com" });
+  await pay(a); // booking-time emails (incl. the door code, since check-in is tomorrow) count too
+  const p = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "unpaid@example.com", propertySlug: SL });
   const noauth = await api("/api/cron/automations");
   check("E1", "cron without secret is 401", noauth.status === 401, noauth.status);
   const [r1, r2] = await Promise.all([
@@ -347,6 +347,73 @@ def("Guest messaging is email-only", async () => {
   const r = await api(`/api/bookings/${a.json.bookingId}/messages`, { method: "POST", body: { body: "hi", guestEmail: "chat@example.com", bookingReference: a.json.bookingReference } });
   check("GM1", "guest can't post in-app messages (410 with support email)", r.status === 410 && /@/.test(r.json?.error ?? ""), `${r.status} ${r.text}`, "T-SEC-06");
   check("GM2", "no host email triggered", emails().length === 0, emails().map((m) => m.subject).join(" | "));
+});
+
+def("Last-minute booking gets its door code at payment", async () => {
+  await db.property.update({ where: { slug: SB }, data: { lockboxCode: "5150" } });
+  const local = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
+  const [y, mo, da] = local.split("-").map(Number);
+  const d = (n) => new Date(Date.UTC(y, mo - 1, da + n)).toISOString().slice(0, 10);
+  const a = await book({ checkIn: d(0), checkOut: d(3), guestEmail: "lastminute@example.com" });
+  check("LM1", "same-day check-in can be booked", a.status === 200, `${a.status} ${a.text}`);
+  clearEmails();
+  await pay(a);
+  const door = emails().filter((m) => m.to === "lastminute@example.com" && m.html.includes("5150"));
+  check("LM2", "door code emailed immediately on payment", door.length === 1, emails().map((m) => m.subject).join(" | "), "T-EM-12");
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  check("LM3", "cron doesn't send the door code again", !emails().some((m) => m.to === "lastminute@example.com" && m.html.includes("5150")), emails().map((m) => m.subject).join(" | "));
+  const far = await book({ checkIn: "2026-11-10", checkOut: "2026-11-13", guestEmail: "early@example.com" });
+  clearEmails();
+  await pay(far);
+  check("LM4", "far-future booking gets no door code at payment", !emails().some((m) => m.html.includes("5150")), "door code sent early");
+  await db.property.update({ where: { slug: SB }, data: { lockboxCode: null } });
+});
+
+def("Owner price overrides and blocks", async () => {
+  const cookie = await adminCookie();
+  const r1 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: "2026-10-06", endDate: "2026-10-06", price: 500, note: "event night" } });
+  check("OP1", "admin sets a $500 override for Oct 6", r1.status === 200 || r1.status === 201, `${r1.status} ${r1.text.slice(0, 200)}`);
+  const q = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-05", checkOut: "2026-10-09" } });
+  // 3 × 31500 + 500×0.9=45000 → 139500 nightly
+  check("OP2", "quote uses the override (10% off $500) for that night", q.json?.quote?.nightlySubtotalCents === 139500, JSON.stringify(q.json?.quote?.nightlyLineItems));
+  const r2 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: "2026-10-20", endDate: "2026-10-21", isBlocked: true, note: "owner stay" } });
+  check("OP3", "admin blocks Oct 20–21", r2.status === 200 || r2.status === 201, `${r2.status} ${r2.text.slice(0, 200)}`);
+  const b = await book({ checkIn: "2026-10-19", checkOut: "2026-10-22" });
+  check("OP4", "owner-blocked nights can't be booked", b.status === 409, b.status);
+  const ok = await book({ checkIn: "2026-10-22", checkOut: "2026-10-25", guestEmail: "afterblock@example.com" });
+  check("OP5", "night after the block is bookable (block covers exactly the chosen nights)", ok.status === 200, `${ok.status} ${ok.text}`);
+  const feeds = (await api("/api/admin/calendar-feeds", { headers: { cookie } })).json;
+  const url = JSON.stringify(feeds).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
+  const feed = url ? (await api(url)).text : "";
+  check("OP6", "owner block is exported to Airbnb (20261020→20261022)", feed.includes("DTSTART;VALUE=DATE:20261020") && feed.includes("DTEND;VALUE=DATE:20261022"), feed.slice(0, 500));
+});
+
+def("Summerland booking (no taxes configured)", async () => {
+  await forceSync(SL);
+  const blocked = await book({ propertySlug: SL, checkIn: "2026-10-21", checkOut: "2026-10-24" });
+  check("SL1", "Summerland Airbnb nights are blocked", blocked.status === 409, blocked.status);
+  const r = await book({ propertySlug: SL, checkIn: "2026-10-05", checkOut: "2026-10-08", guests: 4, guestEmail: "beach@example.com" });
+  // 3 weekday nights × 37500×0.9=33750 → 101250; fee 5063 (rounded); cleaning 15000
+  check("SL2", "Summerland total = nights + 5% fee + cleaning, no tax", r.json?.totalPriceCents === 101250 + 5063 + 15000, r.json?.totalPriceCents);
+  const tooMany = await book({ propertySlug: SL, checkIn: "2026-11-05", checkOut: "2026-11-08", guests: 5, guestEmail: "big@example.com" });
+  check("SL3", "5 guests rejected for the 4-guest bungalow", tooMany.status === 400, tooMany.status);
+});
+
+def("Partial refund on cancel", async () => {
+  const cookie = await adminCookie();
+  const a = await book();
+  await pay(a);
+  const c = await api(`/api/bookings/${a.json.bookingId}/cancel`, { method: "POST", headers: { cookie }, body: { refund: 50000 } });
+  check("PR1", "partial refund of $500 accepted", c.status === 200 && c.json?.refundCents === 50000, c.text);
+  const st = await stripe("/__test/state");
+  check("PR2", "Stripe refund is exactly $500", st.refunds.some((x) => x.amount === 50000), JSON.stringify(st.refunds));
+  const bad = await book({ guestEmail: "x2@example.com" });
+  check("PR3", "dates freed after cancel", bad.status === 200, bad.status);
+  await pay(bad);
+  const junk = await api(`/api/bookings/${bad.json.bookingId}/cancel`, { method: "POST", headers: { cookie }, body: { refund: "abc" } });
+  const still = await db.booking.findUnique({ where: { id: bad.json.bookingId } });
+  check("PR4", "a typo'd refund amount is rejected and the booking stays PAID", junk.status === 400 && still.status === "PAID", `${junk.status} ${still.status}`, "T-BK-10");
 });
 
 def("Wi-Fi lead capture", async () => {

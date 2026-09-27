@@ -1,7 +1,7 @@
 // Browser smoke test of the guest journey and admin, against the local QA stack.
 // Usage: PLAYWRIGHT_MODULE=/path/to/node_modules/playwright/index.mjs SHOTS=/tmp/shots node qa/ui/smoke.mjs
 import fs from "node:fs";
-import { BASE, SB, SL, db, resetData, forceSync, stripe, check, results, scenario, ADMIN } from "../e2e/lib.mjs";
+import { BASE, SB, SL, db, resetData, forceSync, stripe, check, results, scenario, ADMIN, book, pay } from "../e2e/lib.mjs";
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
 const SHOTS = process.env.SHOTS || "/tmp/bunks-qa/shots";
@@ -131,6 +131,26 @@ scenario("Admin pages");
     await shot(page, `admin-${section}`);
     check(`UA-${section}`, `admin/${section} loads signed-in with no errors`, res.status() === 200 && page.problems.length === 0 && !/sign in to continue|password/i.test(text.slice(0, 400)), `${res.status()} ${page.problems.join(" | ")} ${text.slice(0, 120)}`);
   }
+
+  // Cancel a paid booking from Admin → Bookings with the policy-suggested refund.
+  const paid = await book({ guestEmail: "cancel-ui@example.com", checkIn: "2026-12-07", checkOut: "2026-12-10" });
+  await pay(paid);
+  page.problems = [];
+  await page.goto(`${BASE}/admin/messages`, { waitUntil: "networkidle" });
+  await page.getByText("cancel-ui@example.com").first().click().catch(() => {});
+  await page.getByRole("button", { name: /cancel booking/i }).first().click();
+  await page.waitForTimeout(300);
+  const suggested = await page.locator("label", { hasText: "(your policy)" }).innerText();
+  check("UA-cancel-1", "policy suggests a full refund for a stay 70 days out", /Full refund/.test(suggested), suggested);
+  await shot(page, "admin-cancel-open");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: /cancel and refund/i }).click();
+  await page.waitForTimeout(2000);
+  await shot(page, "admin-cancel-done");
+  const row = await db.booking.findUnique({ where: { id: paid.json.bookingId } });
+  const st = await stripe("/__test/state");
+  check("UA-cancel-2", "admin cancel marks the booking CANCELLED and refunds in full", row.status === "CANCELLED" && st.refunds.some((r) => r.payment_intent === row.stripePaymentIntentId && r.amount === row.totalPriceCents), `${row.status} ${JSON.stringify(st.refunds)}`);
+  check("UA-cancel-3", "admin page shows Cancelled after refresh, no errors", /Cancelled/.test(await page.locator("body").innerText()) && page.problems.length === 0, page.problems.join(" | "));
   await page.context().close();
 }
 

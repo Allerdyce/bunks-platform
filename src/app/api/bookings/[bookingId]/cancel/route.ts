@@ -44,6 +44,18 @@ export async function POST(
         // Refund: "full" (default, e.g. host cancels), "none", or an amount in cents.
         const body = (await request.json().catch(() => ({}))) as { refund?: "full" | "none" | number };
         const refundRequest = body.refund ?? "full";
+        // Reject anything that isn't "full", "none" or a whole number of cents, rather than
+        // cancelling with a silent $0 refund on a typo.
+        if (
+            refundRequest !== "full" &&
+            refundRequest !== "none" &&
+            !(typeof refundRequest === "number" && Number.isInteger(refundRequest) && refundRequest >= 0)
+        ) {
+            return NextResponse.json(
+                { error: 'Refund must be "full", "none" or an amount in cents.' },
+                { status: 400 }
+            );
+        }
         let refundCents = 0;
         if (booking.status === "PAID" && booking.stripePaymentIntentId.startsWith("pi_")) {
             refundCents =
@@ -51,7 +63,7 @@ export async function POST(
                     ? booking.totalPriceCents
                     : refundRequest === "none"
                         ? 0
-                        : Math.max(0, Math.min(Math.round(Number(refundRequest)) || 0, booking.totalPriceCents));
+                        : Math.min(refundRequest, booking.totalPriceCents);
         }
 
         if (refundCents > 0) {

@@ -1,4 +1,5 @@
 import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
+import { resolveDoorCode } from '@/lib/email/doorCodeDelivery';
 import { NextResponse } from 'next/server';
 import type { Booking, EmailType, Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -244,11 +245,6 @@ async function runDailyJob(
 
 function anchorDate(booking: Booking, anchor: Anchor) {
   return anchor === 'checkIn' ? booking.checkInDate : booking.checkOutDate;
-}
-
-// The building entry code; ski-locker codes are listed inside the email, not used as the door code.
-function resolveDoorCode(property: Property) {
-  return property.lockboxCode || property.garageCode || null;
 }
 
 // Property.timezone defaults to "Europe/London" in the schema, which is wrong for every listing.

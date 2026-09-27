@@ -21,6 +21,7 @@ import {
 } from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
 import { SUPPORT_EMAIL } from "@/lib/contact";
+import { CancelBookingControl, type AdminBookingStatus } from "@/components/admin/CancelBookingControl";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
@@ -31,6 +32,9 @@ type AdminThreadSummary = {
   guestEmail: string;
   checkInDate: string;
   checkOutDate: string;
+  status: AdminBookingStatus;
+  totalPriceCents: number;
+  holdExpired: boolean;
   property: {
     id: number;
     name: string;
@@ -50,12 +54,6 @@ const stayDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   timeZone: "UTC",
 });
-const threadTimestampFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
 
 const formatStayRange = (checkIn: string, checkOut: string) => {
   try {
@@ -67,14 +65,18 @@ const formatStayRange = (checkIn: string, checkOut: string) => {
   }
 };
 
-const formatThreadTimestamp = (value?: string | null) => {
-  if (!value) return null;
-  try {
-    return threadTimestampFormatter.format(new Date(value));
-  } catch {
-    return value;
-  }
-};
+const formatMoney = (cents: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
+  booking.status === "PAID"
+    ? "Paid"
+    : booking.status === "CANCELLED"
+      ? "Cancelled"
+      : booking.holdExpired
+        ? "Abandoned checkout"
+        : "Awaiting payment";
+
 
 export default function AdminMessagesPage() {
   const [authState, setAuthState] = useState<AuthState>("checking");
@@ -87,9 +89,6 @@ export default function AdminMessagesPage() {
   const [threadsError, setThreadsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
-  const [conversationSnapshots, setConversationSnapshots] = useState<
-    Record<number, { snippet: string | null; timestamp: string | null }>
-  >({});
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -196,25 +195,6 @@ export default function AdminMessagesPage() {
     await fetchThreads(searchQuery.trim() || undefined);
   };
 
-  const handleThreadSummaryUpdate = useCallback(
-    (
-      threadId: number,
-      summary: {
-        lastMessageSnippet: string | null;
-        lastMessageAt?: string | null;
-      },
-    ) => {
-      setConversationSnapshots((prev) => ({
-        ...prev,
-        [threadId]: {
-          snippet: summary.lastMessageSnippet,
-          timestamp: summary.lastMessageAt ?? null,
-        },
-      }));
-    },
-    [],
-  );
-
   const activeThread = useMemo(() => {
     if (!threads.length) return null;
     if (activeThreadId === null) {
@@ -243,130 +223,6 @@ export default function AdminMessagesPage() {
   const activePropertyDetails = activeThread
     ? (getPropertyBySlug(activeThread.property.slug) ?? null)
     : null;
-
-  const handleActiveThreadSummaryChange = useCallback(
-    (summary: {
-      lastMessageSnippet: string | null;
-      lastMessageAt?: string | null;
-    }) => {
-      if (activeThread) {
-        handleThreadSummaryUpdate(activeThread.id, summary);
-      }
-    },
-    [activeThread, handleThreadSummaryUpdate],
-  );
-
-  const conversationPanel = activeThread ? (
-    (
-              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
-                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
-                <p className="text-sm text-gray-600">
-                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
-                </p>
-                <a
-                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
-                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-                >
-                  Email {activeThread.guestEmail}
-                </a>
-              </div>
-            )
-  ) : (
-    <div className="rounded-[32px] border border-dashed border-gray-200 bg-white/90 p-6 text-sm text-gray-500">
-      Select a booking on the left to open the message thread.
-    </div>
-  );
-
-  const reservationPanel = activeThread ? (
-    <div className="flex h-full flex-col gap-6">
-      <div className="overflow-hidden rounded-[32px] border border-gray-200 bg-white ">
-        {activePropertyDetails?.image && (
-          <div className="relative h-44 w-full">
-            <Image
-              src={activePropertyDetails.image}
-              alt={activeThread.property.name}
-              fill
-              className="object-cover"
-              sizes="320px"
-            />
-          </div>
-        )}
-        <div className="p-6 space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
-              Reservation
-            </p>
-            <h3 className="font-sans font-semibold text-2xl text-gray-900">
-              {activeThread.property.name}
-            </h3>
-            <p className="mt-1 flex items-center gap-2 text-sm text-gray-500">
-              <MapPin className="h-4 w-4" />{" "}
-              {activePropertyDetails?.location ?? activeThread.property.slug}
-            </p>
-          </div>
-          <div className="grid gap-4 text-sm text-gray-600">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                Guest
-              </p>
-              <p className="font-semibold text-gray-900">
-                {activeThread.guestName}
-              </p>
-              <a
-                href={`mailto:${activeThread.guestEmail}`}
-                className="text-xs text-gray-500 underline"
-              >
-                {activeThread.guestEmail}
-              </a>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                  Check-in
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {stayDateFormatter.format(new Date(activeThread.checkInDate))}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                  Check-out
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {stayDateFormatter.format(
-                    new Date(activeThread.checkOutDate),
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-gray-500">
-              <span>Reference</span>
-              <span className="font-semibold text-gray-900">
-                {activeThread.referenceCode ?? "Pending"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="rounded-[32px] border border-gray-200 bg-white/95 p-6 text-sm text-gray-600">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-          Property support
-        </p>
-        <p className="mt-2 font-semibold text-gray-900">
-          {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}
-        </p>
-        <p className="text-xs text-gray-500">
-          Use this escalation channel if messaging doesn&apos;t get a reply
-          within 5 minutes.
-        </p>
-      </div>
-    </div>
-  ) : (
-    <div className="rounded-[32px] border border-dashed border-gray-200 bg-white/90 p-6 text-sm text-gray-500">
-      Choose a booking to see reservation context.
-    </div>
-  );
 
   if (authState === "checking") {
     return <AdminCheckingShell active="messages" />;
@@ -625,6 +481,37 @@ export default function AdminMessagesPage() {
                         {activeThread.referenceCode ?? "Pending"}
                       </p>
                     </div>
+                    <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                          Status
+                        </p>
+                        <p className="font-semibold text-gray-900">
+                          {bookingStatusLabel(activeThread)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                          Total
+                        </p>
+                        <p className="font-semibold text-gray-900">
+                          {formatMoney(activeThread.totalPriceCents)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-3 border-t border-gray-100 pt-6">
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                      Cancellation
+                    </p>
+                    <CancelBookingControl
+                      key={activeThread.id}
+                      bookingId={activeThread.id}
+                      status={activeThread.status}
+                      totalPriceCents={activeThread.totalPriceCents}
+                      checkInDate={activeThread.checkInDate}
+                      onCancelled={() => void fetchThreads(searchQuery || undefined)}
+                    />
                   </div>
                   <div className="space-y-2 border-t border-gray-100 pt-6">
                     <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
