@@ -39,6 +39,8 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
   month: "short",
   day: "numeric",
+  // Stay dates are calendar dates stored at UTC midnight, not local instants.
+  timeZone: "UTC",
 });
 
 function formatStayDates(checkIn: string, checkOut: string) {
@@ -653,149 +655,124 @@ export function BookingDetailsView({
     } satisfies EssentialMapProps;
 
     return (
-      <section className="flex flex-col bg-white lg:min-h-screen lg:flex-row">
-        <div className="order-1 flex w-full flex-col gap-8 px-6 py-8 lg:order-1 lg:h-screen lg:w-[34%] lg:max-w-[520px] lg:flex-shrink-0 lg:overflow-y-auto lg:px-12 lg:py-14">
-          {!isLookupModalOpen && error && (
-            <div className="flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-                Essential info
-              </p>
-              <h2 className="mt-2 font-serif text-4xl text-gray-900">
-                {booking.property.name}
-              </h2>
-              {stayRangeLabel && (
-                <p className="text-sm text-gray-500">{stayRangeLabel}</p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {lastLookup && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={isLoading}
-                  onClick={() =>
-                    void handleLookup({
-                      bookingReference: lastLookup.bookingReference,
-                      guestEmail: lastLookup.guestEmail,
-                    })
-                  }
-                  className="gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" /> Refresh stay
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={handleSwitchBooking}
-                className="gap-2"
-              >
-                Switch booking
-              </Button>
-            </div>
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:py-14">
+        <header className="mb-10 flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-sm font-semibold text-gray-500">
+              Your stay · Booking {referenceCode ?? booking.id}
+            </p>
+            <h1 className="page-title">{booking.property.name}</h1>
+            <p className="mt-4 text-base text-gray-600">{stayRangeLabel}</p>
           </div>
-
-          <div className="space-y-6">
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={handleSwitchBooking}
+          >
+            Switch booking
+          </Button>
+        </header>
+        {!isLookupModalOpen && error && (
+          <p
+            role="alert"
+            className="mb-6 rounded-xl bg-rose-50 p-4 text-rose-700"
+          >
+            {error}
+          </p>
+        )}
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-14">
+          <div>
             {heroImage && (
-              <div className="relative w-full overflow-hidden rounded-xl">
-                <div className="relative h-56 w-full">
-                  <Image
-                    src={heroImage}
-                    alt={booking.property.name}
-                    fill
-                    className="object-cover"
-                    sizes="420px"
-                  />
-                </div>
+              <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-xl">
+                <Image
+                  src={heroImage}
+                  alt={booking.property.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 700px"
+                />
               </div>
             )}
-            <div>
-              <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                Booking #{referenceCode ?? booking.id}
-              </p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {booking.property.name}
-              </p>
-              <p className="text-sm text-gray-500">
-                {propertyDetails?.location ?? booking.property.slug}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-10 text-sm text-gray-600">
+            <dl className="mb-10 grid grid-cols-2 gap-6 border-b pb-8">
               <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                  Stay
-                </p>
-                <p className="text-base font-semibold text-gray-900">
-                  {stayRangeLabel}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                  Guest
-                </p>
-                <p className="text-base font-semibold text-gray-900">
+                <dt className="text-sm text-gray-500">Guest</dt>
+                <dd className="mt-1 text-lg font-semibold">
                   {booking.guestName}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Booking total</dt>
+                <dd className="mt-1 text-lg font-semibold">
+                  {currencyFormatter.format(booking.totalPriceCents / 100)}
+                </dd>
+              </div>
+            </dl>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="section-heading">Arrive and settle in</h2>
+              {lastLookup && (
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => void handleLookup(lastLookup)}
+                  className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline underline-offset-4 disabled:opacity-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh details
+                </button>
+              )}
+            </div>
+            <dl className="grid gap-x-8 sm:grid-cols-2">
+              {essentialItems.map((item) => (
+                <div key={item.label} className="min-w-0 border-t py-6">
+                  <dt className="mb-2 text-sm text-gray-500">{item.label}</dt>
+                  <dd className="break-words text-lg font-medium leading-relaxed">
+                    {item.value}
+                  </dd>
+                  {item.helper && (
+                    <dd className="mt-2 break-words text-sm leading-relaxed text-gray-500">
+                      {item.helper}
+                    </dd>
+                  )}
+                </div>
+              ))}
+            </dl>
+          </div>
+          <aside className="space-y-8">
+            <div className="overflow-hidden rounded-xl border bg-white">
+              <div className="p-6">
+                <h2 className="section-heading">Find your way here</h2>
+                <p className="mt-2 text-base leading-relaxed text-gray-600">
+                  {mapProps.address ?? propertyDetails?.location}
                 </p>
               </div>
+              <EssentialMap {...mapProps} className="h-[320px] w-full" />
             </div>
-            <div className="border-t border-[var(--color-border)] pt-4 text-sm text-gray-600">
-              <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                Total
+            <div className="rounded-xl bg-gray-100 p-7 sm:p-8">
+              <h2 className="font-serif text-3xl font-normal">
+                Make yourself at home.
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-gray-600">
+                A little local knowledge goes a long way. Your guide brings the
+                details together for an easier stay.
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {currencyFormatter.format(booking.totalPriceCents / 100)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                Arrival tips
-              </p>
-              <div className="mt-3 space-y-5">
-                {essentialItems.map((item) => (
-                  <div
-                    key={item.label}
-                    className="border-t border-[var(--color-border)] pt-4 first:border-0 first:pt-0"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-                      {item.label}
-                    </p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {item.value}
-                    </p>
-                    {item.helper && (
-                      <p className="text-sm text-gray-500">{item.helper}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {guideUrl && (
+              {guideUrl && (
+                <a
+                  href={guideUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="marketing-button mt-6"
+                >
+                  Open your guidebook
+                </a>
+              )}
               <a
-                href={guideUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center text-sm font-semibold text-gray-900 underline"
+                href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`}
+                className="mt-5 block break-words text-sm font-semibold underline underline-offset-4"
               >
-                Download your guidebook
+                Email your host
               </a>
-            )}
-          </div>
-        </div>
-
-        <div className="order-2 w-full lg:hidden">
-          <EssentialMap {...mapProps} className="h-[320px] w-full" />
-        </div>
-
-        <div className="order-3 hidden w-full lg:block lg:basis-[66%] lg:flex-shrink-0">
-          <div className="lg:fixed lg:inset-y-0 lg:right-0 lg:h-screen lg:w-2/3">
-            <EssentialMap {...mapProps} className="h-full w-full" />
-          </div>
+            </div>
+          </aside>
         </div>
       </section>
     );
@@ -804,42 +781,65 @@ export function BookingDetailsView({
   const renderGuideSection = () => {
     if (!booking) return renderNoBookingState();
     return (
-      <section className="max-w-7xl mx-auto w-full space-y-8">
-        <div className="px-6 pt-8 lg:px-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-            Guide book
-          </p>
-          <h3 className="mt-2 font-serif text-4xl text-gray-900">
-            Plan every moment in town
-          </h3>
-          <p className="text-sm text-gray-500">
-            Hand-curated recommendations, arrival notes, and concierge contacts.
-          </p>
-          {guideUrl && (
-            <a
-              href={guideUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-900 underline"
-            >
-              Download the PDF guidebook
-            </a>
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:py-14">
+        <div className="mb-12 grid overflow-hidden rounded-xl bg-gray-100 md:grid-cols-2">
+          <div className="flex flex-col items-start justify-center p-7 sm:p-12">
+            <p className="mb-4 text-sm font-semibold text-gray-600">
+              Your guide to {propertyDetails?.location ?? booking.property.name}
+            </p>
+            <h1 className="page-title">A little local knowledge.</h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-gray-600">
+              Settle in, find your favorites, and make the most of your time
+              here.
+            </p>
+            {guideUrl && (
+              <a
+                href={guideUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="marketing-button mt-8"
+              >
+                Open your guidebook
+              </a>
+            )}
+          </div>
+          {heroImage && (
+            <div className="relative min-h-[260px] md:min-h-[440px]">
+              <Image
+                src={heroImage}
+                alt={booking.property.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 640px"
+              />
+            </div>
           )}
         </div>
         {booking.property.slug === "steamboat-downtown-townhome" ? (
-          <div className="px-6 lg:px-12 pb-12">
-            <SteamboatGuestGuide showSecureDetails />
-          </div>
+          <SteamboatGuestGuide showSecureDetails />
         ) : (
-          <div className="mx-6 lg:mx-12 rounded-xl border border-gray-200 bg-white/90 p-8 text-gray-600">
-            <p>
-              We&apos;re finalizing the digital guidebook for this property. In
-              the meantime, the PDF linked above covers check-in instructions,
-              our favorite restaurants, and concierge contacts.
-            </p>
-            <p className="mt-4 font-semibold text-gray-900">
-              Need help? Text or email us anytime.
-            </p>
+          <div className="grid gap-8 border-t py-8 md:grid-cols-2 md:gap-16">
+            <div>
+              <h2 className="section-heading">The details for your stay</h2>
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-600">
+                {guideUrl
+                  ? "Your guidebook is ready to open above. We’re still putting the finishing touches on the digital guide here."
+                  : "We’re putting the finishing touches on your digital guide. Your host can help with recommendations and questions in the meantime."}
+              </p>
+            </div>
+            <div>
+              <h2 className="section-heading">A question for your host?</h2>
+              <p className="mt-4 text-base leading-relaxed text-gray-600">
+                Use Messages for anything about your stay, or get in touch by
+                email.
+              </p>
+              <a
+                href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`}
+                className="mt-5 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
+              >
+                Email your host
+              </a>
+            </div>
           </div>
         )}
       </section>
@@ -849,9 +849,15 @@ export function BookingDetailsView({
   const renderMessagesSection = () => {
     if (!booking) return renderNoBookingState();
     return (
-      <section className="flex flex-col bg-white lg:min-h-screen">
+      <section className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 lg:py-14">
+        <header className="mb-8">
+          <p className="mb-3 text-sm font-semibold text-gray-500">
+            Your stay, connected
+          </p>
+          <h1 className="page-title">A direct line to your host.</h1>
+        </header>
         <MessagesLayout
-          variant="full-bleed"
+          variant="guest"
           sidebar={
             <div className="flex h-full flex-col">
               <div className="flex flex-col gap-4 border-b border-gray-100 p-6">
@@ -1004,7 +1010,7 @@ export function BookingDetailsView({
   ) : null;
 
   return (
-    <div className={`relative ${booking ? "bg-white" : "bg-gray-50 pb-16"}`}>
+    <div className="relative bg-[var(--color-surface)] pb-8">
       {renderLookupModal()}
       {loadingBanner}
       {booking ? (

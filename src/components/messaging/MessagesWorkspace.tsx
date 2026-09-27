@@ -63,14 +63,14 @@ export function MessageThreadList({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p
-                    className={`truncate text-sm font-semibold ${isActive ? "text-gray-900" : "text-gray-700"}`}
+                    className={`line-clamp-2 text-sm font-semibold ${isActive ? "text-gray-900" : "text-gray-700"}`}
                   >
                     {thread.title}
                   </p>
-                  <p className="truncate text-xs uppercase tracking-[0.2em] text-gray-400">
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">
                     {thread.subtitle}
                   </p>
                 </div>
@@ -85,16 +85,16 @@ export function MessageThreadList({
                   {thread.meta}
                 </p>
               )}
-              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
+              <div className="mt-2 space-y-2 text-xs text-gray-500">
                 {thread.lastMessageSnippet ? (
-                  <p className="truncate pr-2 text-gray-500">
+                  <p className="line-clamp-2 text-gray-500">
                     {thread.lastMessageSnippet}
                   </p>
                 ) : (
                   <p className="truncate pr-2 text-gray-400">No messages yet</p>
                 )}
                 {thread.lastMessageAtLabel && (
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     <Clock className="h-3 w-3" />
                     {thread.lastMessageAtLabel}
                   </span>
@@ -118,7 +118,7 @@ interface MessagesLayoutProps {
   sidebar: ReactNode;
   conversation: ReactNode;
   reservation?: ReactNode;
-  variant?: "default" | "full-bleed";
+  variant?: "default" | "full-bleed" | "guest";
 }
 
 export function MessagesLayout({
@@ -127,6 +127,22 @@ export function MessagesLayout({
   reservation,
   variant = "default",
 }: MessagesLayoutProps) {
+  if (variant === "guest") {
+    return (
+      <div className="grid overflow-hidden rounded-xl border bg-white lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+        <div className="order-2 min-w-0 border-t lg:order-1 lg:border-t-0 lg:border-r">
+          {sidebar}
+        </div>
+        <div className="order-1 min-w-0 min-h-[560px] lg:order-2 lg:h-[720px]">
+          {conversation}
+        </div>
+        <div className="order-3 hidden min-w-0 border-l bg-gray-50 xl:block">
+          {reservation}
+        </div>
+      </div>
+    );
+  }
+
   if (variant === "full-bleed") {
     return (
       <div className="flex flex-col bg-white lg:h-[calc(100vh-80px)] lg:flex-row lg:divide-x lg:divide-gray-200">

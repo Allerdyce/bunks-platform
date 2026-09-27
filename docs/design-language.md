@@ -50,4 +50,10 @@ The platform starts with two owned homes and is intended to onboard more. Write 
 
 TypeScript and targeted lint validate the updated code. Browser checks cover public pages, trip lookup, Wi-Fi entry, cleaner sign-in, all six signed-in admin routes, and phone-width overflow on admin, privacy and the tax tool. Local admin data APIs can fail without a database; resource checklists and email previews use existing sample/static data. Populated pricing/guest/message data, cleaner-authenticated pages, payment completion and booked-trip states require their configured services or real sessions; their shared UI is updated but those end-to-end flows are not claimed as tested. Production was inspected read-only; no content, pricing, bookings or campaigns were changed.
 
-PR #2 launch fixes are integrated into the design branch. The production bunks-platform build passed; TESTA returns Booking not found on production, so its populated trip flow remains unverified there. The new setup page inherits the operations theme. Booking lookup errors now use readable guidance rather than raw JSON.
+PR #2 launch fixes are integrated into the design branch. The production bunks-platform build passed. TESTA is now available on production; Essential Info, Guide Book, and the empty Messages view were inspected read-only. The new setup page inherits the operations theme. Booking lookup errors now use readable guidance rather than raw JSON.
+
+## Populated trip pages
+
+Essentials uses one page scroll, a generous photo and arrival-details column, and a secondary map/guide column. Guide Book uses a split editorial introduction with the actual property guide link; never label an arbitrary URL as a PDF. Messages uses a contained workspace and shows the conversation before the stay summary on phones. Trip tabs stay visible at phone widths, with an accessible current-page state.
+
+Updated layouts were checked locally using a temporary, clearly labeled DEMO1 fixture, including a sample message. The fixture was removed before committing. All three pages had no horizontal overflow at 390 CSS pixels. Stay date display was checked in Pacific, Mountain, and Tokyo time zones to prevent UTC-midnight calendar dates shifting backward. No live messages were sent or booking details changed. Live delivery of messages and payment flows were not tested.

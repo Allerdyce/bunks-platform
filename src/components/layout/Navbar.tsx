@@ -175,6 +175,7 @@ export function Navbar({
                     key={link.label}
                     href={link.href}
                     onClick={handleLinkClick}
+                    aria-current={isActive ? "page" : undefined}
                     className={`text-base font-semibold transition-colors ${
                       isActive
                         ? "rounded-full bg-[var(--color-surface-alt)] px-4 py-2 text-[var(--color-text-primary)]"
@@ -214,22 +215,50 @@ export function Navbar({
           </div>
 
           <div className="lg:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="rounded-full border border-[var(--color-border)] p-2 text-[var(--color-text-primary)] shadow-sm"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
-              aria-expanded={isOpen}
-              aria-controls="mobile-navigation"
-            >
-              {isOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            {isBookingView ? (
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center rounded-full bg-gray-100 px-5 text-sm font-semibold"
+              >
+                Exit
+              </Link>
+            ) : (
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="rounded-full border border-[var(--color-border)] p-2 text-[var(--color-text-primary)] shadow-sm"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isOpen}
+                aria-controls="mobile-navigation"
+              >
+                {isOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {isBookingView && (
+        <div className="grid grid-cols-3 gap-1 px-3 pb-3 lg:hidden">
+          {navLinks
+            .filter((link) => link.type === "booking")
+            .map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                aria-current={
+                  bookingSection === link.section ? "page" : undefined
+                }
+                className={`flex min-h-11 items-center justify-center rounded-full px-2 text-center text-sm font-semibold ${bookingSection === link.section ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+        </div>
+      )}
 
       {isOpen && (
         <div

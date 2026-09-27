@@ -242,7 +242,9 @@ export function BookingMessages({
                         : "bg-gray-100 text-gray-900"
                     }`}
                   >
-                    <p className="whitespace-pre-line">{message.body}</p>
+                    <p className="whitespace-pre-line break-words leading-relaxed">
+                      {message.body}
+                    </p>
                   </div>
                 </div>
               ))}
