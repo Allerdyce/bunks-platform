@@ -104,7 +104,7 @@ export function HomeHubRequestForm() {
             name="listingUrl"
             type="url"
             maxLength={500}
-            placeholder="https://airbnb.com/rooms/…"
+            placeholder="https://…"
             className={inputClass}
           />
         </div>

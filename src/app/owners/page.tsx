@@ -5,10 +5,10 @@ import { OwnersView } from "@/components/owners/OwnersView";
 export const metadata: Metadata = {
   title: "For owners · Free Bunks Home Hub",
   description:
-    "A free tap-or-scan Home Hub for your vacation rental. Guests get Wi-Fi, your house guide and local picks in one tap, and an easy way to book their next stay direct.",
+    "A free Home Hub for your rental. Guests tap for Wi-Fi, house details and local favorites, and book directly when they're ready to come back.",
   openGraph: {
-    title: "A free Home Hub for your rental",
-    description: "Help guests through the stay, and bring them back direct for 5%, not 15%.",
+    title: "A better stay. A reason to return.",
+    description: "A free Home Hub for your rental, and an easy way for guests to book again.",
     images: [{ url: "/owners/home-hub-entry.webp", width: 1536, height: 1024, alt: "The Bunks Home Hub on an entry table" }],
   },
 };
