@@ -10,7 +10,6 @@ const STORAGE_KEY = "bunks-email-template-toggles";
 const AUDIENCE_ORDER: EmailTemplateSpec["audience"][] = [
   "guest",
   "host",
-  "system",
 ];
 const AUDIENCE_META: Record<
   EmailTemplateSpec["audience"],
@@ -25,11 +24,6 @@ const AUDIENCE_META: Record<
     label: "Host + Ops",
     description: "Operational alerts that keep partners in sync.",
     accent: "#F63D68",
-  },
-  system: {
-    label: "System alerts",
-    description: "Automated monitoring, cron digests, and failure notices.",
-    accent: "#12B76A",
   },
 };
 type ToggleTab = "all" | EmailTemplateSpec["audience"];
@@ -121,7 +115,6 @@ export function TemplateControls({
       all: [],
       guest: [],
       host: [],
-      system: [],
     };
 
     templates.forEach((template) => {
