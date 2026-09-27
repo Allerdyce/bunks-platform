@@ -215,7 +215,7 @@ export function WifiConnectForm({
               rel="noopener noreferrer"
               className={`inline-flex items-center gap-2 transition-colors text-sm font-medium border-b border-transparent pb-0.5 ${t.guideLink}`}
             >
-              View Property Guide
+              Your trip page &amp; house guide
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>

@@ -8,7 +8,7 @@ export function HomeHero({ onExplore }: { onExplore: () => void }) {
     <>
       <section className="relative isolate flex min-h-[640px] items-center justify-center overflow-hidden bg-gray-900 px-6 pb-24 pt-40 text-center text-white sm:min-h-[720px] lg:min-h-[min(850px,92svh)]">
         <Image
-          src="/2211-lillie-ave/kitchen/kitchen-1.webp"
+          src="/summerland/kitchen/kitchen-1.webp"
           alt="A sunlit dining table opening onto the Pacific at our Summerland home"
           fill
           sizes="100vw"

@@ -1,5 +1,6 @@
 "use client";
 
+import { PROPERTY_GUIDE_FILES, type GuideKind } from "@/data/guides";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarCheck } from "@/components/admin/CalendarCheck";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
@@ -191,6 +192,24 @@ function PropertySetupCard({
       <div>
         <h2 className="text-lg font-semibold text-gray-900">{form.name}</h2>
         <p className="text-xs text-gray-500">{form.slug}</p>
+        {PROPERTY_GUIDE_FILES[form.slug] && (
+          <p className="mt-2 text-sm text-gray-600">
+            Guest guides (paid guests get these on their trip page):{" "}
+            {(Object.keys(PROPERTY_GUIDE_FILES[form.slug]) as GuideKind[]).map((kind, index) => (
+              <span key={kind}>
+                {index > 0 && " · "}
+                <a
+                  href={`/api/guides/${form.slug}/${kind}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  {kind === "brochure" ? "Brochure" : "Guide"} (PDF)
+                </a>
+              </span>
+            ))}
+          </p>
+        )}
       </div>
 
       <section className="space-y-3">

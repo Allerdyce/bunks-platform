@@ -26,7 +26,7 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
       <div className="marketing-container">
         <div className="relative h-[320px] overflow-hidden rounded-lg sm:h-[520px]">
           <Image
-            src="/2211-lillie-ave/kitchen/kitchen-1.webp"
+            src="/summerland/kitchen/kitchen-1.webp"
             alt="The Summerland dining room, with open doors to the ocean"
             fill
             sizes="100vw"
@@ -65,7 +65,7 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
         <div className="grid overflow-hidden rounded-lg bg-[#eeece8] md:grid-cols-2">
           <div className="relative min-h-[360px] md:min-h-[550px]">
             <Image
-              src="/2211-lillie-ave/living-room/living-room-4.webp"
+              src="/summerland/living-room/living-room-4.webp"
               alt="A thoughtfully furnished living room at Bunks"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"

@@ -1,19 +1,14 @@
 export interface SteamboatGuide {
   propertyBasics: {
     name: string;
-    address: string;
     checkInTime: string;
     checkOutTime: string;
-    wifi: { ssid: string; password: string };
-    // Door/lock codes intentionally live only in the database (Property row) and are served
-    // to verified guests via /api/trip-access/[ref]. Never add them to client-bundled data.
-    skiLocker: {
-      locationNotes: string;
-    };
+    // This guide ships in the client bundle. The address, Wi-Fi, directions and anything else
+    // that locates the home live in lib/privatePropertyDetails and reach verified guests only.
+    // Door/lock codes live only in the database and are served via /api/trip-access/[ref].
     hosts: { name: string; phone: string }[];
   };
   checkinCheckout: {
-    directions: { fromDenver: string; fromHayden: string };
     checkinNotes: string;
     checkoutSteps: string[];
     houseRules: string[];
@@ -64,27 +59,15 @@ export interface SteamboatGuide {
 
 export const STEAMBOAT_GUIDE: SteamboatGuide = {
   propertyBasics: {
-    name: "Alpen Glow Townhomes #2",
-    address: "45 6th Street, Townhouse #2, Steamboat Springs, CO 80487",
+    name: "Downtown Steamboat Luxury Townhome",
     checkInTime: "3:00 p.m.",
     checkOutTime: "10:00 a.m.",
-    wifi: { ssid: "Townhouse2", password: "Steamboat" },
-    skiLocker: {
-      locationNotes:
-        "Across from the gondola entrance in Steamboat Square—look for the Alpen Glow door beside the candy store and chairlift swing.",
-    },
     hosts: [
       { name: "Alissa", phone: "(310) 994-2387" },
       { name: "Matt", phone: "(310) 902-2899" },
     ],
   },
   checkinCheckout: {
-    directions: {
-      fromDenver:
-        "Take I-70 W to CO-9 N/CO-40 W toward Silverthorne. Follow US-40 into Steamboat Springs (Lincoln Ave), then turn left on 6th Street. Take the immediate right between the Alpen Glow condos and townhomes—#2 is on the left.",
-      fromHayden:
-        "From Yampa Valley Regional Airport, head east on US-40 (Lincoln Ave). Turn right on 6th Street, then the immediate right between the Alpen Glow condos and townhomes. Townhome #2 is on the left.",
-    },
     checkinNotes:
       "Self check-in via the keypad beside the garage. Text us if you arrive before 3 p.m.—we'll expedite cleaning when possible. Late arrivals are totally fine; codes stay active.",
     checkoutSteps: [
@@ -104,7 +87,7 @@ export const STEAMBOAT_GUIDE: SteamboatGuide = {
     ],
     quietHours: "7:00 p.m. – 7:00 a.m.",
     parking:
-      "You have a dedicated single-car garage spot plus first-come street parking along 6th Street. Keep vehicles clear of the shared drive and follow posted winter plow rules.",
+      "You have a dedicated single-car garage spot plus first-come street parking nearby. Keep vehicles clear of the shared drive and follow posted winter plow rules.",
   },
   amenities: {
     bath: [

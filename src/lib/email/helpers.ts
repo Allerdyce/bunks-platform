@@ -1,7 +1,7 @@
 import { Booking, Property } from '@prisma/client';
 import { toAbsoluteUrl } from '@/lib/url';
 import { SUPPORT_EMAIL } from '@/lib/contact';
-import { guideUrlFor } from '@/data/guides';
+import { guideUrlForBooking } from '@/lib/guideLinks';
 
 const DEFAULT_CURRENCY = 'USD';
 
@@ -37,13 +37,13 @@ export function formatCurrencyFromCents(amountCents: number, currency = DEFAULT_
 }
 
 export function resolveGuestBookUrl(booking: Booking & { property: Property }) {
-  const url = guideUrlFor(booking.property.slug, booking.guestBookUrlOverride, booking.property.guestBookUrl);
+  const url = guideUrlForBooking(booking, booking.guestBookUrlOverride, booking.property.guestBookUrl);
   return toAbsoluteUrl(url ?? undefined);
 }
 
 export function resolveCheckInGuideUrl(booking: Booking & { property: Property }) {
   const url =
-    guideUrlFor(booking.property.slug, booking.checkInInstructionsOverride, booking.property.checkInGuideUrl);
+    guideUrlForBooking(booking, booking.checkInInstructionsOverride, booking.property.checkInGuideUrl);
   return toAbsoluteUrl(url ?? undefined);
 }
 

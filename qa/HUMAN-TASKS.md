@@ -2,6 +2,16 @@
 
 Updated after your answers to Q1–Q7 (27 Sep). Work through the tasks in order and tick each box as you go. **Bold** tasks block a safe launch.
 
+## 0. Steamboat codes (owner is keeping them)
+
+- [ ] **Check Admin → Setup (Steamboat) matches the codes printed in the guides.** The trip page shows what's in Setup; the PDFs show what's printed. They should agree:
+  - Garage 0409
+  - Lockbox 1009
+  - Ski locker: door 47754, locker #36, locker code 2482
+  - Wi-Fi: Townhouse2 / Steamboat
+- [ ] The brochure's first page says "10am Check-in time"; everything else says 3 p.m. check-in, 10 a.m. checkout. Worth fixing when it's next re-exported.
+- The guides open only for paid guests (trip page and emails) and for admins (Admin → Setup → Guide/Brochure links). Until this deploys, they're still public at bunks.com.
+
 ## 1. Vercel environment variables
 
 Where: vercel.com → bunks-platform (the Allerdyce project, not the old `bunks` one) → Settings → Environment Variables. For each variable:
@@ -17,6 +27,7 @@ When all of 1a–1c are done, redeploy once (step 1d).
 - [ ] **1b. Add `ICAL_FEED_SECRET`** (Q4). Use a **new** long random value, generated the same way as 1a. It must not be the same as any other secret.
   - This changes your Bunks calendar link. That's fine, because Airbnb hasn't imported it yet (task 3c).
   - Do 1b before 3c. If Airbnb has already imported the old link, paste the new link from Admin → Setup into Airbnb again.
+- [ ] 1b2. Optional: add `GUIDE_LINK_SECRET` (another new random value). It signs the guide PDF links in guest emails. Without it, `ADMIN_SESSION_SECRET` is used; changing that secret later would break links in emails already sent (guests can still open the guide from their trip page).
 - [ ] **1c. Add `ADMIN_EMAILS`** (Q6) with the value `ali@bunks.com,matt@bunks.com,alissa@bunks.com`.
   - This list is now the full admin list. Adding or removing someone later is just editing it and redeploying.
   - Until it's set, the code falls back to those same three. `trumandavies7@gmail.com` has been removed from the code.

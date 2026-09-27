@@ -122,14 +122,26 @@ export interface BookingDetailsData {
     name: string;
     slug: string;
     timezone?: string | null;
-    checkInGuideUrl?: string | null;
-    guestBookUrl?: string | null;
     hostSupportEmail?: string | null;
     checkInTime?: string | null;
     checkOutTime?: string | null;
-    address?: string | null;
   };
+  /** Only present for paid bookings. */
+  secure?: BookingPrivateDetails | null;
+}
 
+/** What locates the home or unlocks its network: returned only to verified guests with a paid booking. */
+export interface BookingPrivateDetails {
+  address: string | null;
+  buildingName: string | null;
+  mapsUrl: string | null;
+  wifiSsid: string | null;
+  wifiPassword: string | null;
+  parkingNotes: string | null;
+  directions: { label: string; detail: string }[];
+  skiLockerNotes: string | null;
+  guideUrl: string | null;
+  brochureUrl: string | null;
 }
 
 export interface BookingDetailsResponse {
