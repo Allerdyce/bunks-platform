@@ -26,7 +26,7 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-AV-13 | P1 | (review) An empty Airbnb feed paused checkout for up to a day, and only the daily job sent an alert. | Fixed. An empty feed keeps the old blocks, which can only over-block, so checkout continues. Any failed import emails an alert, at most every 4 hours. | F4b, F4c, F8 |
 | T-AV-14 | P2 | (review) The iCal parser merges events that share an ID, which could drop a reservation or trip the "malformed" guard. | Fixed. Each event is parsed on its own. | unit |
 | T-AV-10 | P2 | `BlockedDate` has no unique constraint, so concurrent imports can duplicate rows (harmless for availability). | Parked. Needs a schema migration. | — |
-| T-AV-11 | P2 | The Bunks→Airbnb feed token is derived from `ADMIN_SESSION_SECRET` when `ICAL_FEED_SECRET` is unset. Rotating the admin secret would silently break Airbnb's import of Bunks bookings. | Parked. See HANDOFF Q4. | — |
+| T-AV-11 | P2 | The Bunks→Airbnb feed token fell back to `ADMIN_SESSION_SECRET`. | Q4 answered: set a separate `ICAL_FEED_SECRET`. | HUMAN-TASKS 1b |
 
 ## Booking and payment
 
@@ -42,7 +42,7 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-BK-10 | P1 | A typo in the admin refund amount cancelled the booking with a **$0 refund**. | Fixed. Now rejected. | PR4 |
 | T-BK-11 | P2 | An admin cancel racing a payment could keep the money and cancel the stay. | Fixed with a conditional update. | reviewed; race not reproduced |
 | T-BK-12 | P1 | Admin had no way to cancel or refund a booking. A partial refund in the Stripe dashboard left the dates blocked on both sites. | **Default taken.** Admin → Bookings shows status and total, and has a Cancel control with the policy refund pre-selected. | UA-cancel-1..3, C1–C9, PR1–PR3 |
-| T-BK-13 | P2 | The payment form showed success for "processing" payments (bank transfers). | Fixed. See HANDOFF Q3 on payment methods. | code |
+| T-BK-13 | P2 | The payment form showed success for "processing" payments (bank transfers). | Fixed. After Q3, checkout requests cards only (Apple/Google Pay included). | code, H4b |
 | T-BK-15 | P2 | (review) A property still on the schema's "Europe/London" default timezone would reject same-day evening bookings and send the door code a day early. | Fixed. One shared rule gives each property its real timezone. | unit |
 | T-BK-16 | P2 | (review) Releasing an "unpaid" hold whose payment had just gone through, and a refund racing its own webhook. | Fixed. Stripe is checked first; the refund race returns success. | C10 |
 | T-BK-14 | P3 | The guest count is not stored on the booking. | Parked (schema). | — |
@@ -77,7 +77,7 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-SEC-04 | P2 | Wi-Fi sign-up accepted a 5,000-character name and returned internal user ids. | Fixed. | WL2, WL4 |
 | T-SEC-05 | P2 | Guest name was inserted unescaped into an ops alert email's HTML. | Fixed. | code |
 | T-SEC-06 | P2 | The retired guest chat API still accepted messages and emailed the host. | Fixed. Returns 410 (use email). | GM1, GM2 |
-| T-SEC-07 | P2 | Four admin emails are hard-coded; config can add admins but not remove them. | Parked. See HANDOFF Q6. | — |
+| T-SEC-07 | P2 | Admin emails were hard-coded; config could add admins but not remove them. | Fixed after Q6. `ADMIN_EMAILS` in Vercel is now the full list; the code fallback is ali@, matt@ and alissa@. | HUMAN-TASKS 1c |
 | T-SEC-08 | P2 | The seed script could overwrite live settings and contained an Airbnb calendar link. | Fixed. It refuses non-local databases. The old link is still in git history. | manual run |
 | T-SEC-09 | P3 | The Wi-Fi password is in the page source before the email is entered. | Won't fix. The gate is a convenience, not security. | — |
 

@@ -50,7 +50,7 @@ http.createServer(async (req, res) => {
       const f = parseForm(body);
       const idem = req.headers["idempotency-key"];
       if (idem) for (const pi of pis.values()) if (pi._idem === idem) return send(res, 200, pi);
-      const pi = { id: id("pi"), object: "payment_intent", amount: Number(f.amount), amount_received: 0, currency: f.currency, status: "requires_payment_method", metadata: f.metadata ?? {}, receipt_email: f.receipt_email, client_secret: "", payment_method: null, latest_charge: null, _idem: idem };
+      const pi = { id: id("pi"), object: "payment_intent", amount: Number(f.amount), amount_received: 0, currency: f.currency, status: "requires_payment_method", metadata: f.metadata ?? {}, payment_method_types: f.payment_method_types ? Object.values(f.payment_method_types) : null, receipt_email: f.receipt_email, client_secret: "", payment_method: null, latest_charge: null, _idem: idem };
       pi.client_secret = `${pi.id}_secret_mock`;
       pis.set(pi.id, pi);
       return send(res, 200, pi);

@@ -357,6 +357,9 @@ export async function POST(req: NextRequest) {
           {
             amount: totalPriceCents,
             currency: 'usd',
+            // Cards only (Apple Pay / Google Pay are cards): bank debits and pay-later methods can
+            // stay "processing" for days, far longer than the 30-minute date hold.
+            payment_method_types: ['card'],
             receipt_email: normalizedEmail,
             metadata: paymentMetadata,
           },

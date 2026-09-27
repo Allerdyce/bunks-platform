@@ -1,56 +1,88 @@
 # Things only you can do (before Oct 1)
 
-Each item is a setting in an admin screen or a service dashboard. None of these were changed tonight. Items in **bold** block a safe launch.
+Updated after your answers to Q1–Q7 (27 Sep). Work through the tasks in order and tick each box as you go. **Bold** tasks block a safe launch.
 
-## Vercel → bunks-platform → Settings → Environment Variables (Production)
+## 1. Vercel environment variables
 
-1. **Confirm `CRON_SECRET` is set** (any long random value).
-   - Without it, both daily jobs refuse to run in production: no reminder or door-code emails, and no daily Airbnb import or failure alert.
-2. Set `ICAL_FEED_SECRET` to the **same value** your `ADMIN_SESSION_SECRET` has today (see HANDOFF Q4).
-   - The Bunks calendar link you paste into Airbnb then stays the same.
-   - Changing the admin secret later won't break the link.
-3. Leave `EMAIL_SENDING_PAUSED` unset or `true` until marketing is ready (item 12).
+Where: vercel.com → bunks-platform (the Allerdyce project, not the old `bunks` one) → Settings → Environment Variables. For each variable:
+1. Press **Add New**.
+2. Tick **Production** and **Preview**.
+3. Save.
 
-## Admin → Details (production)
+When all of 1a–1c are done, redeploy once (step 1d).
 
-4. **Open the page and clear any made-up contacts** if you see them: phone numbers ending 555-01xx, "Priya", "Slack #host-support", "Share property code 8821", or links like `bunks.com/?property=…/door-codes`.
-   - Tonight's code already hides these exact values from guests, but they shouldn't sit in the database.
-   - Enter a real phone number or leave the field blank. Only the support email is required now.
+- [ ] **1a. Check `CRON_SECRET` exists.**
+  - If it's missing, add it with any long random value, e.g. from 1Password's generator or `openssl rand -hex 32`.
+  - Without it, the daily jobs refuse to run in production: no reminder or door-code emails, and no daily Airbnb import or failure alert.
+- [ ] **1b. Add `ICAL_FEED_SECRET`** (Q4). Use a **new** long random value, generated the same way as 1a. It must not be the same as any other secret.
+  - This changes your Bunks calendar link. That's fine, because Airbnb hasn't imported it yet (task 3c).
+  - Do 1b before 3c. If Airbnb has already imported the old link, paste the new link from Admin → Setup into Airbnb again.
+- [ ] **1c. Add `ADMIN_EMAILS`** (Q6) with the value `ali@bunks.com,matt@bunks.com,alissa@bunks.com`.
+  - This list is now the full admin list. Adding or removing someone later is just editing it and redeploying.
+  - Until it's set, the code falls back to those same three. `trumandavies7@gmail.com` has been removed from the code.
+- [ ] **1d. Redeploy.** Deployments → latest Production deployment → ⋯ → Redeploy. Environment changes only apply to new deployments.
+- [ ] Leave `EMAIL_SENDING_PAUSED` unset or `true` until marketing is ready (task 7).
 
-## Admin → Setup (each property)
+## 2. Admin → Details (production)
 
-5. Airbnb calendar link:
-   - Steamboat: replace the old `airbnb.co.uk …?s=` link with the new `?t=` one.
-   - Summerland: add its link.
-   - Press **Sync now** for each and check that the "upcoming Airbnb nights" count looks right.
-6. Guest support email → `alissa@bunks.com` for both properties.
-7. Check-in and check-out times, Wi-Fi network and password, lockbox or garage code, parking notes, max guests and timezone.
-   - Blank times fall back to 3:00 PM and 10:00 AM everywhere.
-   - These now override the built-in listing text, so fill in what's true.
-8. Copy each **Bunks calendar link** into Airbnb → Calendar → Availability → Connect calendars → Import.
+- [ ] **Clear any made-up contacts** if you see them:
+  - phone numbers ending 555-01xx
+  - "Priya" or "Slack #host-support"
+  - "Share property code 8821"
+  - links like `bunks.com/?property=…/door-codes`
 
-## Admin → Pricing
+  Enter a real phone number or leave the field blank; only the support email is required. The code already hides these exact values from guests, but they shouldn't sit in the database.
 
-9. Enter the real Airbnb nightly rates (Sun–Thu and Fri–Sat) and cleaning fee. The stored values are placeholders.
-10. Summerland: add the Transient Occupancy Tax once the rate is confirmed. Steamboat's lodging tax too, if it isn't there yet.
+## 3. Admin → Setup (each property)
 
-## Stripe dashboard
+- [ ] **3a. Airbnb calendar link.**
+  - Steamboat: replace the old `airbnb.co.uk …?s=` link with the new `?t=` link.
+  - Summerland: add its link.
+  - Press **Sync now** for each and check that the "upcoming Airbnb nights" count looks right.
+- [ ] 3b. Fill in the rest:
+  - Guest support email → `alissa@bunks.com`
+  - check-in and check-out times
+  - Wi-Fi network and password
+  - lockbox or garage code
+  - parking notes
+  - max guests
+  - timezone
 
-11. Developers → Webhooks → your production endpoint `…/api/stripe` must send these 3 events:
+  These now override the built-in listing text. Blank times fall back to 3:00 PM and 10:00 AM.
+- [ ] **3c. Connect Airbnb to Bunks** (after 1b and 1d). Copy each property's **Bunks calendar link** from Setup into Airbnb → Calendar → Availability → Connect calendars → Import.
+
+## 4. Admin → Pricing
+
+- [ ] 4a. Enter the real Airbnb nightly rates (Sun–Thu and Fri–Sat) and the cleaning fee. The stored values are placeholders.
+- [ ] 4b. Summerland: add the Transient Occupancy Tax once the rate is confirmed. Steamboat's lodging tax too, if it isn't there yet.
+
+## 5. Stripe dashboard (dashboard.stripe.com, **live mode**)
+
+Checkout now asks Stripe for **cards only** (Q3). Apple Pay and Google Pay are cards, so they still work; bank debits and pay-later can't appear. Nothing to switch off for Bunks. Two checks:
+
+- [ ] **5a. Webhook events.**
+  - Where: Developers → Webhooks → the endpoint ending `/api/stripe`.
+  - Make sure it sends exactly these three events:
     - `payment_intent.succeeded`
     - `payment_intent.payment_failed`
     - `charge.refunded`
-12. Settings → Payment methods: turn off bank debits (ACH) and buy-now-pay-later (see HANDOFF Q3).
+  - To fix it: ⋯ → Update details → Select events.
+- [ ] 5b. Wallets.
+  - Where: Settings → Payments → Payment methods.
+  - Leave **Cards**, **Apple Pay** and **Google Pay** on.
+  - Apple Pay also needs the domain verified: Settings → Payments → Payment method domains → add `bunks.com` (and `www.bunks.com`, if you use it).
 
-## Neon (production database)
+## 6. Neon (production database)
 
-13. Delete the test booking before connecting the Airbnb import:
-    `DELETE FROM "Booking" WHERE "publicReference" = 'TESTA';`
+- [ ] **Delete the test booking before connecting Airbnb (task 3c):**
+  `DELETE FROM "Booking" WHERE "publicReference" = 'TESTA';`
 
-## Airbnb
+## 7. Later / optional
 
-14. Optional: the old Steamboat export link (`…?s=fbedfa…`) is in this repo's git history. If it still works, Airbnb's "Reset link" makes it useless to anyone who has the repo, and then you paste the new link into Admin → Setup.
+- [ ] Airbnb: the old Steamboat export link (`…?s=fbedfa…`) is in this repo's git history. If it still works, Airbnb's **Reset link** makes it useless to anyone who has the repo. Then paste the new link into Setup (task 3a).
+- [ ] Before turning on marketing email: send me the postal address to add to the marketing footer (a US CAN-SPAM requirement), then set `EMAIL_SENDING_PAUSED=false`.
+- [ ] Rate limits (Q5): nothing to do for launch. If you see abuse, tell me and I'll set up Upstash.
 
-## Before turning on marketing email
+## Your rulings (27 Sep)
 
-15. Add a postal address to the marketing footer (a US CAN-SPAM requirement), then set `EMAIL_SENDING_PAUSED=false`. Send me the address and I'll add it.
+Q1 pause checkout when the Airbnb calendar can't be read: **yes**. Q2 cancellation policy: **confirmed**. Q3 cards and wallets only: **yes, now enforced in code**. Q4 separate calendar secret: **yes** (task 1b). Q5 rate limits: **launch as-is**. Q6 admins: **ali@, matt@, alissa@, list managed in Vercel** (task 1c). Q7 60 nights / 2 years: **keep**.

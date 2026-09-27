@@ -38,6 +38,7 @@ def("Happy path: book, pay, confirm", async () => {
   const state = await stripe("/__test/state");
   const pi = state.pis.find((p) => p.id === b.stripePaymentIntentId);
   check("H4", "PaymentIntent amount equals booking total", pi?.amount === EXPECTED_TOTAL, pi?.amount);
+  check("H4b", "PaymentIntent accepts cards only (incl. Apple/Google Pay)", JSON.stringify(pi?.payment_method_types) === JSON.stringify({ 0: "card" }) || JSON.stringify(pi?.payment_method_types) === '["card"]', JSON.stringify(pi?.payment_method_types), "Q3");
   const { webhook } = await pay(r);
   check("H5", "webhook accepted", webhook.status === 200, JSON.stringify(webhook));
   const paid = await db.booking.findUnique({ where: { id: b.id } });

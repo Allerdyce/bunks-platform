@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T06:06:51.773Z",
-  "pass": 135,
-  "total": 135,
+  "at": "2026-09-27T18:40:38.629Z",
+  "pass": 136,
+  "total": 136,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -90,6 +90,14 @@
       "pass": true,
       "detail": "",
       "ticket": ""
+    },
+    {
+      "scenario": "Happy path: book, pay, confirm",
+      "id": "H4b",
+      "description": "PaymentIntent accepts cards only (incl. Apple/Google Pay)",
+      "pass": true,
+      "detail": "",
+      "ticket": "Q3"
     },
     {
       "scenario": "Happy path: book, pay, confirm",

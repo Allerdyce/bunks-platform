@@ -2,7 +2,7 @@
 
 Branch `claude/bold-curie-7laxza` is pushed, with **no PR and nothing merged**. It sits on top of the design branch. Nothing touched the live database, the Airbnb calendars, real Stripe or real email; everything ran on a local copy with fakes.
 
-## Needs you (answer in one line each)
+## Needs you: answered 27 Sep (all recommendations accepted; Q6 drops trumandavies7@). Remaining steps are in `qa/HUMAN-TASKS.md`.
 
 **Q1 · Keep "pause checkout if the Airbnb calendar can't be read"?**
 - Why it matters: a broken Airbnb link otherwise lets direct guests pay for nights Airbnb already sold.
