@@ -504,6 +504,41 @@ def("Wi-Fi lead capture", async () => {
   check("WL5", "guest CSV export neutralises formulas", !/(^|,)"?=HYPERLINK/m.test(csv.text), csv.text.slice(0, 300), "T-SEC-03");
 });
 
+def("Address, Wi-Fi and guides only for paid guests", async () => {
+  const PRIVATE = /Lillie Ave|6th Street|Townhouse ?#?2|Alpen Glow/;
+  for (const page of ["/", `/property/${SB}`, `/property/${SL}`, "/owners"]) {
+    const r = await api(page);
+    check("PV1", `public page ${page} has no address or Wi-Fi`, r.status === 200 && !PRIVATE.test(r.text), r.text.match(PRIVATE)?.[0] ?? r.status, "T-SEC-10");
+  }
+  for (const pdf of ["/Steamboat%20Welcome%20Guide.pdf", "/Steamboat%20Brochure.pdf", "/Lillie%20Guidebook.pdf"]) {
+    const r = await api(pdf);
+    check("PV2", `old public guide ${decodeURIComponent(pdf)} is gone`, r.status === 404, r.status, "T-SEC-11");
+  }
+  for (const kind of ["guide", "brochure"]) {
+    const anon = await api(`/api/guides/${SB}/${kind}`);
+    const admin = await fetch(`http://localhost:3000/api/guides/${SB}/${kind}`, { headers: { cookie: await adminCookie() } });
+    check("PV9", `Steamboat ${kind} PDF: admins can open it, anonymous visitors can't`, anon.status === 403 && admin.status === 200 && admin.headers.get("content-type") === "application/pdf", `${anon.status}/${admin.status}`, "T-SEC-11");
+  }
+  const r = await book();
+  const ref = r.json.bookingReference;
+  const unpaid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
+  check("PV3", "unpaid booking lookup has no address, Wi-Fi or guide", unpaid.status === 200 && !unpaid.json.booking.secure && !PRIVATE.test(unpaid.text), unpaid.text.slice(0, 300));
+  await pay(r);
+  const paid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
+  const secure = paid.json?.booking?.secure;
+  check("PV4", "paid booking lookup returns address, Wi-Fi and directions", /6th Street/.test(secure?.address ?? "") && !!secure?.wifiSsid && secure?.directions?.length === 2, JSON.stringify(secure).slice(0, 300));
+  const guide = secure?.guideUrl ? await fetch(`http://localhost:3000${secure.guideUrl}`) : null;
+  check("PV5", "signed guide link serves the PDF", guide?.status === 200 && guide.headers.get("content-type") === "application/pdf" && /no-store/.test(guide.headers.get("cache-control") ?? ""), guide?.status);
+  const tampered = secure?.guideUrl?.replace(/sig=[0-9a-f]/, (m) => (m.endsWith("0") ? "sig=1" : "sig=0"));
+  check("PV6", "tampered guide link is refused", (await api(tampered ?? "/api/guides/x/guide")).status === 403, tampered);
+  const otherSlug = secure?.guideUrl?.replace(SB, SL);
+  check("PV6b", "a link can't be reused for another home", (await api(otherSlug ?? "/api/guides/x/guide")).status === 403, otherSlug);
+  const mailHtml = emails().map((m) => m.html).join("\n");
+  check("PV7", "guest emails link the signed guide, not a public PDF", mailHtml.includes("/api/guides/") && !/Steamboat%20|Lillie%20Guidebook/.test(mailHtml), "no signed guide link in emails");
+  await db.booking.update({ where: { publicReference: ref }, data: { status: "CANCELLED" } });
+  check("PV8", "guide link stops working once the booking is cancelled", (await api(secure?.guideUrl ?? "/api/guides/x/guide")).status === 403, "still served");
+});
+
 def("Admin endpoints require a session", async () => {
   const routes = [
     ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],

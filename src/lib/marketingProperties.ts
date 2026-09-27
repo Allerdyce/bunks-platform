@@ -19,10 +19,7 @@ type DbProperty = Pick<
     | "serviceFee"
     | "checkInTime"
     | "checkOutTime"
-    | "wifiSsid"
-    | "wifiPassword"
     | "quietHours"
-    | "parkingNotes"
     | "houseRules"
     | "emergencyContacts"
 >;
@@ -62,6 +59,8 @@ const coerceEmergencyContacts = (
   return entries.length ? entries : undefined;
 };
 
+// These objects are passed to public pages. Anything that locates the home or unlocks its
+// network (address, Wi-Fi, parking directions) stays out: see lib/privatePropertyDetails.
 const mergeProperty = (marketing: Property, dbProperty: DbProperty): Property => {
   const nightlyRateCents = dbProperty.weekdayRate ?? dbProperty.baseNightlyRate;
   const nightlyRate = centsToDollars(nightlyRateCents);
@@ -80,10 +79,7 @@ const mergeProperty = (marketing: Property, dbProperty: DbProperty): Property =>
     // listing data is only a fallback for fields that haven't been filled in yet.
     checkInTime: dbProperty.checkInTime?.trim() || marketing.checkInTime || undefined,
     checkOutTime: dbProperty.checkOutTime?.trim() || marketing.checkOutTime || undefined,
-    wifiSsid: dbProperty.wifiSsid?.trim() || marketing.wifiSsid || undefined,
-    wifiPassword: dbProperty.wifiPassword?.trim() || marketing.wifiPassword || undefined,
     quietHours: dbProperty.quietHours?.trim() || marketing.quietHours || undefined,
-    parkingNotes: dbProperty.parkingNotes?.trim() || marketing.parkingNotes || undefined,
     houseRules: coerceStringArray(dbProperty.houseRules) ?? marketing.houseRules,
     emergencyContacts: coerceEmergencyContacts(dbProperty.emergencyContacts) ?? marketing.emergencyContacts,
   };
@@ -135,10 +131,7 @@ const propertySelect = {
   serviceFee: true,
   checkInTime: true,
   checkOutTime: true,
-  wifiSsid: true,
-  wifiPassword: true,
   quietHours: true,
-  parkingNotes: true,
   houseRules: true,
   emergencyContacts: true,
 };

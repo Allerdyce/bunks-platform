@@ -1,4 +1,8 @@
 import { STEAMBOAT_GUIDE } from "@/data/steamboatGuide";
+import { privateDetailsFor } from "@/lib/privatePropertyDetails";
+
+const PRIVATE = privateDetailsFor("steamboat-downtown-townhome");
+const WIFI = PRIVATE?.wifiSsid ? `${PRIVATE.wifiSsid} / ${PRIVATE.wifiPassword ?? ""}` : "In your arrival email";
 
 export interface GuideListItem {
   label: string;
@@ -29,14 +33,11 @@ export function getSteamboatBookingConfirmationSlice(): SteamboatConfirmationSli
   const { propertyBasics, checkinCheckout } = STEAMBOAT_GUIDE;
   return {
     arrivalNotes: checkinCheckout.checkinNotes,
-    directions: [
-      { label: "From Denver", detail: checkinCheckout.directions.fromDenver },
-      { label: "From Hayden (HDN)", detail: checkinCheckout.directions.fromHayden },
-    ],
+    directions: PRIVATE?.directions ?? [],
     essentials: [
       { label: "Check-in", detail: propertyBasics.checkInTime, helper: "Keypad beside garage" },
       { label: "Check-out", detail: propertyBasics.checkOutTime },
-      { label: "Wi-Fi", detail: `${propertyBasics.wifi.ssid} / ${propertyBasics.wifi.password}` },
+      { label: "Wi-Fi", detail: WIFI },
       { label: "Door codes", detail: "On your trip page", helper: "Released 24 hours before check-in" },
     ],
   };
@@ -46,7 +47,7 @@ export function getSteamboatPreStaySlice(): SteamboatPreStaySlice {
   const { propertyBasics, checkinCheckout, emergency } = STEAMBOAT_GUIDE;
   return {
     essentials: [
-      { label: "Wi-Fi", detail: `${propertyBasics.wifi.ssid} / ${propertyBasics.wifi.password}` },
+      { label: "Wi-Fi", detail: WIFI },
       {
         label: "Door & Ski Locker Codes",
         detail: "On your trip page",
@@ -54,7 +55,7 @@ export function getSteamboatPreStaySlice(): SteamboatPreStaySlice {
       },
       { label: "Hosts", detail: `${propertyBasics.hosts[0].name} ${propertyBasics.hosts[0].phone}`, helper: `${propertyBasics.hosts[1].name} ${propertyBasics.hosts[1].phone}` },
     ],
-    parkingNote: checkinCheckout.parking,
+    parkingNote: PRIVATE?.parkingNotes ?? checkinCheckout.parking,
     quietHours: checkinCheckout.quietHours,
     emergencyContacts: [
       { label: emergency.hospital.name, detail: emergency.hospital.phone, helper: emergency.hospital.address },

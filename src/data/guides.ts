@@ -1,14 +1,15 @@
-// Guest guide PDFs (in /public), per property slug.
-// `guide` is what guests open from their trip page, emails and the Wi-Fi page;
-// `afterWifi` is shown on the Wi-Fi success screen.
-export const PROPERTY_GUIDES: Record<string, { guide: string; afterWifi: string }> = {
+// Guest guide PDFs, per property slug. They live in /private/guides, not /public: they
+// contain the address, Wi-Fi and (Steamboat) lock codes. Guests reach them only through a
+// signed, per-booking link (lib/guideLinks) served by /api/guides/[slug]/[kind].
+export type GuideKind = "guide" | "brochure";
+
+export const PROPERTY_GUIDE_FILES: Record<string, Partial<Record<GuideKind, string>>> = {
   "steamboat-downtown-townhome": {
-    guide: "/Steamboat%20Welcome%20Guide.pdf",
-    afterWifi: "/Steamboat%20Brochure.pdf",
+    guide: "steamboat-welcome-guide.pdf",
+    brochure: "steamboat-brochure.pdf",
   },
   "summerland-ocean-view-beach-bungalow": {
-    guide: "/Lillie%20Guidebook.pdf",
-    afterWifi: "/Lillie%20Guidebook.pdf",
+    guide: "summerland-guidebook.pdf",
   },
 };
 
@@ -18,11 +19,4 @@ const PLACEHOLDER_GUIDE_HOSTS = ["guides.bunks.com", "guestbook.bunks.com"];
 export function isPlaceholderGuideUrl(url?: string | null) {
   if (!url) return true;
   return PLACEHOLDER_GUIDE_HOSTS.some((host) => url.includes(host));
-}
-
-/** A real guide link for the property: its PDF, else a stored URL that isn't a placeholder. */
-export function guideUrlFor(slug: string, ...storedUrls: Array<string | null | undefined>) {
-  const pdf = PROPERTY_GUIDES[slug]?.guide;
-  if (pdf) return pdf;
-  return storedUrls.find((url) => !isPlaceholderGuideUrl(url)) ?? null;
 }

@@ -21,7 +21,7 @@ export function GuestStories() {
           </div>
           <div className="relative min-h-[380px] overflow-hidden rounded-lg">
             <Image
-              src="/2211-lillie-ave/exterior/exterior-1.webp"
+              src="/summerland/exterior/exterior-1.webp"
               alt="An outdoor lounge for unhurried days on the California coast"
               fill
               sizes="(max-width: 768px) 100vw, 33vw"

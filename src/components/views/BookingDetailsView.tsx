@@ -62,7 +62,6 @@ const formatThreadTimestamp = (value?: string | null) => {
 };
 
 import { SUPPORT_EMAIL } from "@/lib/contact";
-import { guideUrlFor } from "@/data/guides";
 
 type EssentialMapProps = {
   propertyName: string;
@@ -261,9 +260,10 @@ export function BookingDetailsView({
     const items: { label: string; value: string; helper?: string }[] = [
       {
         label: "Address",
-        value: propertyDetails?.address ?? booking.property.name,
-        helper:
-          propertyDetails?.location ?? booking.property.slug.replace(/-/g, " "),
+        value: booking.secure?.address ?? propertyDetails?.location ?? booking.property.name,
+        helper: booking.secure?.address
+          ? (propertyDetails?.location ?? undefined)
+          : "Full address shared once your booking is paid",
       },
       {
         label: "Check-in",
@@ -278,8 +278,8 @@ export function BookingDetailsView({
     ];
 
     const wifiValue =
-      propertyDetails?.wifiSsid || propertyDetails?.wifiPassword
-        ? [propertyDetails?.wifiSsid, propertyDetails?.wifiPassword]
+      booking.secure?.wifiSsid || booking.secure?.wifiPassword
+        ? [booking.secure?.wifiSsid, booking.secure?.wifiPassword]
             .filter(Boolean)
             .join(" / ")
         : null;
@@ -371,9 +371,7 @@ export function BookingDetailsView({
     return items;
   }, [booking, propertyDetails, hostContacts, isPaidBooking, accessCodes]);
 
-  const guideUrl = booking
-    ? guideUrlFor(booking.property.slug, booking.property.checkInGuideUrl, booking.property.guestBookUrl)
-    : null;
+  const guideUrl = booking?.secure?.guideUrl ?? null;
 
   const sectionCopy: Record<
     BookingPortalSection,
@@ -563,7 +561,7 @@ export function BookingDetailsView({
     const mapProps = {
       propertyName: booking.property.name,
       location: propertyDetails?.location ?? booking.property.slug,
-      address: propertyDetails?.address ?? booking.property.address,
+      address: booking.secure?.address ?? null,
     } satisfies EssentialMapProps;
 
     return (
@@ -728,7 +726,7 @@ export function BookingDetailsView({
           )}
         </div>
         {booking.property.slug === "steamboat-downtown-townhome" ? (
-          <SteamboatGuestGuide showSecureDetails />
+          <SteamboatGuestGuide secure={booking.secure ?? null} />
         ) : (
           <div className="grid gap-8 border-t py-8 md:grid-cols-2 md:gap-16">
             <div>

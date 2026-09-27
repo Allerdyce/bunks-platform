@@ -114,6 +114,10 @@ scenario("Guest books through the UI");
   await shot(page, "flow-6-trip-page");
   check("UB8", "trip page shows Oct 5 check-in and Oct 9 checkout", /Oct(ober)?\s+5/.test(trip) && /Oct(ober)?\s+9/.test(trip), trip.slice(0, 400));
   check("UB9", "trip page has no errors", page.problems.length === 0, page.problems.join(" | "));
+  const wifiLine = trip.match(/Wi-Fi\s*\n\s*([^\n]+)/)?.[1] ?? "";
+  check("UB10", "paid trip page shows the address and Wi-Fi (kept off public pages)", /6th Street/.test(trip) && wifiLine.includes(" / "), `wifi: ${wifiLine}`, "T-SEC-10");
+  const pdfLink = await page.locator('a[href^="/api/guides/"]').count();
+  check("UB11", "paid trip page links the signed guide PDF", pdfLink > 0, "no /api/guides/ link", "T-SEC-11");
   await page.context().close();
 }
 

@@ -63,7 +63,9 @@ export function PreStayReminderEmail(props: PreStayReminderEmailProps) {
     normalizedCheckInGuide && normalizedGuestBook && normalizedCheckInGuide === normalizedGuestBook,
   );
   const combinedGuideUrl = checkInGuideUrl ?? guestBookUrl;
-  const recommendationsAnchor = guestBookUrl ? appendAnchor(guestBookUrl, 'recommendations') : null;
+  // A PDF guide (or a signed /api/guides link to one) has no #recommendations section.
+  const recommendationsAnchor =
+    guestBookUrl && !/(\.pdf($|[?#])|\/api\/guides\/)/i.test(guestBookUrl) ? appendAnchor(guestBookUrl, 'recommendations') : null;
 
   return (
     <EmailLayout previewText={`You&apos;re almost at ${propertyName}`}> 

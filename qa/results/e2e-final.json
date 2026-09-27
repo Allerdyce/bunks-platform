@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T20:53:52.107Z",
-  "pass": 146,
-  "total": 146,
+  "at": "2026-09-27T23:31:00.261Z",
+  "pass": 162,
+  "total": 162,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -1146,6 +1146,134 @@
       "pass": true,
       "detail": "",
       "ticket": "T-SEC-03"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV1",
+      "description": "public page / has no address or Wi-Fi",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-10"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV1",
+      "description": "public page /property/steamboat-downtown-townhome has no address or Wi-Fi",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-10"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV1",
+      "description": "public page /property/summerland-ocean-view-beach-bungalow has no address or Wi-Fi",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-10"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV1",
+      "description": "public page /owners has no address or Wi-Fi",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-10"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV2",
+      "description": "old public guide /Steamboat Welcome Guide.pdf is gone",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV2",
+      "description": "old public guide /Steamboat Brochure.pdf is gone",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV2",
+      "description": "old public guide /Lillie Guidebook.pdf is gone",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV9",
+      "description": "Steamboat guide PDF: admins can open it, anonymous visitors can't",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV9",
+      "description": "Steamboat brochure PDF: admins can open it, anonymous visitors can't",
+      "pass": true,
+      "detail": "",
+      "ticket": "T-SEC-11"
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV3",
+      "description": "unpaid booking lookup has no address, Wi-Fi or guide",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV4",
+      "description": "paid booking lookup returns address, Wi-Fi and directions",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV5",
+      "description": "signed guide link serves the PDF",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV6",
+      "description": "tampered guide link is refused",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV6b",
+      "description": "a link can't be reused for another home",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV7",
+      "description": "guest emails link the signed guide, not a public PDF",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Address, Wi-Fi and guides only for paid guests",
+      "id": "PV8",
+      "description": "guide link stops working once the booking is cancelled",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
     },
     {
       "scenario": "Admin endpoints require a session",

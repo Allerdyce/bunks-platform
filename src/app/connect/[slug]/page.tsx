@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Wifi, ShieldCheck, FileText } from "lucide-react";
+import { Wifi, ShieldCheck } from "lucide-react";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 import {
   WifiConnectForm,
   type WifiTheme,
 } from "@/components/wifi/WifiConnectForm";
-import { PROPERTY_GUIDES } from "@/data/guides";
+import { prisma } from "@/lib/prisma";
+import { wifiFor } from "@/lib/privatePropertyDetails";
 
 // 5 minute cache
 export const revalidate = 300;
@@ -85,10 +86,6 @@ export default async function WifiConnectPage({
 
   const slug = ALIAS_MAP[rawSlug] || rawSlug;
 
-  // Guide shown on the page, and the one linked from the success screen after unlocking.
-  const guideEntry = PROPERTY_GUIDES[slug];
-  const guide = guideEntry ? { page: guideEntry.guide, success: guideEntry.afterWifi } : undefined;
-
   const properties = await fetchMarketingProperties();
   const property = properties.find((p) => p.slug === slug);
 
@@ -96,8 +93,14 @@ export default async function WifiConnectPage({
     notFound();
   }
 
-  // Ensure we have wifi details
-  if (!property.wifiSsid || !property.wifiPassword) {
+  // This page is the in-home Wi-Fi page, so it's the one public place Wi-Fi appears. The house
+  // guide PDFs contain the address and lock codes, so guests get them from their trip page.
+  const saved = await prisma.property
+    .findUnique({ where: { slug }, select: { wifiSsid: true, wifiPassword: true } })
+    .catch(() => null);
+  const wifi = wifiFor(slug, saved);
+
+  if (!wifi) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center p-4 ${t.page}`}
@@ -150,29 +153,13 @@ export default async function WifiConnectPage({
           </p>
 
           <WifiConnectForm
-            ssid={property.wifiSsid}
-            password={property.wifiPassword}
+            ssid={wifi.ssid}
+            password={wifi.password}
             propertySlug={property.slug}
-            guideUrl={guide?.success}
+            guideUrl="/my-trips"
             bookDirectUrl={`/property/${property.slug}`}
             theme={theme}
           />
-
-          {guide && (
-            <div className={`mt-8 pt-6 border-t text-center ${t.divider}`}>
-              <a
-                href={guide.page}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center gap-2 text-sm transition-colors ${t.link}`}
-              >
-                <FileText className="w-4 h-4" />
-                <span className="underline underline-offset-4">
-                  Download Welcome Guide
-                </span>
-              </a>
-            </div>
-          )}
 
           <div
             className={`mt-6 flex items-center justify-center gap-2 text-xs ${t.footer}`}
