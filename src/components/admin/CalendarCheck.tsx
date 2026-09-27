@@ -6,6 +6,7 @@ type Range = { start: string; end: string; kind: "reservation" | "blocked" };
 type Feed = { label: string; ok: boolean; error?: string; ranges: Range[] };
 type CheckResult = {
   feeds: Feed[];
+  diff: { complete: boolean; missingOnSite: string[]; onlyOnSite: string[] };
   blockedNights: { airbnbAndOther: string[]; direct: string[] };
   directBookings: Array<{ start: string; end: string; reference: string | null }>;
 };
@@ -62,6 +63,43 @@ export function CalendarCheck({ slug }: { slug: string }) {
         {loading ? "Checking…" : "Check calendars"}
       </button>
       {error && <p className="text-sm text-red-700">{error}</p>}
+      {result && (
+        <div
+          role="status"
+          className={`rounded-xl p-4 text-sm ${
+            !result.diff.complete || result.diff.missingOnSite.length
+              ? "border border-red-200 bg-red-50 text-red-800"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {!result.diff.complete ? (
+            <p>At least one calendar couldn&apos;t be read (see below), so this comparison is incomplete.</p>
+          ) : result.diff.missingOnSite.length ? (
+            <>
+              <p className="font-semibold">
+                Booked or blocked elsewhere but still open on Bunks: press “Sync now”, then check again.
+              </p>
+              <ul className="mt-1">
+                {toRanges(result.diff.missingOnSite).map((range) => (
+                  <li key={range.start}>
+                    {fmt(range.start)} → {fmt(range.end)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="font-semibold">In sync: every night booked or blocked on these calendars is unavailable on Bunks.</p>
+          )}
+          {result.diff.onlyOnSite.length > 0 && (
+            <p className="mt-2 text-gray-700">
+              Unavailable on Bunks only (direct bookings or your own blocks):{" "}
+              {toRanges(result.diff.onlyOnSite)
+                .map((range) => `${fmt(range.start)} → ${fmt(range.end)}`)
+                .join(", ")}
+            </p>
+          )}
+        </div>
+      )}
       {result && (
         <div className="grid gap-4 text-sm sm:grid-cols-2">
           {result.feeds.map((feed) => (
