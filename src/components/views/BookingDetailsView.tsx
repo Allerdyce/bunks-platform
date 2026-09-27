@@ -323,12 +323,12 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
       {
         label: "Check-in",
         value: booking.property.checkInTime ?? "3:00 PM",
-        helper: "Self check-in via keypad by garage",
+        helper: "Self check-in",
       },
       {
         label: "Check-out",
         value: booking.property.checkOutTime ?? "11:00 AM",
-        helper: "Cleaners arrive shortly after",
+        helper: "Please check out by this time",
       },
     ];
 
@@ -339,7 +339,7 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
     items.push({
       label: "Wi-Fi",
       value: wifiValue ?? securePlaceholder,
-      helper: wifiValue ? "Townhouse network & password" : "Full details emailed before arrival",
+      helper: wifiValue ? "Network / password" : "Full details emailed before arrival",
     });
 
     const codes = isPaidBooking && accessCodes?.available ? accessCodes.codes : null;
@@ -351,10 +351,10 @@ export function BookingDetailsView({ onNavigate: _onNavigate, initialLookup, onP
       });
     } else {
       if (codes.garageCode) {
-        items.push({ label: "Garage", value: codes.garageCode, helper: "Code + press enter" });
+        items.push({ label: "Garage", value: codes.garageCode });
       }
       if (codes.lockboxCode) {
-        items.push({ label: "Lockbox", value: codes.lockboxCode, helper: "Backup key by garage entry" });
+        items.push({ label: "Door code", value: codes.lockboxCode });
       }
       if (codes.skiLockerDoorCode || codes.skiLockerNumber || codes.skiLockerCode) {
         items.push({
