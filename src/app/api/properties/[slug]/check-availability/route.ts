@@ -1,6 +1,7 @@
 // src/app/api/properties/[slug]/check-availability/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUnavailableNights, parseStayDate } from '@/lib/bookingAvailability';
 
 export const runtime = 'nodejs';
 
@@ -9,10 +10,6 @@ type CheckAvailabilityBody = {
   checkOut: string;
   guests?: number;
 };
-
-function normalizeToMidnight(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +20,6 @@ export async function POST(req: NextRequest) {
     const slug = parts[2]; // e.g. "api"->0, "properties"->1, slug->2
 
     const body = (await req.json()) as CheckAvailabilityBody;
-    console.log('[check-availability] Request:', { slug, body });
 
     if (!slug) {
       return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
@@ -47,12 +43,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const checkInDate = normalizeToMidnight(new Date(body.checkIn));
-    const checkOutDate = normalizeToMidnight(new Date(body.checkOut));
+    const checkInDate = parseStayDate(body.checkIn);
+    const checkOutDate = parseStayDate(body.checkOut);
 
-    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+    if (!checkInDate || !checkOutDate) {
       return NextResponse.json(
-        { error: 'Invalid date format' },
+        { error: 'Invalid date format (expected YYYY-MM-DD)' },
         { status: 400 }
       );
     }
@@ -64,39 +60,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1) Check blocked dates (Airbnb + DIRECT)
-    const anyBlocked = await prisma.blockedDate.findFirst({
-      where: {
-        propertyId: property.id,
-        date: {
-          gte: checkInDate,
-          lt: checkOutDate,
-        },
-      },
+    // Checkout holds are enforced when the booking is created, not in the public quote.
+    const unavailable = await getUnavailableNights(property.id, checkInDate, checkOutDate, {
+      includePendingHolds: false,
     });
 
-    if (anyBlocked) {
+    if (unavailable.size > 0) {
       return NextResponse.json({
         available: false,
-        reason: 'DATES_BLOCKED',
-      });
-    }
-
-    // 2) Check overlapping PAID bookings (double-check)
-    const overlappingBooking = await prisma.booking.findFirst({
-      where: {
-        propertyId: property.id,
-        status: 'PAID',
-        // overlap: start < requested end AND end > requested start
-        checkInDate: { lt: checkOutDate },
-        checkOutDate: { gt: checkInDate },
-      },
-    });
-
-    if (overlappingBooking) {
-      return NextResponse.json({
-        available: false,
-        reason: 'EXISTING_BOOKING',
+        reason: 'DATES_UNAVAILABLE',
+        unavailableNights: Array.from(unavailable).sort(),
       });
     }
 
@@ -116,13 +89,10 @@ export async function POST(req: NextRequest) {
       available: true,
       quote
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error checking availability:', error);
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: String(error?.message ?? error),
-      },
+      { error: 'Unable to check availability right now.' },
       { status: 500 }
     );
   }

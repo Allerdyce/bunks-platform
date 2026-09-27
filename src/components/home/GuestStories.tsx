@@ -1,10 +1,4 @@
 import Image from "next/image";
-import { PROPERTY_REVIEWS } from "@/data/reviews";
-
-const stories = [
-  PROPERTY_REVIEWS["summerland-ocean-view-beach-bungalow"][0],
-  PROPERTY_REVIEWS["steamboat-downtown-townhome"][1],
-];
 
 export function GuestStories() {
   return (
@@ -16,16 +10,15 @@ export function GuestStories() {
           great memories.
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
-          <figure className="flex min-h-[380px] flex-col justify-between rounded-lg bg-[#b5ced9] p-7 lg:p-9">
-            <blockquote className="text-lg font-medium leading-relaxed">
-              “{stories[0].body}”
-            </blockquote>
-            <figcaption className="mt-10 text-sm">
-              <span className="font-semibold">{stories[0].guestName}</span>
-              <br />
-              Summerland · {stories[0].stayDate}
-            </figcaption>
-          </figure>
+          <div className="flex min-h-[380px] flex-col justify-between rounded-lg bg-[#b5ced9] p-7 lg:p-9">
+            <h3 className="text-lg font-medium leading-relaxed">
+              Slow mornings. Salt air. A little room to unwind.
+            </h3>
+            <p className="mt-10 text-sm">
+              Coffee on the deck, a walk by the ocean, and time together. Make
+              yourself at home in Summerland.
+            </p>
+          </div>
           <div className="relative min-h-[380px] overflow-hidden rounded-lg">
             <Image
               src="/2211-lillie-ave/exterior/exterior-1.webp"
@@ -38,16 +31,15 @@ export function GuestStories() {
               A little more time together.
             </span>
           </div>
-          <figure className="flex min-h-[380px] flex-col justify-between rounded-lg bg-[#c6d8bf] p-7 lg:p-9">
-            <blockquote className="text-lg font-medium leading-relaxed">
-              “{stories[1].body}”
-            </blockquote>
-            <figcaption className="mt-10 text-sm">
-              <span className="font-semibold">{stories[1].guestName}</span>
-              <br />
-              Steamboat Springs · {stories[1].stayDate}
-            </figcaption>
-          </figure>
+          <div className="flex min-h-[380px] flex-col justify-between rounded-lg bg-[#c6d8bf] p-7 lg:p-9">
+            <h3 className="text-lg font-medium leading-relaxed">
+              Fresh mountain air. A place to gather after a day outside.
+            </h3>
+            <p className="mt-10 text-sm">
+              Find your own pace in Steamboat Springs, from snowy weekends to
+              long summer days.
+            </p>
+          </div>
         </div>
       </div>
     </section>

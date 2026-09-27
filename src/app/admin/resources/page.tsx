@@ -82,8 +82,8 @@ export default function AdminResourcesPage() {
   const [authState, setAuthState] = useState<
     "checking" | "unauthenticated" | "authenticated"
   >("checking");
-  const [email, setEmail] = useState("ali@bunks.com");
-  const [password, setPassword] = useState("PMbunks101!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -498,7 +498,7 @@ export default function AdminResourcesPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -trangray-y-1/2 text-gray-500" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                 </div>
                 <button
                   type="button"

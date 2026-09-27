@@ -39,17 +39,9 @@ export const OPS_PRESETS: OpsPreset[] = [
         value: `${STEAMBOAT_GUIDE.propertyBasics.wifi.ssid} / ${STEAMBOAT_GUIDE.propertyBasics.wifi.password}`,
       },
       {
-        label: "Garage code",
-        value: STEAMBOAT_GUIDE.propertyBasics.garageCode,
-      },
-      {
-        label: "Lockbox",
-        value: STEAMBOAT_GUIDE.propertyBasics.lockboxCode,
-      },
-      {
-        label: "Ski locker",
-        value: `Door ${STEAMBOAT_GUIDE.propertyBasics.skiLocker.doorCode} · Locker #${STEAMBOAT_GUIDE.propertyBasics.skiLocker.lockerNumber}`,
-        helper: `Locker code ${STEAMBOAT_GUIDE.propertyBasics.skiLocker.lockerCode}`,
+        label: "Door & lock codes",
+        value: "Stored on the property record",
+        helper: "Released to paid guests on their trip page 24h before check-in.",
       },
       {
         label: "Hosts",

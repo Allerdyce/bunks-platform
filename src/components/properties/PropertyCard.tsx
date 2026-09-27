@@ -40,10 +40,12 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
       </div>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="text-sm font-medium">{property.location}</p>
-        <span className="flex shrink-0 items-center gap-1 text-sm">
-          <Star className="h-3 w-3 fill-current" aria-hidden="true" />
-          {property.rating}
-        </span>
+        {property.reviews > 0 && property.rating > 0 && (
+          <span className="flex shrink-0 items-center gap-1 text-sm">
+            <Star className="h-3 w-3 fill-current" aria-hidden="true" />
+            {property.rating}
+          </span>
+        )}
       </div>
       <h3 className="mb-3 font-serif text-2xl font-normal sm:text-3xl">
         {property.name}
@@ -58,7 +60,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
         <span className="flex items-center gap-2 font-medium">
           Explore home{" "}
           <ArrowUpRight
-            className="h-4 w-4 transition-transform group-hover:trangray-x-0.5"
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
             aria-hidden="true"
           />
         </span>

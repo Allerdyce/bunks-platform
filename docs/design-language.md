@@ -19,9 +19,9 @@ Use serif for page titles and editorial moments; use 20px semibold sans-serif fo
 
 ## Marketing composition
 
-The homepage leads with full-bleed Bunks photography, a centered two-line serif title, and one primary action. Its centered semibold navigation overlays the photograph and becomes opaque on scroll. Use white space between distinct sections: the real home collection, three benefits, alternating photography and copy, existing guest reviews, and a native disclosure FAQ. About follows the same typography and spacing with a centered introduction and an editorial story.
+The homepage leads with full-bleed Bunks photography, a centered two-line serif title, and one primary action. Its centered semibold navigation overlays the photograph and becomes opaque on scroll. Use white space between distinct sections: the real home collection, three benefits, alternating photography and copy, editorial destination panels, and a native disclosure FAQ. About follows the same typography and spacing with a centered introduction and an editorial story.
 
-Keep marketing headings separate from operational property headings. Use the shared marketing container, section spacing, title, and button classes; avoid oversized italic headlines and repeated beige cards. All photographs are Bunks assets and guest quotations come from the existing property review data. Do not import Kindred membership, swapping, scale, or press claims into this direct-booking product.
+Keep marketing headings separate from operational property headings. Use the shared marketing container, section spacing, title, and button classes; avoid oversized italic headlines and repeated beige cards. All photographs are Bunks assets. Destination panels use editorial copy, not testimonials; display ratings only when sourced reviews exist. Do not import Kindred membership, swapping, scale, or press claims into this direct-booking product.
 
 ## Site-wide interiors and operations
 
@@ -42,10 +42,12 @@ The platform starts with two owned homes and is intended to onboard more. Write 
 | Wi-Fi connection and return-booking offer, light/dark variants | connect/[slug], WifiConnectForm |
 | Privacy | Readable open sections; legal text unchanged |
 | Host tax helper | TotToolLayout, TotWizard; calculations unchanged |
-| Admin details, pricing, emails, resources, messages, guests | Admin layout, AdminTopNav, all six route views and admin components |
+| Admin details, setup, pricing, emails, resources, messages, guests | Admin layout, AdminTopNav, all seven route views and admin components |
 | Cleaner sign-in, properties, property checklists | Cleaner layouts, ChecklistViewer, ResourceList, LogoutButton |
 | Missing routes | Branded not-found page |
 
 ### Verification boundaries
 
 TypeScript and targeted lint validate the updated code. Browser checks cover public pages, trip lookup, Wi-Fi entry, cleaner sign-in, all six signed-in admin routes, and phone-width overflow on admin, privacy and the tax tool. Local admin data APIs can fail without a database; resource checklists and email previews use existing sample/static data. Populated pricing/guest/message data, cleaner-authenticated pages, payment completion and booked-trip states require their configured services or real sessions; their shared UI is updated but those end-to-end flows are not claimed as tested. Production was inspected read-only; no content, pricing, bookings or campaigns were changed.
+
+PR #2 launch fixes are integrated into the design branch. The production bunks-platform build passed; TESTA returns Booking not found on production, so its populated trip flow remains unverified there. The new setup page inherits the operations theme. Booking lookup errors now use readable guidance rather than raw JSON.

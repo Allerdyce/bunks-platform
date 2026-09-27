@@ -12,14 +12,17 @@ import { sendPaymentFailure } from '@/lib/email/sendPaymentFailure';
 import Stripe from 'stripe';
 import { isFeatureEnabled } from '@/lib/featureFlags';
 import { PriceLabsService } from '@/lib/pricelabs/service';
+import { sendEmail } from '@/lib/email/sendEmail';
+import {
+  blockBookingNights,
+  isRangeAvailable,
+  releaseBookingNights,
+  withPropertyLock,
+} from '@/lib/bookingAvailability';
 
 export const runtime = 'nodejs';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-function normalizeToMidnight(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
 function capitalize(value: string) {
   if (!value) return value;
@@ -80,10 +83,7 @@ export async function POST(req: NextRequest) {
     event = stripeClient.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
     console.error('Error verifying Stripe webhook:', err);
-    return NextResponse.json(
-      { error: 'Invalid signature', details: String(err?.message ?? err) },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   try {
@@ -101,51 +101,71 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // 1) Mark booking as PAID
-      if (booking.status !== 'PAID') {
-        await prisma.booking.update({
-          where: { id: booking.id },
-          data: { status: 'PAID' },
-        });
-      }
-
-      // 2) Block dates for this booking (DIRECT source)
-      const checkInDate = normalizeToMidnight(new Date(booking.checkInDate));
-      const checkOutDate = normalizeToMidnight(new Date(booking.checkOutDate));
-
-      const blockedDates: Date[] = [];
-      const cursor = new Date(checkInDate);
-      while (cursor < checkOutDate) {
-        blockedDates.push(
-          new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())
+      if (paymentIntent.amount_received !== booking.totalPriceCents) {
+        console.error(
+          `Stripe amount mismatch for booking ${booking.id}: received ${paymentIntent.amount_received}, expected ${booking.totalPriceCents}`
         );
-        cursor.setDate(cursor.getDate() + 1);
       }
 
-      if (blockedDates.length > 0) {
-        const uniqueIsoDates = Array.from(
-          new Set(blockedDates.map((d) => d.toISOString()))
+      // 1) Confirm the booking under the property lock: only a PENDING booking whose dates
+      //    are still free becomes PAID. Stripe retries are no-ops once it is PAID.
+      const outcome = await withPropertyLock(booking.propertyId, async (tx) => {
+        const current = await tx.booking.findUnique({ where: { id: booking.id } });
+        if (!current || current.status === 'PAID') {
+          return 'already-processed' as const;
+        }
+        const stillAvailable =
+          current.status === 'PENDING' &&
+          (await isRangeAvailable(
+            current.propertyId,
+            current.checkInDate,
+            current.checkOutDate,
+            { excludeBookingIds: [current.id], includePendingHolds: false },
+            tx
+          ));
+        if (!stillAvailable) {
+          await tx.booking.update({ where: { id: current.id }, data: { status: 'CANCELLED' } });
+          return 'conflict' as const;
+        }
+        await tx.booking.update({ where: { id: current.id }, data: { status: 'PAID' } });
+        // 2) Block dates for this booking (DIRECT source)
+        await blockBookingNights(current, tx);
+        return 'paid' as const;
+      });
+
+      if (outcome === 'already-processed') {
+        return NextResponse.json({ received: true });
+      }
+
+      if (outcome === 'conflict') {
+        console.error(`Booking ${booking.id} paid after its dates became unavailable; refunding.`);
+        await stripeClient.refunds.create(
+          { payment_intent: paymentIntentId, reason: 'duplicate' },
+          { idempotencyKey: `conflict-refund-${booking.id}` }
         );
-
-        await prisma.blockedDate.createMany({
-          data: uniqueIsoDates.map((iso) => ({
-            propertyId: booking.propertyId,
-            date: new Date(iso),
-            source: 'DIRECT',
-          })),
-          skipDuplicates: true,
-        });
+        const property = await prisma.property.findUnique({ where: { id: booking.propertyId } });
+        const alertTo = property?.hostSupportEmail || process.env.ADMIN_EMAIL || 'ali@bunks.com';
+        try {
+          await sendEmail({
+            to: alertTo,
+            subject: `Action needed: booking ${booking.publicReference ?? booking.id} refunded (dates unavailable)`,
+            html: `<p>${booking.guestName} (${booking.guestEmail}) paid for ${property?.name ?? 'a property'} ` +
+              `${booking.checkInDate.toISOString().slice(0, 10)} → ${booking.checkOutDate.toISOString().slice(0, 10)}, ` +
+              `but those dates were no longer available when the payment completed. The payment was refunded automatically. ` +
+              `Please contact the guest.</p>`,
+          });
+        } catch (alertError) {
+          console.error('Failed to send booking conflict alert', alertError);
+        }
+        return NextResponse.json({ received: true });
       }
 
-      console.log(
-        `✅ Booking ${booking.id} marked PAID and ${blockedDates.length} dates blocked`
-      );
+      console.log(`✅ Booking ${booking.id} marked PAID and dates blocked`);
 
       // PriceLabs Sync
       try {
         const updatedBooking = { ...booking, status: 'PAID' as const };
         // Sync reservation (now PAID/Reserved status confirmed)
-        // @ts-ignore
         await PriceLabsService.syncReservation(updatedBooking);
         // Sync calendar (blocked dates)
         await PriceLabsService.syncCalendar(booking.propertyId);
@@ -208,6 +228,20 @@ export async function POST(req: NextRequest) {
           const formattedTotal = formatter.format(amount / 100);
 
           console.log(`💸 Refund detected for booking ${booking.id}: ${formattedTotal}`);
+
+          // A full refund cancels the stay and frees its dates.
+          if (charge.refunded && booking.status !== 'CANCELLED') {
+            await prisma.$transaction(async (tx) => {
+              await tx.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } });
+              await releaseBookingNights(booking, tx);
+            });
+            try {
+              await PriceLabsService.syncReservation({ ...booking, status: 'CANCELLED' });
+              await PriceLabsService.syncCalendar(booking.propertyId);
+            } catch (plError) {
+              console.error('Failed to sync refund cancellation to PriceLabs', plError);
+            }
+          }
 
           try {
             // Import dynamically or ensure top-level import exists
@@ -290,7 +324,7 @@ export async function POST(req: NextRequest) {
             amountDue: formattedAmount,
             dueBy: 'Immediately',
             failureReason: paymentIntent.last_payment_error?.message ?? 'Payment declined by bank',
-            paymentLink: `https://bunks.com/trips/${booking.publicReference ?? booking.id}`,
+            paymentLink: `https://bunks.com/my-trips/${booking.publicReference ?? booking.id}/essential`,
           });
           console.log(`✅ Sent payment failure email for booking ${booking.id}`);
         } catch (err) {
@@ -304,9 +338,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error('Error handling Stripe webhook:', err);
-    return NextResponse.json(
-      { error: 'Webhook handler error', details: String(err?.message ?? err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });
   }
 }

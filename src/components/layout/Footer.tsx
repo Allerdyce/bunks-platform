@@ -63,7 +63,12 @@ export function Footer({ onNavigate }: FooterProps) {
           </h4>
           <ul className="mt-4 space-y-2 text-sm text-[var(--color-text-secondary)]">
             <li>
-              <a href="mailto:stay@bunks.com">Get in touch</a>
+              <a
+                href="mailto:stay@bunks.com"
+                className="transition hover:text-[var(--color-text-primary)]"
+              >
+                Contact
+              </a>
             </li>
             <li>
               <Link
@@ -76,34 +81,10 @@ export function Footer({ onNavigate }: FooterProps) {
             </li>
             <li>
               <Link
-                href="/admin"
-                className="transition hover:text-[var(--color-text-primary)]"
-              >
-                Admin Login
-              </Link>
-            </li>
-            <li>
-              <Link
                 href="/privacy"
                 className="transition hover:text-[var(--color-text-primary)]"
               >
                 Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/cleaner/login"
-                className="transition hover:text-[var(--color-text-primary)]"
-              >
-                Cleaner Portal
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/tools/sb-tot"
-                className="transition hover:text-[var(--color-text-primary)]"
-              >
-                Taxes
               </Link>
             </li>
           </ul>

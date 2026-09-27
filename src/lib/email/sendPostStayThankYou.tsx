@@ -60,7 +60,7 @@ function defaultUpcomingReasons(propertyName: string): UpcomingReason[] {
       date: 'Late July',
       description: `Hike the ridge behind ${propertyName} and soak in the springs after.`,
       ctaLabel: 'Hold dates',
-      ctaUrl: 'https://bunks.com/trips/wildflowers',
+      ctaUrl: 'https://bunks.com',
     },
   ];
 }

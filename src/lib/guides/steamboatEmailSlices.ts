@@ -37,8 +37,7 @@ export function getSteamboatBookingConfirmationSlice(): SteamboatConfirmationSli
       { label: "Check-in", detail: propertyBasics.checkInTime, helper: "Keypad beside garage" },
       { label: "Check-out", detail: propertyBasics.checkOutTime },
       { label: "Wi-Fi", detail: `${propertyBasics.wifi.ssid} / ${propertyBasics.wifi.password}` },
-      { label: "Garage", detail: propertyBasics.garageCode },
-      { label: "Lockbox", detail: propertyBasics.lockboxCode, helper: "Behind garage entry" },
+      { label: "Door codes", detail: "On your trip page", helper: "Released 24 hours before check-in" },
     ],
   };
 }
@@ -48,12 +47,10 @@ export function getSteamboatPreStaySlice(): SteamboatPreStaySlice {
   return {
     essentials: [
       { label: "Wi-Fi", detail: `${propertyBasics.wifi.ssid} / ${propertyBasics.wifi.password}` },
-      { label: "Garage Code", detail: propertyBasics.garageCode },
-      { label: "Lockbox Code", detail: propertyBasics.lockboxCode },
       {
-        label: "Ski Locker",
-        detail: `Door ${propertyBasics.skiLocker.doorCode} · Locker #${propertyBasics.skiLocker.lockerNumber}`,
-        helper: `Locker code ${propertyBasics.skiLocker.lockerCode}`,
+        label: "Door & Ski Locker Codes",
+        detail: "On your trip page",
+        helper: "Released 24 hours before check-in",
       },
       { label: "Hosts", detail: `${propertyBasics.hosts[0].name} ${propertyBasics.hosts[0].phone}`, helper: `${propertyBasics.hosts[1].name} ${propertyBasics.hosts[1].phone}` },
     ],

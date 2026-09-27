@@ -6,6 +6,7 @@ import type {
   BookingResponse,
   ConversationMessage,
   Property,
+  TripAccessResponse,
 } from "@/types";
 
 const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
@@ -82,6 +83,12 @@ const mockApi = {
 
       },
     };
+  },
+  async fetchTripAccessCodes(_bookingReference: string, _guestEmail: string): Promise<TripAccessResponse> {
+    void _bookingReference;
+    void _guestEmail;
+    await delay(200);
+    return { available: false };
   },
   async fetchBlockedDates(slug: Property["slug"]): Promise<{ blockedDates: string[]; minStay: Record<string, number> }> {
     await delay(300);
@@ -257,8 +264,20 @@ const realApi = {
     const encodedRef = encodeURIComponent(bookingReference.trim());
     const res = await fetch(`/api/bookings/${encodedRef}?${params.toString()}`);
     if (!res.ok) {
-      const message = await res.text();
-      throw new Error(message || "Failed to load booking details");
+      throw new Error(
+        res.status === 404
+          ? "We couldn't find that booking. Check your 5-character reference and booking email, then try again."
+          : "We couldn't load your booking right now. Please try again in a moment.",
+      );
+    }
+    return res.json();
+  },
+  async fetchTripAccessCodes(bookingReference: string, guestEmail: string): Promise<TripAccessResponse> {
+    const params = new URLSearchParams({ email: guestEmail });
+    const encodedRef = encodeURIComponent(bookingReference.trim());
+    const res = await fetch(`/api/trip-access/${encodedRef}?${params.toString()}`, { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("Failed to load access codes");
     }
     return res.json();
   },

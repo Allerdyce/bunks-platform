@@ -34,6 +34,7 @@ import { Button } from "@/components/shared/Button";
 import { ImageLightbox } from "@/components/shared/ImageLightbox";
 import { PROPERTY_REVIEWS } from "@/data/reviews";
 import { api } from "@/lib/api";
+import { formatStayDate } from "@/lib/availability";
 
 interface PropertyDetailViewProps {
   property: Property;
@@ -120,7 +121,15 @@ export function PropertyDetailView({
   const comparableNightlyRate = Math.ceil((property.price * 1.1) / 10) * 10;
   const nightlyRateLabel = formatCurrency(property.price);
   const comparableRateLabel = formatCurrency(comparableNightlyRate);
-  const reviewCount = property.reviews;
+  // Ratings are derived from real guest reviews only; with none, all rating UI is hidden.
+  const reviewCount = propertyReviews.length;
+  const averageRating = reviewCount
+    ? Math.round(
+        (propertyReviews.reduce((sum, review) => sum + review.rating, 0) /
+          reviewCount) *
+          100,
+      ) / 100
+    : 0;
   const savingsCopy =
     "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
@@ -143,8 +152,8 @@ export function PropertyDetailView({
           {
             method: "POST",
             body: JSON.stringify({
-              checkIn: bookingDates.start.toISOString(),
-              checkOut: bookingDates.end.toISOString(),
+              checkIn: formatStayDate(bookingDates.start),
+              checkOut: formatStayDate(bookingDates.end),
               guests: guestCount,
             }),
           },
@@ -205,8 +214,8 @@ export function PropertyDetailView({
           {
             method: "POST",
             body: JSON.stringify({
-              checkIn: pendingRange.start.toISOString(),
-              checkOut: pendingRange.end.toISOString(),
+              checkIn: formatStayDate(pendingRange.start),
+              checkOut: formatStayDate(pendingRange.end),
               guests: guestCount,
             }),
           },
@@ -441,24 +450,27 @@ export function PropertyDetailView({
                 {property.name}
               </h1>
             </div>
-            <div className="text-right hidden sm:block shrink-0">
-              <div className="flex items-center gap-1 justify-end mb-1">
-                <Star className="w-4 h-4 fill-current text-gray-900" />
-                <span className="font-medium text-lg">{property.rating}</span>
+            {hasPropertyReviews && (
+              <div className="text-right hidden sm:block shrink-0">
+                <div className="flex items-center gap-1 justify-end mb-1">
+                  <Star className="w-4 h-4 fill-current text-gray-900" />
+                  <span className="font-medium text-lg">{averageRating}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={openReviewsModal}
+                  className="text-sm text-gray-500 underline underline-offset-4 decoration-dotted hover:text-gray-900 whitespace-nowrap"
+                >
+                  {reviewCountLabel}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={openReviewsModal}
-                className="text-sm text-gray-500 underline underline-offset-4 decoration-dotted hover:text-gray-900 whitespace-nowrap"
-              >
-                {reviewCountLabel}
-              </button>
-            </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-x-8 gap-y-4 py-6 border-b border-gray-200 mb-8">
             <span className="flex items-center gap-2 text-gray-600">
-              <Users className="w-5 h-5" /> {property.guests} Guests
+              <Users className="w-5 h-5" /> {property.guests}{" "}
+              {property.guests === 1 ? "Guest" : "Guests"}
             </span>
             <span className="flex items-center gap-2 text-gray-600">
               <Bed className="w-5 h-5" /> {property.bedrooms} Bedrooms
@@ -741,15 +753,17 @@ export function PropertyDetailView({
                   </p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={openReviewsModal}
-                className="flex items-center gap-1 text-sm text-gray-500 underline decoration-dotted underline-offset-4 hover:text-gray-900"
-              >
-                <Star className="w-3 h-3 fill-current" />
-                {property.rating}
-                <span className="text-gray-400">({reviewCount})</span>
-              </button>
+              {hasPropertyReviews && (
+                <button
+                  type="button"
+                  onClick={openReviewsModal}
+                  className="flex items-center gap-1 text-sm text-gray-500 underline decoration-dotted underline-offset-4 hover:text-gray-900"
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                  {averageRating}
+                  <span className="text-gray-400">({reviewCount})</span>
+                </button>
+              )}
             </div>
 
             <div className="border border-gray-200 rounded-xl mb-6 overflow-hidden">
@@ -799,7 +813,7 @@ export function PropertyDetailView({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -trangray-y-1/2 text-gray-500" />
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                 </div>
               </div>
             </div>
@@ -905,14 +919,14 @@ export function PropertyDetailView({
         </div>
       )}
 
-      {reviewsOpen && (
+      {reviewsOpen && hasPropertyReviews && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 px-4">
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>
                 <p className="section-heading text-gray-900">Guest reviews</p>
                 <p className="text-sm text-gray-500">
-                  {reviewCountLabel} · Rated {property.rating}
+                  {reviewCountLabel} · Rated {averageRating}
                 </p>
               </div>
               <button

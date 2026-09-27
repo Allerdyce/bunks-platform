@@ -251,7 +251,7 @@ export function WifiConnectForm({
         ) : (
           <>
             Connect Now{" "}
-            <ArrowRight className="w-5 h-5 group-hover:trangray-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </>
         )}
       </button>

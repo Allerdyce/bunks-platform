@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isValidPriceLabsIntegrationToken } from "@/lib/pricelabs/integrationToken";
 
 export async function POST(req: NextRequest) {
     // 1. Connectivity Check / Verification Probe
@@ -31,30 +32,7 @@ export async function POST(req: NextRequest) {
     // let's try to be more permissive for the "registration" phase if needed, OR ensure we match exact header.
     // NextRequest headers are case-insensitive `get()`.
 
-    if (token !== process.env.PRICELABS_INTEGRATION_TOKEN) {
-        // Fallback: Check if they passed it in query string? (PriceLabs sometimes does `?token=...`)
-        // The guide says "Store the integration token... will use it in ... headers".
-
-        // Relaxing for registration probe:
-        // If body represents a probe/verify?
-        // We haven't read body yet.
-        // Let's read body safely.
-
-        // Return 401 strictly for security, BUT maybe logged error helps.
-        // Let's try to debug by returning the received token in error message (temp)? No, security risk.
-        // Let's check if the token env var is actually set correctly in local dev?
-        // The script ran passed, so env var is there.
-
-        // Maybe PriceLabs sends headers as `X-Integration-Token` and Next.js normalizes?
-        // `req.headers.get` is case-insensitive.
-
-        // Is it possible the Hook URL verification sends a DIFFERENT token?
-        // Or no token (public ping)?
-        // Guide: "Hook URL (Optional)... PriceLabs may call this..."
-        // Doesn't explicitly say "Verification call includes token".
-        // But usually it does.
-
-        // Let's try to parse body first to see if it's a verify attempt?
+    if (!isValidPriceLabsIntegrationToken(token)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

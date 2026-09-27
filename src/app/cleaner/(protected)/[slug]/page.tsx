@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { CLEANING_PROFILES } from "@/lib/cleaning/data";
+import { requireCleanerSession } from "@/lib/cleanerSession";
 import { ChecklistViewer } from "@/components/resources/ChecklistViewer";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -9,6 +10,7 @@ interface Params {
 }
 
 export default async function CleanerPropertyPage({ params }: Params) {
+  await requireCleanerSession();
   const { slug } = await params;
   const profile = CLEANING_PROFILES.find((p) => p.slug === slug);
 

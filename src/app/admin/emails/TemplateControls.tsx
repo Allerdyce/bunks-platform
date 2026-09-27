@@ -315,7 +315,7 @@ export function TemplateControls({
                         >
                           <span
                             className={`pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                              isEnabled ? "trangray-x-5" : "trangray-x-0"
+                              isEnabled ? "translate-x-5" : "translate-x-0"
                             }`}
                           />
                         </button>

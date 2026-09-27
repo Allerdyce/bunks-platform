@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CLEANING_PROFILES } from "@/lib/cleaning/data";
+import { requireCleanerSession } from "@/lib/cleanerSession";
 
-export default function CleanerDashboard() {
+export default async function CleanerDashboard() {
+  await requireCleanerSession();
+
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div className="space-y-2">

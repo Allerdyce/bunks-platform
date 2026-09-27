@@ -1,6 +1,7 @@
 
 import { render } from '@react-email/components';
 import { sendEmail } from './sendEmail';
+import { MessageStream } from './postmark';
 import { BookDirectCampaignEmail } from '@/emails/BookDirectCampaignEmail';
 
 interface WifiLeadCampaignOptions {
@@ -15,5 +16,7 @@ export async function sendWifiLeadCampaign({ email, name }: WifiLeadCampaignOpti
         to: email,
         subject: "Until next time: 10% off when you book direct",
         html: emailHtml,
+        category: 'marketing',
+        messageStream: MessageStream.broadcast,
     });
 }

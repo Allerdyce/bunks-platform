@@ -1,25 +1,23 @@
 // src/app/api/bookings/route.ts
 import { Prisma, Property as PrismaProperty } from '@prisma/client';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripeClient } from '@/lib/stripe';
-import { isFeatureEnabled } from '@/lib/featureFlags';
-import { PriceLabsService } from '@/lib/pricelabs/service';
+import {
+  isRangeAvailable,
+  nightsBetween,
+  parseStayDate,
+  pendingHoldCutoff,
+  withPropertyLock,
+} from '@/lib/bookingAvailability';
+import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 
 export const runtime = 'nodejs';
 
 
 
-function normalizeToMidnight(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
-function diffInNights(start: Date, end: Date) {
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const diffMs = end.getTime() - start.getTime();
-  return Math.max(1, Math.ceil(diffMs / msPerDay));
-}
 
 type CreateBookingBody = {
   propertySlug: string;
@@ -140,21 +138,6 @@ function isBookingReferenceCollision(error: unknown) {
   return false;
 }
 
-function parseActivityDate(value?: string | null) {
-  if (!value) return null;
-  const [yearStr, monthStr, dayStr] = value.split("-");
-  const year = Number.parseInt(yearStr ?? "", 10);
-  const month = Number.parseInt(monthStr ?? "", 10);
-  const day = Number.parseInt(dayStr ?? "", 10);
-
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return null;
-  }
-
-  const parsed = new Date(year, month - 1, day);
-
-  return normalizeToMidnight(parsed);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -171,7 +154,6 @@ export async function POST(req: NextRequest) {
 
     const property = await prisma.property.findUnique({
       where: { slug: propertySlug },
-      // @ts-ignore
       include: { taxes: true },
     });
 
@@ -184,12 +166,12 @@ export async function POST(req: NextRequest) {
 
 
 
-    const checkInDate = normalizeToMidnight(new Date(checkIn));
-    const checkOutDate = normalizeToMidnight(new Date(checkOut));
+    const checkInDate = parseStayDate(checkIn);
+    const checkOutDate = parseStayDate(checkOut);
 
-    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+    if (!checkInDate || !checkOutDate) {
       return NextResponse.json(
-        { error: 'Invalid date format' },
+        { error: 'Invalid date format (expected YYYY-MM-DD)' },
         { status: 400 }
       );
     }
@@ -201,7 +183,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const nights = diffInNights(checkInDate, checkOutDate);
+    // Allow "today" in any US timezone.
+    const earliestCheckIn = new Date(Date.now() - 36 * 60 * 60 * 1000);
+    if (checkInDate < earliestCheckIn) {
+      return NextResponse.json({ error: 'Check-in date is in the past' }, { status: 400 });
+    }
+
+    const nights = nightsBetween(checkInDate, checkOutDate);
     const minimumNights = PROPERTY_MINIMUM_NIGHTS[property.slug] ?? 1;
 
     if (nights < minimumNights) {
@@ -215,38 +203,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1) Check blocked dates (from Airbnb + DIRECT)
-    const anyBlocked = await prisma.blockedDate.findFirst({
-      where: {
-        propertyId: property.id,
-        date: {
-          gte: checkInDate,
-          lt: checkOutDate,
-        },
-      },
-    });
+    const normalizedEmail = guestEmail.trim().toLowerCase();
 
-    if (anyBlocked) {
+    // Pull the latest Airbnb calendar before taking payment.
+    await syncAirbnbCalendarIfStale(property, 2 * 60_000);
+
+    // Fast pre-check (repeated under the property lock before inserting).
+    if (!(await isRangeAvailable(property.id, checkInDate, checkOutDate, { ignorePendingForEmail: normalizedEmail }))) {
       return NextResponse.json(
-        { available: false, reason: 'DATES_BLOCKED' },
-        { status: 409 }
-      );
-    }
-
-    // 2) Check overlapping paid bookings (belt & braces)
-    const overlappingBooking = await prisma.booking.findFirst({
-      where: {
-        propertyId: property.id,
-        status: 'PAID',
-        // overlap: start < requested end AND end > requested start
-        checkInDate: { lt: checkOutDate },
-        checkOutDate: { gt: checkInDate },
-      },
-    });
-
-    if (overlappingBooking) {
-      return NextResponse.json(
-        { available: false, reason: 'EXISTING_BOOKING' },
+        { available: false, reason: 'DATES_UNAVAILABLE' },
         { status: 409 }
       );
     }
@@ -317,38 +282,87 @@ export async function POST(req: NextRequest) {
       nightlyLineItems
     } = quote;
 
-    // 4) Create booking in DB with PENDING status
+    // 4) Create booking in DB with PENDING status, holding the dates while the guest pays.
     await ensureBookingReferenceColumn();
+
+    const stripe = getStripeClient();
 
     type CreatedBooking = Awaited<ReturnType<typeof prisma.booking.create>>;
     let booking: CreatedBooking | null = null;
-    let bookingReference: string | null = null;
+    let reusedBooking: CreatedBooking | null = null;
 
-    for (let attempt = 0; attempt < BOOKING_REFERENCE_INSERT_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt < BOOKING_REFERENCE_INSERT_ATTEMPTS && !booking; attempt += 1) {
       const candidateReference = await generateUniqueBookingReference();
       try {
-        booking = await prisma.$transaction(async (tx) => {
-          const createdBooking = await tx.booking.create({
+        const result = await withPropertyLock(property.id, async (tx) => {
+          // Same guest restarting checkout: reuse their hold for identical dates, release other holds.
+          const ownHolds = await tx.booking.findMany({
+            where: {
+              propertyId: property.id,
+              status: 'PENDING',
+              createdAt: { gte: pendingHoldCutoff() },
+              guestEmail: { equals: normalizedEmail, mode: 'insensitive' },
+            },
+          });
+          const sameStay = ownHolds.find(
+            (hold) =>
+              hold.checkInDate.getTime() === checkInDate.getTime() &&
+              hold.checkOutDate.getTime() === checkOutDate.getTime() &&
+              hold.totalPriceCents === totalPriceCents &&
+              hold.stripePaymentIntentId.startsWith('pi_')
+          );
+          if (sameStay) {
+            return { reused: sameStay };
+          }
+          if (ownHolds.length) {
+            await tx.booking.updateMany({
+              where: { id: { in: ownHolds.map((hold) => hold.id) } },
+              data: { status: 'CANCELLED' },
+            });
+          }
+
+          const available = await isRangeAvailable(property.id, checkInDate, checkOutDate, {}, tx);
+          if (!available) {
+            return { unavailable: true as const };
+          }
+
+          const created = await tx.booking.create({
             data: {
               propertyId: property.id,
               checkInDate,
               checkOutDate,
-              guestName,
-              guestEmail,
+              guestName: guestName.trim(),
+              guestEmail: normalizedEmail,
               totalPriceCents,
               status: 'PENDING',
-              stripePaymentIntentId: '',
+              // Unique placeholder until the PaymentIntent exists.
+              stripePaymentIntentId: `pending_${randomUUID()}`,
               publicReference: candidateReference,
             },
           });
-
-
-
-          return createdBooking;
+          return { created, released: ownHolds };
         });
 
-        bookingReference = booking.publicReference ?? candidateReference;
-        break;
+        if ('unavailable' in result) {
+          return NextResponse.json(
+            { available: false, reason: 'DATES_UNAVAILABLE' },
+            { status: 409 }
+          );
+        }
+
+        if ('reused' in result && result.reused) {
+          reusedBooking = result.reused;
+          break;
+        }
+
+        booking = result.created;
+
+        // Best effort: cancel PaymentIntents of the holds we released.
+        for (const released of result.released) {
+          if (released.stripePaymentIntentId.startsWith('pi_')) {
+            await stripe.paymentIntents.cancel(released.stripePaymentIntentId).catch(() => undefined);
+          }
+        }
       } catch (creationError) {
         if (isBookingReferenceCollision(creationError)) {
           console.warn('Booking reference collision detected, retrying');
@@ -358,61 +372,73 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!booking || !bookingReference) {
+    let clientSecret: string | null = null;
+
+    if (reusedBooking) {
+      const existingIntent = await stripe.paymentIntents.retrieve(reusedBooking.stripePaymentIntentId);
+      if (existingIntent.status !== 'canceled' && existingIntent.status !== 'succeeded') {
+        booking = reusedBooking;
+        clientSecret = existingIntent.client_secret;
+      } else {
+        await prisma.booking.update({ where: { id: reusedBooking.id }, data: { status: 'CANCELLED' } });
+        return NextResponse.json(
+          { error: 'Your previous checkout has expired. Please try again.' },
+          { status: 409 }
+        );
+      }
+    }
+
+    if (!booking) {
       console.error('Unable to create booking with a unique reference');
       return NextResponse.json(
-        { error: 'Internal server error', details: 'Unable to assign booking reference. Please try again.' },
+        { error: 'We could not start your booking. Please try again.' },
         { status: 500 }
       );
     }
 
-    const stripe = getStripeClient();
+    const bookingReference = booking.publicReference ?? '';
 
-    const paymentMetadata: Record<string, string> = {
-      bookingId: booking.id.toString(),
-      propertySlug,
-      checkIn: checkInDate.toISOString(),
-      checkOut: checkOutDate.toISOString(),
-    };
+    if (!clientSecret) {
+      const paymentMetadata: Record<string, string> = {
+        bookingId: booking.id.toString(),
+        propertySlug,
+        checkIn: checkInDate.toISOString().slice(0, 10),
+        checkOut: checkOutDate.toISOString().slice(0, 10),
+        guests: partySize.toString(),
+        booking_reference: bookingReference,
+      };
 
+      try {
+        const paymentIntent = await stripe.paymentIntents.create(
+          {
+            amount: totalPriceCents,
+            currency: 'usd',
+            receipt_email: normalizedEmail,
+            metadata: paymentMetadata,
+          },
+          { idempotencyKey: `booking-${booking.id}` }
+        );
 
-    paymentMetadata.guests = partySize.toString();
-
-    paymentMetadata.booking_reference = bookingReference;
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalPriceCents,
-      currency: 'usd',
-      receipt_email: guestEmail,
-      metadata: paymentMetadata,
-    });
-
-    // 6) Update booking with the PaymentIntent ID
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        stripePaymentIntentId: paymentIntent.id,
-      },
-    });
-
-    // PriceLabs Sync
-    try {
-      if (booking) {
-        // Sync reservation
-        await PriceLabsService.syncReservation(booking);
-        // Sync availability (blocks dates)
-        await PriceLabsService.syncCalendar(booking.propertyId);
+        // 6) Update booking with the PaymentIntent ID
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: { stripePaymentIntentId: paymentIntent.id },
+        });
+        clientSecret = paymentIntent.client_secret;
+      } catch (stripeError) {
+        // Release the hold so the dates aren't blocked by a checkout that can't be paid.
+        await prisma.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } }).catch(() => undefined);
+        throw stripeError;
       }
-    } catch (plError) {
-      console.error('Failed to sync new booking to PriceLabs', plError);
-      // Do not fail the request
     }
+
+    // PriceLabs is only told about bookings once they're paid (see the Stripe webhook).
 
     return NextResponse.json({
       ok: true,
       bookingId: booking.id,
       bookingReference,
-      clientSecret: paymentIntent.client_secret,
+      clientSecret,
       totalPriceCents,
       currency: 'usd',
       nights: nightlyLineItems.length,
@@ -425,21 +451,11 @@ export async function POST(req: NextRequest) {
         nightlyLineItems,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating booking:', error);
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: String(error?.message ?? error),
-      },
+      { error: 'We could not start your booking. Please try again or contact us.' },
       { status: 500 }
     );
-  } finally {
-    // PriceLabs Sync (Async, Fire-and-forget-ish but we are in serverless return 
-    // so we can't really await if we want speed, but Vercel might kill it. 
-    // Best practice: await it if critical.
-    // Also valid: It's inside the POST handler, so we can await before return or 
-    // use waitUntil if available (Next 15?). Here we just await inside the try block 
-    // BUT I put it in `finally`? No, `booking` might be null if failed.
   }
 }

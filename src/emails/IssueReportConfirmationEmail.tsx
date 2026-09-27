@@ -189,7 +189,7 @@ export function IssueReportConfirmationEmail(props: IssueReportConfirmationEmail
 
       <Hr className="my-6 border-[#EAECF0]" />
       <Text className="text-xs text-[#98A2B3]">
-        Ticket #{ticketId} · We monitor replies 24/7 and respond within minutes during active stays.
+        Ticket #{ticketId} · Reply to this email with any updates and our team will follow up.
       </Text>
     </EmailLayout>
   );

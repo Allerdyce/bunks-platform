@@ -75,8 +75,8 @@ const formatThreadTimestamp = (value?: string | null) => {
 
 export default function AdminMessagesPage() {
   const [authState, setAuthState] = useState<AuthState>("checking");
-  const [email, setEmail] = useState("ali@bunks.com");
-  const [password, setPassword] = useState("PMbunks101!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [threads, setThreads] = useState<AdminThreadSummary[]>([]);

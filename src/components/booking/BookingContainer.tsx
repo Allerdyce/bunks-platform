@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { GuestDetailsForm } from "./GuestDetailsForm";
 import { PaymentSection } from "./PaymentSection";
 import { BookingSummary } from "./BookingSummary";
+import { formatStayDate } from "@/lib/availability";
 
 interface BookingContainerProps {
   property: Property;
@@ -68,7 +69,7 @@ export function BookingContainer({
 
     const subtotal = nights * discountedNightlyRate;
     const cleaningFee = property.cleaningFee ?? 0;
-    const serviceFee = Math.round(subtotal * 0.15); // 15% Service Fee
+    const serviceFee = 0; // No service fee on direct bookings
     const total = subtotal + cleaningFee + serviceFee;
 
     return {
@@ -91,8 +92,8 @@ export function BookingContainer({
           {
             method: "POST",
             body: JSON.stringify({
-              checkIn: dates.start.toISOString(),
-              checkOut: dates.end.toISOString(),
+              checkIn: formatStayDate(dates.start),
+              checkOut: formatStayDate(dates.end),
               guests: guestCount,
             }),
           },
@@ -139,8 +140,8 @@ export function BookingContainer({
       const normalizedEmail = guestDetails.email.trim();
       const payload = {
         propertySlug: property.slug,
-        checkIn: dates.start.toISOString(),
-        checkOut: dates.end.toISOString(),
+        checkIn: formatStayDate(dates.start),
+        checkOut: formatStayDate(dates.end),
         guestName: `${guestDetails.firstName} ${guestDetails.lastName}`.trim(),
         guestEmail: normalizedEmail,
         guests: guestDetails.guests,
@@ -241,6 +242,8 @@ export function BookingContainer({
         <BookingSummary
           property={property}
           nights={nights}
+          dates={dates}
+          guests={guestDetails.guests}
           breakdown={pricingBreakdown}
           fallbackPricing={{
             nightlyRate: fallbackTotals.discountedNightlyRate,

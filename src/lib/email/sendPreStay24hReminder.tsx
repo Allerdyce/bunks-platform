@@ -75,7 +75,7 @@ export async function sendPreStay24hReminder(
   const nights = calculateNights(new Date(booking.checkInDate), new Date(booking.checkOutDate));
   const opsDetails = await getOpsDetails();
   const supportEmail = booking.property.hostSupportEmail ?? opsDetails.supportEmail;
-  const hostSupportPhone = options.hostSupportPhone ?? opsDetails.supportSmsNumber;
+  const hostSupportPhone = options.hostSupportPhone || opsDetails.supportSmsNumber || undefined;
   const checkInGuideUrl = resolveCheckInGuideUrl(booking) ?? toAbsoluteUrl(opsDetails.liveInstructionsUrl);
   const guestBookUrl = resolveGuestBookUrl(booking) ?? toAbsoluteUrl(opsDetails.guestBookUrl);
   const referenceLinks = buildReferenceLinks(opsDetails, { checkInGuideUrl, guestBookUrl });
@@ -106,7 +106,7 @@ export async function sendPreStay24hReminder(
       outstandingTasks={options.outstandingTasks ?? ['Share ETA via reply if delayed', 'Double-check you packed swim gear for the hot tub']}
       hostSupportEmail={supportEmail}
       hostSupportPhone={hostSupportPhone}
-      supportNote={`Reference booking ${bookingReference} or ${stayDates} if you text our concierge.`}
+      supportNote={`Reference booking ${bookingReference} or ${stayDates} when you contact us.`}
       referenceLinks={referenceLinks}
       supportDirectory={supportDirectory}
     />,
