@@ -1,23 +1,83 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { Check } from "lucide-react";
 
 export function ExperienceBanner() {
   return (
-    <section className="mx-auto mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="grid items-center gap-10 md:grid-cols-2 lg:gap-20">
-        <div className="relative aspect-[5/4] overflow-hidden rounded-xl">
-          <Image src="/2211-lillie-ave/hero.jpg" alt="A welcoming space to settle into at Bunks" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+    <div className="marketing-container space-y-20 pb-20 sm:space-y-28 sm:pb-28">
+      <section className="grid overflow-hidden rounded-lg bg-[#eeece8] md:grid-cols-2">
+        <div className="flex flex-col items-start justify-center px-7 py-12 sm:p-12 lg:p-16">
+          <p className="mb-6 text-sm font-semibold uppercase tracking-wide">
+            Book direct
+          </p>
+          <h2 className="marketing-title mb-6 text-4xl lg:text-5xl">
+            The same lovely home.
+            <br />A little more left
+            <br className="hidden lg:block" /> for the trip.
+          </h2>
+          <p className="mb-8 max-w-md text-lg leading-relaxed">
+            Save 10% compared to the same listing on other platforms when you
+            book with Bunks. Pick your dates to see your stay and full price
+            breakdown.
+          </p>
+          <Link href="/#listings" className="marketing-button">
+            Find your next stay
+          </Link>
         </div>
-        <div className="max-w-lg py-4">
-          <p className="eyebrow mb-5 text-gray-500">Stay a little closer</p>
-          <h2 className="editorial-title mb-6 text-4xl sm:text-5xl">Beautiful homes.<br />A human welcome.</h2>
-          <p className="mb-8 text-gray-600 leading-relaxed">The best trips have a way of making you feel like you belong. We bring together homes with character and people who know them, so you can settle in and enjoy being there.</p>
-          <Link href="/?view=about" className="inline-flex min-h-12 items-center gap-4 rounded-full border border-gray-300 px-6 text-sm font-medium transition-colors hover:bg-gray-100">Get to know Bunks <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></Link>
+        <div className="relative min-h-[330px] md:min-h-[580px]">
+          <Image
+            src="/2211-lillie-ave/living-room/living-room-4.webp"
+            alt="Light-filled seating and natural textures in the Summerland living room"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+          />
         </div>
-      </div>
-    </section>
+      </section>
+      <section className="grid items-center gap-10 md:grid-cols-2 lg:gap-16">
+        <div className="relative min-h-[380px] overflow-hidden rounded-lg sm:min-h-[560px] lg:min-h-[650px]">
+          <Image
+            src="/steamboat-pictures/exterior/exterior-4.jpg"
+            alt="The timber and stone exterior of our Steamboat townhome"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+          />
+        </div>
+        <div className="py-4 lg:px-6">
+          <p className="mb-6 text-sm font-semibold uppercase tracking-wide">
+            A warm welcome
+          </p>
+          <h2 className="marketing-title mb-9 text-4xl lg:text-5xl">
+            Settle in.
+            <br />
+            We’ll take it from here.
+          </h2>
+          <ul className="mb-9 divide-y divide-gray-200">
+            {[
+              "Homes professionally cleaned and prepared for your arrival",
+              "Clear arrival details, all in one place",
+              "Local favorites to help you find your feet",
+              "A direct line to your hosts during your stay",
+            ].map((item) => (
+              <li
+                key={item}
+                className="flex items-start gap-4 py-5 text-base leading-relaxed lg:text-lg"
+              >
+                <Check
+                  className="mt-1 h-5 w-5 shrink-0"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link href="/?view=about" className="marketing-button">
+            A little about us
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }

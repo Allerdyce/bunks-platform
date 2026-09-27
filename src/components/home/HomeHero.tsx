@@ -1,25 +1,55 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/shared/Button";
 
 export function HomeHero({ onExplore }: { onExplore: () => void }) {
   return (
-    <section className="mx-auto mb-16 max-w-7xl px-4 sm:px-6 lg:mb-24 lg:px-8">
-      <div className="grid overflow-hidden rounded-xl bg-[#e9e9df] lg:min-h-[580px] lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex flex-col items-start justify-center px-7 py-12 sm:px-12 sm:py-16 lg:px-14">
-          <p className="eyebrow mb-7 text-gray-600">Good places. Better together.</p>
-          <h1 className="editorial-title mb-6 text-5xl sm:text-6xl lg:text-[4.5rem]">Somewhere<br />you can<br /><em className="font-normal">feel at home.</em></h1>
-          <p className="mb-8 max-w-sm text-base leading-relaxed text-gray-600">Thoughtfully chosen homes. A little local knowledge. More time with your favorite people.</p>
-          <Button onClick={onExplore}>Find your next stay <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></Button>
-          <p className="mt-5 text-xs text-gray-600">Book directly with Bunks and save 10%.</p>
+    <>
+      <section className="relative isolate flex min-h-[640px] items-center justify-center overflow-hidden bg-gray-900 px-6 pb-24 pt-40 text-center text-white sm:min-h-[720px] lg:min-h-[min(850px,92svh)]">
+        <Image
+          src="/2211-lillie-ave/kitchen/kitchen-1.webp"
+          alt="A sunlit dining table opening onto the Pacific at our Summerland home"
+          fill
+          sizes="100vw"
+          priority
+          className="-z-20 object-cover object-[45%_55%]"
+        />
+        <div className="absolute inset-0 -z-10 bg-black/45" />
+        <div className="mx-auto max-w-2xl">
+          <p className="mb-6 text-sm font-medium text-white">
+            A small collection. A personal welcome.
+          </p>
+          <h1 className="marketing-title text-[46px] sm:text-6xl lg:text-[68px]">
+            Find your place.
+            <br />
+            Feel at home.
+          </h1>
+          <p className="mx-auto mb-8 mt-6 max-w-lg text-lg leading-relaxed text-white">
+            Coastal mornings and mountain weekends.
+            <br className="hidden sm:block" /> Beautiful homes, booked directly
+            with your hosts.
+          </p>
+          <Button
+            onClick={onExplore}
+            variant="secondary"
+            className="mx-auto border-white bg-white px-7 text-base text-gray-950 hover:bg-gray-100"
+          >
+            Explore our homes
+          </Button>
         </div>
-        <div className="relative min-h-[320px] sm:min-h-[440px]">
-          <Image src="/2211-lillie-ave/hero.jpg" alt="A sunlit Bunks home in Summerland, California" fill sizes="(max-width: 1024px) 100vw, 55vw" priority className="object-cover" />
-          <div className="absolute bottom-5 left-5 rounded-full bg-white/95 px-4 py-2 text-xs text-gray-900">Summerland, California</div>
-        </div>
-      </div>
-    </section>
+        <p className="absolute bottom-7 left-0 right-0 text-sm text-white/90">
+          At home in Summerland, California
+        </p>
+      </section>
+      <button
+        onClick={onExplore}
+        className="flex min-h-16 w-full items-center justify-center gap-4 bg-[#f9e8a6] px-6 py-4 text-sm font-semibold text-gray-950 sm:text-base"
+      >
+        A better way to stay. Book direct and save 10%.{" "}
+        <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+      </button>
+    </>
   );
 }

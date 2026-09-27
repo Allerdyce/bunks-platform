@@ -1,55 +1,75 @@
-"use client";
-
-import { Coffee, ShieldCheck, Star } from "lucide-react";
+import Link from "next/link";
+import { Coffee, KeyRound, House } from "lucide-react";
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: "Best Rate Guarantee",
-    desc: "Save on service fees when you book directly with us.",
-    accentBg: "bg-[#e1e4d8]",
-    accentText: "text-gray-700",
+    icon: KeyRound,
+    title: "Your home, for a little while",
+    description:
+      "Room to gather, a kitchen to cook in, and the freedom to make the day your own.",
+    color: "text-[#9c731b]",
+    background: "bg-[#fae8aa]",
+  },
+  {
+    icon: House,
+    title: "Book with the people who know it",
+    description:
+      "A direct connection to your hosts, from your first question to your last morning.",
+    color: "text-[#477993]",
+    background: "bg-[#d7eaf0]",
   },
   {
     icon: Coffee,
-    title: "Concierge Service",
-    desc: "Local recommendations and support throughout your stay.",
-    accentBg: "bg-[#e1e4d8]",
-    accentText: "text-gray-700",
-  },
-  {
-    icon: Star,
-    title: "Quality Assured",
-    desc: "Every property is professionally cleaned and inspected.",
-    accentBg: "bg-[#e1e4d8]",
-    accentText: "text-gray-700",
+    title: "The details, taken care of",
+    description:
+      "Professionally prepared homes, local recommendations, and support throughout your stay.",
+    color: "text-[#536f55]",
+    background: "bg-[#dfe9d9]",
   },
 ];
 
-export function WhyBook() {
+export function WhyBook({ showAboutLink = true }: { showAboutLink?: boolean }) {
   return (
-    <div className="bg-[var(--color-surface-alt)] py-16 sm:py-24 mb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="editorial-title text-4xl sm:text-5xl mb-4">A good stay starts with the little things.</h2>
-          <p className="text-gray-500 max-w-2xl mx-auto">
-            We bridge the gap between professional hospitality and the comfort of a home.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-12">
-          {FEATURES.map((feature) => (
-            <div key={feature.title} className="flex flex-col items-center text-center">
-              <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center mb-6 border border-white/60 ${feature.accentBg} ${feature.accentText}`}
-              >
-                <feature.icon className="w-6 h-6" />
+    <section className="marketing-section bg-white">
+      <div className="marketing-container">
+        <h2 className="marketing-title mx-auto max-w-3xl text-center text-3xl sm:text-[42px]">
+          A more personal way to get away.
+          <br className="hidden sm:block" /> A home, and the people behind it.
+        </h2>
+        <div className="mb-12 mt-12 grid gap-12 md:mb-16 md:mt-20 md:grid-cols-3 lg:gap-16">
+          {FEATURES.map(
+            ({ icon: Icon, title, description, color, background }) => (
+              <div key={title} className="mx-auto max-w-sm text-center">
+                <div
+                  className={`relative mx-auto mb-7 flex h-20 w-20 items-center justify-center ${color}`}
+                >
+                  <span
+                    className={`absolute inset-2 rotate-[-12deg] rounded-[35%_55%_40%_60%] ${background}`}
+                  />
+                  <Icon
+                    className="relative h-12 w-12"
+                    strokeWidth={1.25}
+                    aria-hidden="true"
+                  />
+                </div>
+                <h3 className="mb-3 text-base font-semibold tracking-normal">
+                  {title}
+                </h3>
+                <p className="text-base leading-relaxed text-gray-500 sm:text-lg">
+                  {description}
+                </p>
               </div>
-              <h3 className="font-serif text-xl text-gray-900 mb-3">{feature.title}</h3>
-              <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
-            </div>
-          ))}
+            ),
+          )}
         </div>
+        {showAboutLink && (
+          <div className="text-center">
+            <Link href="/?view=about" className="marketing-button">
+              Meet Bunks
+            </Link>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

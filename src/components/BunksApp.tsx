@@ -521,6 +521,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     <Layout
       onNavigate={handleNavigate}
       currentView={view}
+      immersiveHeader={view === "home"}
       bookingSection={bookingSection}
       bookingRef={pathBookingRef}
       hideFooter={isBookingViewState}
