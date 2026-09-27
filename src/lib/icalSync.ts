@@ -8,7 +8,9 @@ import { eachNight, toISODate, withPropertyLock } from "@/lib/bookingAvailabilit
 type SyncableProperty = { id: number; slug: string; airbnbIcalUrl: string | null };
 
 const PLACEHOLDER_ICAL_HOSTS = ["calendarlabs.com"];
-const lastSyncedAt = new Map<number, number>();
+// Keyed by property + feed URL, so changing the Airbnb link in Setup forces a fresh import.
+const lastSyncedAt = new Map<string, number>();
+const syncKey = (property: SyncableProperty) => `${property.id}:${property.airbnbIcalUrl ?? ''}`;
 
 const toUtcDay = (value: Date) => new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 const DAY_MS = 86_400_000;
@@ -90,7 +92,7 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
       throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug} (HTTP ${res.status})`, "FETCH_FAILED");
     }
   } catch (error) {
-    recordSyncFailure(property.id);
+    recordSyncFailure(property);
     if (error instanceof IcalSyncError) throw error;
     throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug}: ${(error as Error).message}`, "FETCH_FAILED");
   }
@@ -99,7 +101,7 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
   try {
     nights = parseIcalNights(text);
   } catch (error) {
-    recordSyncFailure(property.id);
+    recordSyncFailure(property);
     throw error;
   }
 
@@ -128,22 +130,20 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
       })),
     });
   }).catch((error) => {
-    recordSyncFailure(property.id);
+    recordSyncFailure(property);
     throw error;
   });
 
-  lastSyncedAt.set(property.id, Date.now());
-  lastFailedAt.delete(property.id);
+  lastSyncedAt.set(syncKey(property), Date.now());
+  lastFailedAt.delete(syncKey(property));
   return { ok: true as const, nights: nights.size };
 }
 
 // After a failure, wait before retrying from page loads so a broken feed isn't hit on every request.
 const FAILURE_BACKOFF_MS = 2 * 60_000;
-const lastFailedAt = new Map<number, number>();
-const recordSyncFailure = (propertyId: number) => lastFailedAt.set(propertyId, Date.now());
+const lastFailedAt = new Map<string, number>();
+const recordSyncFailure = (property: SyncableProperty) => lastFailedAt.set(syncKey(property), Date.now());
 
-/** When this instance last imported the property's Airbnb calendar successfully (ms epoch), if ever. */
-export const lastSuccessfulSyncAt = (propertyId: number) => lastSyncedAt.get(propertyId) ?? null;
 
 export type StaleSyncResult = "fresh" | "synced" | "failed" | "no-url";
 
@@ -158,8 +158,8 @@ export async function syncAirbnbCalendarIfStale(
   { retryImmediately = false }: { retryImmediately?: boolean } = {},
 ): Promise<StaleSyncResult> {
   if (!isUsableIcalUrl(property.airbnbIcalUrl)) return "no-url";
-  const last = lastSyncedAt.get(property.id) ?? 0;
-  const failedAt = lastFailedAt.get(property.id) ?? 0;
+  const last = lastSyncedAt.get(syncKey(property)) ?? 0;
+  const failedAt = lastFailedAt.get(syncKey(property)) ?? 0;
   if (failedAt > last) {
     // The latest attempt failed: report it until a retry (after the backoff) succeeds.
     // Checkout retries straight away; page loads back off so a broken feed isn't hammered.

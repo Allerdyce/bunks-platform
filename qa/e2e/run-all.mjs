@@ -137,7 +137,10 @@ def("Airbnb feed failures never erase reservations", async () => {
   clearEmails();
   const cron = await api("/api/cron/ical-sync", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("F7", "daily import failure emails an ops alert", cron.status === 200 && emails().some((m) => /Airbnb calendar import failed/.test(m.subject)), emails().map((m) => m.subject).join(" | "), "T-AV-02");
+  // A new feed URL has no fresh import on the booking route, so checkout must read it now.
+  await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: "http://localhost:8765/steamboat-broken.ics" } });
   const blocked = await book({ guestEmail: "during-outage@example.com" });
+  await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: "http://localhost:8765/steamboat.ics" } });
   check("F8", "checkout pauses (503, friendly message) while the Airbnb import is failing", blocked.status === 503 && /try again|email us/i.test(blocked.json?.message ?? ""), `${blocked.status} ${blocked.text}`, "T-AV-02");
   restoreIcal();
   await forceSync(SB);
