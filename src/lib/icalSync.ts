@@ -107,10 +107,32 @@ export async function syncAirbnbCalendar(property: SyncableProperty, options: { 
 
   let text = "";
   try {
-    const res = await fetch(property.airbnbIcalUrl, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+    const res = await fetch(property.airbnbIcalUrl, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+      // Some calendar hosts refuse requests that don't look like a calendar client.
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarSync/1.0; +https://bunks.com)",
+        Accept: "text/calendar, text/plain;q=0.9, */*;q=0.8",
+      },
+    });
     text = res.ok ? await res.text() : "";
-    if (!res.ok || !text.includes("BEGIN:VCALENDAR")) {
-      throw new IcalSyncError(`Airbnb iCal fetch failed for ${property.slug} (HTTP ${res.status})`, "FETCH_FAILED");
+    if (!res.ok) {
+      const hint =
+        res.status === 404 || res.status === 410
+          ? "the link wasn't found. It may have been reset in Airbnb; copy a fresh export link."
+          : res.status === 401 || res.status === 403
+            ? "Airbnb refused the request. Check the link is the full export link including ?t=…"
+            : res.status === 429
+              ? "Airbnb is rate-limiting requests. It will retry automatically."
+              : "Airbnb returned an error.";
+      throw new IcalSyncError(`Airbnb calendar for ${property.slug}: HTTP ${res.status}, ${hint}`, "FETCH_FAILED");
+    }
+    if (!text.includes("BEGIN:VCALENDAR")) {
+      throw new IcalSyncError(
+        `Airbnb calendar for ${property.slug}: the link returned a web page, not a calendar. Use the export link from Airbnb → Calendar → Availability → Connect calendars.`,
+        "FETCH_FAILED",
+      );
     }
   } catch (error) {
     recordSyncFailure(property, error);

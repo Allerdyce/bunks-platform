@@ -65,7 +65,7 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-EM-12 | P1 | A guest booking on the day of check-in got no door code until the next morning. | Fixed. It is sent at payment. | LM1–LM4 |
 | T-EM-14 | P2 | Steamboat-only copy (hot tub, low 30s, cabin, security keypad, concierge locker) went to Summerland guests too. | Fixed. | email renders |
 | T-EM-15 | P2 | Cancelling an unpaid, abandoned checkout emailed the guest "Cancellation confirmed $0". | Fixed. | C9 |
-| T-EM-02 | P1 | The marketing email has no postal address (a US CAN-SPAM requirement). | Parked. Marketing is paused. See HUMAN-TASKS. | — |
+| T-EM-02 | P1 | The marketing email had no postal address (a US CAN-SPAM requirement). | Fixed. Added Bunks LLC, 144 E Carrillo St, Santa Barbara, CA 93101 (the address in the privacy policy). | code |
 
 ## Security
 

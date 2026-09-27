@@ -80,7 +80,7 @@ Checkout now asks Stripe for **cards only** (Q3). Apple Pay and Google Pay are c
 ## 7. Later / optional
 
 - [ ] Airbnb: the old Steamboat export link (`…?s=fbedfa…`) is in this repo's git history. If it still works, Airbnb's **Reset link** makes it useless to anyone who has the repo. Then paste the new link into Setup (task 3a).
-- [ ] Before turning on marketing email: send me the postal address to add to the marketing footer (a US CAN-SPAM requirement), then set `EMAIL_SENDING_PAUSED=false`.
+- [ ] When you're ready for marketing email, set `EMAIL_SENDING_PAUSED=false`. The postal address is already in the footer (Bunks LLC, 144 E Carrillo St, Santa Barbara).
 - [ ] Rate limits (Q5): nothing to do for launch. If you see abuse, tell me and I'll set up Upstash.
 
 ## Your rulings (27 Sep)

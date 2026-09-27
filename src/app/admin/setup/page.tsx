@@ -127,6 +127,12 @@ function PropertySetupCard({
         throw new Error((data as { error?: string }).error || "Save failed");
       setStatus({ type: "success", text: "Saved" });
       onSaved();
+      // A new or changed Airbnb link is imported straight away, so any problem shows up now.
+      if ((form.airbnbIcalUrl ?? "").trim() && (form.airbnbIcalUrl ?? "") !== (initial.airbnbIcalUrl ?? "")) {
+        setSaving(false);
+        await handleSync();
+        return;
+      }
     } catch (err) {
       setStatus({ type: "error", text: (err as Error).message });
     } finally {
@@ -225,13 +231,15 @@ function PropertySetupCard({
             id={`ical-${form.id}`}
             value={form.airbnbIcalUrl ?? ""}
             onChange={(e) => set("airbnbIcalUrl", e.target.value)}
-            placeholder="https://www.airbnb.com/calendar/ical/….ics?s=…"
+            placeholder="https://www.airbnb.com/calendar/ical/….ics?t=…"
             className={inputClass}
           />
           <p className="mt-1 text-xs text-gray-500">
-            {initial.airbnbImportConfigured
-              ? `Connected · ${initial.upcomingAirbnbNights} upcoming Airbnb nights imported`
-              : "Not connected: Airbnb bookings are not being imported."}
+            {!initial.airbnbImportConfigured
+              ? "Not connected: Airbnb bookings are not being imported."
+              : initial.upcomingAirbnbNights > 0
+                ? `Connected · ${initial.upcomingAirbnbNights} upcoming Airbnb nights imported`
+                : "Link saved, but no upcoming Airbnb nights have been imported. Press “Sync now”: if it shows an error, copy a fresh link from Airbnb."}
           </p>
         </div>
       </section>

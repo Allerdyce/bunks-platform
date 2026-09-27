@@ -95,6 +95,9 @@ export const BookDirectCampaignEmail = ({
             <Text className="text-[#98A2B3] text-xs text-center mt-6">
                 Don&apos;t want these emails?{' '}
                 <Link href="{{{ pm:unsubscribe }}}" className="text-[#98A2B3] underline">Unsubscribe</Link>
+                <br />
+                {/* Postal address required on marketing email (CAN-SPAM); same as the privacy policy. */}
+                Bunks LLC · 144 E Carrillo St · Santa Barbara, CA 93101
             </Text>
 
         </EmailLayout>
