@@ -12,13 +12,7 @@ import type {
 } from "@/types";
 import { Button } from "@/components/shared/Button";
 import { SteamboatGuestGuide } from "@/components/guides/SteamboatGuestGuide";
-import { BookingMessages } from "@/components/messaging/BookingMessages";
 import { api } from "@/lib/api";
-import {
-  MessageThreadList,
-  type MessageThreadSummary,
-  MessagesLayout,
-} from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
 
 interface BookingDetailsViewProps {
@@ -67,17 +61,8 @@ const formatThreadTimestamp = (value?: string | null) => {
   }
 };
 
-import "ol/ol.css";
-import Map from "ol/Map";
-import View from "ol/View";
-import TileLayer from "ol/layer/Tile";
-import OSM from "ol/source/OSM";
-import { fromLonLat } from "ol/proj";
-import { Feature } from "ol";
-import { Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import { Icon, Style } from "ol/style";
+import { SUPPORT_EMAIL } from "@/lib/contact";
+import { guideUrlFor } from "@/data/guides";
 
 type EssentialMapProps = {
   propertyName: string;
@@ -86,87 +71,26 @@ type EssentialMapProps = {
   className?: string;
 };
 
-// Simple mock geocoding for demo purposes
-const MOCK_COORDS: Record<string, [number, number]> = {
-  steamboat: [-106.8317, 40.485],
-  summerland: [-119.5965, 34.4208],
-};
-
-function EssentialMap({
-  propertyName,
-  location,
-  address,
-  className = "h-[520px] w-full",
-}: EssentialMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<Map | null>(null);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Detect location based on string content for demo
-    let center = fromLonLat([-106.8317, 40.485]); // Default Steamboat
-    const locLower = (location || "").toLowerCase();
-    const addrLower = (address || "").toLowerCase();
-
-    if (locLower.includes("summerland") || addrLower.includes("summerland")) {
-      center = fromLonLat(MOCK_COORDS["summerland"]);
-    } else if (
-      locLower.includes("steamboat") ||
-      addrLower.includes("steamboat")
-    ) {
-      center = fromLonLat(MOCK_COORDS["steamboat"]);
-    }
-
-    const vectorSource = new VectorSource();
-    const iconFeature = new Feature({
-      geometry: new Point(center),
-    });
-
-    const iconStyle = new Style({
-      image: new Icon({
-        anchor: [0.5, 1],
-        src: "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg", // Simple pin
-        scale: 1.5,
-      }),
-    });
-
-    iconFeature.setStyle(iconStyle);
-    vectorSource.addFeature(iconFeature);
-
-    const vectorLayer = new VectorLayer({
-      source: vectorSource,
-    });
-
-    const map = new Map({
-      target: mapRef.current,
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-        vectorLayer,
-      ],
-      view: new View({
-        center: center,
-        zoom: 14,
-      }),
-    });
-
-    mapInstance.current = map;
-
-    return () => {
-      map.setTarget(undefined);
-    };
-  }, [location, address]);
-
+// Opens the address in the guest's maps app instead of shipping an interactive map
+// library to every trip page.
+function EssentialMap({ propertyName, location, address, className = "" }: EssentialMapProps) {
+  const query = address || [propertyName, location].filter(Boolean).join(", ");
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return (
     <div className={className}>
-      <div ref={mapRef} className="h-full w-full" />
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+      >
+        <MapPin className="h-4 w-4" /> Open in Google Maps
+      </a>
     </div>
   );
 }
 
-const supportFallback = "hello@bunks.com";
+const supportFallback = SUPPORT_EMAIL;
 const BOOKING_REFERENCE_PATTERN = /^[A-Z0-9]{5}$/;
 
 function normalizeBookingReferenceInput(raw: string) {
@@ -179,12 +103,11 @@ function normalizeBookingReferenceInput(raw: string) {
 }
 
 export function BookingDetailsView({
-  onNavigate: _onNavigate,
+  onNavigate,
   initialLookup,
   onPersistLookup,
   section = "essential",
 }: BookingDetailsViewProps) {
-  void _onNavigate;
   const [lookupReference, setLookupReference] = useState(
     initialLookup?.bookingReference ?? "",
   );
@@ -278,19 +201,6 @@ export function BookingDetailsView({
     }
   };
 
-  const handleConversationSummaryChange = useCallback(
-    (summary: {
-      lastMessageSnippet: string | null;
-      lastMessageAt?: string | null;
-    }) => {
-      setConversationSummary({
-        snippet: summary.lastMessageSnippet,
-        timestamp: summary.lastMessageAt ?? null,
-      });
-    },
-    [],
-  );
-
   // Door/lock codes are fetched per booking from the server (never bundled) and only for PAID stays.
   const [accessCodes, setAccessCodes] = useState<TripAccessResponse | null>(
     null,
@@ -329,24 +239,6 @@ export function BookingDetailsView({
     propertyDetails?.image ?? propertyDetails?.images?.[0] ?? null;
   const referenceCode =
     booking?.referenceCode ?? lastLookup?.bookingReference ?? null;
-
-  const messageThreads: MessageThreadSummary[] = useMemo(() => {
-    if (!booking) return [];
-    return [
-      {
-        id: booking.id,
-        title: booking.property.name,
-        subtitle: formatStayDates(booking.checkInDate, booking.checkOutDate),
-        meta: propertyDetails?.location ?? booking.property.slug,
-        badge: referenceCode,
-        mediaUrl: heroImage ?? null,
-        lastMessageSnippet: conversationSummary.snippet,
-        lastMessageAtLabel: formatThreadTimestamp(
-          conversationSummary.timestamp,
-        ),
-      },
-    ];
-  }, [booking, propertyDetails, heroImage, referenceCode, conversationSummary]);
 
   const stayRangeLabel = useMemo(() => {
     if (!booking) return null;
@@ -479,12 +371,9 @@ export function BookingDetailsView({
     return items;
   }, [booking, propertyDetails, hostContacts, isPaidBooking, accessCodes]);
 
-  const guideUrl =
-    booking?.property.checkInGuideUrl ??
-    booking?.property.guestBookUrl ??
-    (booking?.property.slug === "steamboat-downtown-townhome"
-      ? "/Steamboat%20Brochure.pdf"
-      : null);
+  const guideUrl = booking
+    ? guideUrlFor(booking.property.slug, booking.property.checkInGuideUrl, booking.property.guestBookUrl)
+    : null;
 
   const sectionCopy: Record<
     BookingPortalSection,
@@ -529,12 +418,35 @@ export function BookingDetailsView({
     setIsLookupModalOpen(true);
   };
 
+  // Outside click / Escape: close over a loaded booking, otherwise leave for home.
+  const dismissLookupModal = useCallback(() => {
+    if (canDismissLookupModal) {
+      setIsLookupModalOpen(false);
+    } else {
+      onNavigate("home");
+    }
+  }, [canDismissLookupModal, onNavigate]);
+
+  useEffect(() => {
+    if (!isLookupModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dismissLookupModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isLookupModalOpen, dismissLookupModal]);
+
   const renderLookupModal = () => {
     if (!isLookupModalOpen) {
       return null;
     }
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-8 backdrop-blur">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 px-4 py-8 backdrop-blur"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) dismissLookupModal();
+        }}
+      >
         <div className="relative w-full max-w-lg rounded-xl border border-gray-200 bg-[var(--color-surface)] p-6 sm:p-10 shadow-[var(--shadow-floating)]">
           {canDismissLookupModal && (
             <button
@@ -745,7 +657,7 @@ export function BookingDetailsView({
                   {mapProps.address ?? propertyDetails?.location}
                 </p>
               </div>
-              <EssentialMap {...mapProps} className="h-[320px] w-full" />
+              <EssentialMap {...mapProps} className="px-6 pb-6" />
             </div>
             <div className="rounded-xl bg-gray-100 p-7 sm:p-8">
               <h2 className="font-serif text-3xl font-normal">
@@ -846,163 +758,6 @@ export function BookingDetailsView({
     );
   };
 
-  const renderMessagesSection = () => {
-    if (!booking) return renderNoBookingState();
-    return (
-      <section className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 lg:py-14">
-        <header className="mb-8">
-          <p className="mb-3 text-sm font-semibold text-gray-500">
-            Your stay, connected
-          </p>
-          <h1 className="page-title">A direct line to your host.</h1>
-        </header>
-        <MessagesLayout
-          variant="guest"
-          sidebar={
-            <div className="flex h-full flex-col">
-              <div className="flex flex-col gap-4 border-b border-gray-100 p-6">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-                    Inbox
-                  </p>
-                  <h3 className="mt-2 font-serif text-2xl text-gray-900">
-                    Your stays
-                  </h3>
-                </div>
-                {!isLookupModalOpen && error && (
-                  <div className="flex items-start gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    onClick={() =>
-                      void handleLookup(
-                        lastLookup ?? {
-                          bookingReference:
-                            referenceCode ?? booking.referenceCode,
-                          guestEmail: booking.guestEmail,
-                        },
-                      )
-                    }
-                    disabled={isLoading}
-                    className="flex-1 gap-2 text-xs"
-                  >
-                    <RefreshCw className="h-3 w-3" /> Refresh
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={handleSwitchBooking}
-                    className="flex-1 gap-2 text-xs"
-                  >
-                    Switch
-                  </Button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <MessageThreadList
-                  threads={messageThreads}
-                  activeThreadId={booking.id}
-                />
-              </div>
-            </div>
-          }
-          conversation={
-            <BookingMessages
-              variant="clean"
-              bookingId={booking.id}
-              bookingReference={referenceCode}
-              guestEmail={lastLookup?.guestEmail ?? booking.guestEmail}
-              guestName={booking.guestName}
-              propertyName={booking.property.name}
-              hostSupportEmail={
-                booking.property.hostSupportEmail ?? supportFallback
-              }
-              onConversationSummaryChange={handleConversationSummaryChange}
-            />
-          }
-          reservation={
-            <div className="flex h-full flex-col overflow-y-auto">
-              {heroImage && (
-                <div className="relative h-64 w-full shrink-0">
-                  <Image
-                    src={heroImage}
-                    alt={booking.property.name}
-                    fill
-                    className="object-cover"
-                    sizes="400px"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent p-6 flex items-end">
-                    <h4 className="font-serif text-2xl text-white">
-                      {booking.property.name}
-                    </h4>
-                  </div>
-                </div>
-              )}
-              <div className="p-8 space-y-8">
-                <div>
-                  <p className="flex items-center gap-2 text-sm text-gray-500">
-                    <MapPin className="h-4 w-4" />{" "}
-                    {propertyDetails?.location ?? booking.property.slug}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-6 text-sm text-gray-600">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                        Check-in
-                      </p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {dateFormatter.format(new Date(booking.checkInDate))}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        After {booking.property.checkInTime ?? "3:00 PM"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
-                        Check-out
-                      </p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {dateFormatter.format(new Date(booking.checkOutDate))}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        By {booking.property.checkOutTime ?? "11:00 AM"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">
-                    Need help?
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Your host team is available via this chat or email.
-                  </p>
-                  <a
-                    href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`}
-                    className="block text-sm font-medium text-gray-900 underline"
-                  >
-                    {booking.property.hostSupportEmail ?? supportFallback}
-                  </a>
-                  {referenceCode && (
-                    <p className="text-xs text-gray-500">
-                      Ref: {referenceCode}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          }
-        />
-      </section>
-    );
-  };
-
   const loadingBanner = isLoading ? (
     <div className="pointer-events-none fixed right-4 top-4 z-40 rounded-2xl border border-gray-200 bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500 shadow-xl">
       Updating stay…
@@ -1015,9 +770,8 @@ export function BookingDetailsView({
       {loadingBanner}
       {booking ? (
         <div className="flex min-h-screen flex-col">
-          {section === "essential" && renderEssentialSection()}
+          {(section === "essential" || section === "messages") && renderEssentialSection()}
           {section === "guide" && renderGuideSection()}
-          {section === "messages" && renderMessagesSection()}
         </div>
       ) : (
         <div className="mx-auto flex w-full max-w-[960px] flex-col gap-6 px-4 pb-12 pt-16 sm:px-6 lg:px-8">

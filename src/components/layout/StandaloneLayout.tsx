@@ -18,10 +18,6 @@ export function StandaloneLayout({ children }: PropsWithChildren) {
         router.push("/?view=about");
         return;
       }
-      case "journal": {
-        router.push("/?view=journal");
-        return;
-      }
       case "listings": {
         router.push("/#listings");
         return;

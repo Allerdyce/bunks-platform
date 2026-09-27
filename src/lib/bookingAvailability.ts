@@ -52,7 +52,7 @@ type UnavailableOptions = {
 
 /**
  * Returns every unavailable night (YYYY-MM-DD) for the property in [from, to).
- * Sources: Airbnb iCal + direct blocks, PriceLabs booked/unbookable nights,
+ * Sources: Airbnb iCal + direct blocks,
  * admin-blocked special rates, PAID bookings, and PENDING bookings still inside their hold.
  */
 export async function getUnavailableNights(
@@ -76,9 +76,8 @@ export async function getUnavailableNights(
     });
   }
 
-  const [blocked, pricingBlocked, specialBlocked, bookings] = await Promise.all([
+  const [blocked, specialBlocked, bookings] = await Promise.all([
     db.blockedDate.findMany({ where: { propertyId, date: range }, select: { date: true } }),
-    db.propertyPricing.findMany({ where: { propertyId, date: range, isBlocked: true }, select: { date: true } }),
     db.specialRate.findMany({ where: { propertyId, date: range, isBlocked: true }, select: { date: true } }),
     db.booking.findMany({
       where: {
@@ -93,7 +92,7 @@ export async function getUnavailableNights(
   ]);
 
   const nights = new Set<string>();
-  for (const row of [...blocked, ...pricingBlocked, ...specialBlocked]) {
+  for (const row of [...blocked, ...specialBlocked]) {
     nights.add(toISODate(row.date));
   }
   for (const booking of bookings) {
@@ -129,7 +128,7 @@ export async function withPropertyLock<T>(propertyId: number, fn: (tx: Prisma.Tr
   );
 }
 
-/** Block a paid booking's nights as DIRECT so iCal export and PriceLabs see them. */
+/** Block a paid booking's nights as DIRECT so the iCal export includes them. */
 export async function blockBookingNights(
   booking: { propertyId: number; checkInDate: Date; checkOutDate: Date },
   db: Db = prisma,

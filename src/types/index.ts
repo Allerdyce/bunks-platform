@@ -66,18 +66,6 @@ export interface Property {
   emergencyContacts?: { name: string; phone: string; role?: string }[];
 }
 
-import type { ReactNode } from "react";
-
-export interface JournalPost {
-  id: number;
-  slug: string;
-  title: string;
-  category: string;
-  date: string;
-  image: string;
-  excerpt: string;
-  content: ReactNode;
-}
 
 export interface AvailabilityRequest {
   propertySlug: string;
@@ -203,7 +191,7 @@ export interface PricingQuote {
   nights: number;
 }
 
-export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY" | "PRICELABS";
+export type RateSource = "SPECIAL" | "WEEKEND" | "WEEKDAY";
 
 export interface NightlyLineItem {
   date: string; // YYYY-MM-DD
@@ -233,8 +221,6 @@ export type ViewState =
   | "booking-guide"
   | "booking-messages"
   | "about"
-  | "journal"
-  | "blog-post"
   | "listings";
 
 export type BookingPortalSection = "essential" | "guide" | "messages";
@@ -265,7 +251,6 @@ export interface AdminProperty {
   serviceFee: number;
   currency: string;
   specialRates: AdminSpecialRate[];
-  pricelabsListingId?: string | null;
 }
 
 export interface AdminFeatureToggle {

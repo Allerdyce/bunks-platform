@@ -5,6 +5,7 @@ import { AlertCircle, LogOut, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { PropertyCard } from "@/components/admin/PropertyCard";
 import type { AdminFeatureToggle, AdminProperty } from "@/types";
 
@@ -226,6 +227,10 @@ export default function AdminPricingPage() {
     await fetchProperties();
   };
 
+  if (authState === "checking") {
+    return <AdminCheckingShell active="pricing" />;
+  }
+
   if (authState !== "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -343,7 +348,7 @@ export default function AdminPricingPage() {
                 Rates & availability
               </h1>
               <p className="text-sm text-gray-500">
-                Adjust weekday/weekend rates, cleaning & service fees, plus
+                Set your Airbnb nightly rates and cleaning fee, plus
                 date-specific overrides.
               </p>
             </div>

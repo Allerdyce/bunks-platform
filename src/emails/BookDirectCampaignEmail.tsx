@@ -63,12 +63,12 @@ export const BookDirectCampaignEmail = ({
                         <span><strong>Save 10%</strong> versus Airbnb and VRBO</span>
                     </Text>
                     <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
-                        <span style={{ fontSize: '18px' }}>📅</span>
-                        <span><strong>Priority Access</strong> to peak dates</span>
+                        <span style={{ fontSize: '18px' }}>🏡</span>
+                        <span><strong>Same home, same hosts</strong> you already know</span>
                     </Text>
                     <Text className="text-sm text-[#475467] m-0 flex flex-row items-center gap-2">
-                        <span style={{ fontSize: '18px' }}>⏰</span>
-                        <span><strong>Early Check-in</strong> priority</span>
+                        <span style={{ fontSize: '18px' }}>✉️</span>
+                        <span><strong>Talk to us directly</strong> before and during your stay</span>
                     </Text>
                 </div>
             </Section>

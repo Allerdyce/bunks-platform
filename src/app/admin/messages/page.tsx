@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
-import { BookingMessages } from "@/components/messaging/BookingMessages";
+import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
 import {
   MessageThreadList,
@@ -20,6 +20,7 @@ import {
   MessagesLayout,
 } from "@/components/messaging/MessagesWorkspace";
 import { getPropertyBySlug } from "@/data/properties";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
@@ -43,9 +44,11 @@ type AdminThreadSummary = {
   } | null;
 };
 
+// Stay dates are calendar dates stored as UTC midnight.
 const stayDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
+  timeZone: "UTC",
 });
 const threadTimestampFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -223,10 +226,6 @@ export default function AdminMessagesPage() {
   const hostThreadSummaries: MessageThreadSummary[] = useMemo(() => {
     return threads.map((thread) => {
       const property = getPropertyBySlug(thread.property.slug);
-      const snapshot = conversationSnapshots[thread.id];
-      const snippet = snapshot?.snippet ?? thread.lastMessage?.body ?? null;
-      const timestamp =
-        snapshot?.timestamp ?? thread.lastMessage?.sentAt ?? null;
       return {
         id: thread.id,
         title: thread.guestName,
@@ -234,11 +233,12 @@ export default function AdminMessagesPage() {
         meta: formatStayRange(thread.checkInDate, thread.checkOutDate),
         badge: thread.referenceCode,
         mediaUrl: property?.image ?? property?.images?.[0] ?? null,
-        lastMessageSnippet: snippet,
-        lastMessageAtLabel: formatThreadTimestamp(timestamp),
+        // Messaging is email-only, so the list shows bookings without chat previews.
+        lastMessageSnippet: null,
+        lastMessageAtLabel: null,
       } as MessageThreadSummary;
     });
-  }, [threads, conversationSnapshots]);
+  }, [threads]);
 
   const activePropertyDetails = activeThread
     ? (getPropertyBySlug(activeThread.property.slug) ?? null)
@@ -257,19 +257,21 @@ export default function AdminMessagesPage() {
   );
 
   const conversationPanel = activeThread ? (
-    <BookingMessages
-      variant="panel"
-      viewerRole="host"
-      bookingId={activeThread.id}
-      bookingReference={activeThread.referenceCode}
-      guestEmail={activeThread.guestEmail}
-      guestName={activeThread.guestName}
-      propertyName={activeThread.property.name}
-      hostSupportEmail={
-        activeThread.property.hostSupportEmail ?? "ops@bunks.com"
-      }
-      onConversationSummaryChange={handleActiveThreadSummaryChange}
-    />
+    (
+              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
+                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
+                <p className="text-sm text-gray-600">
+                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
+                </p>
+                <a
+                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  Email {activeThread.guestEmail}
+                </a>
+              </div>
+            )
   ) : (
     <div className="rounded-[32px] border border-dashed border-gray-200 bg-white/90 p-6 text-sm text-gray-500">
       Select a booking on the left to open the message thread.
@@ -352,7 +354,7 @@ export default function AdminMessagesPage() {
           Property support
         </p>
         <p className="mt-2 font-semibold text-gray-900">
-          {activeThread.property.hostSupportEmail ?? "ops@bunks.com"}
+          {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}
         </p>
         <p className="text-xs text-gray-500">
           Use this escalation channel if messaging doesn&apos;t get a reply
@@ -365,6 +367,10 @@ export default function AdminMessagesPage() {
       Choose a booking to see reservation context.
     </div>
   );
+
+  if (authState === "checking") {
+    return <AdminCheckingShell active="messages" />;
+  }
 
   if (authState !== "authenticated") {
     return (
@@ -454,10 +460,10 @@ export default function AdminMessagesPage() {
             Bunks Ops
           </p>
           <h1 className="page-title   text-gray-900 mt-1">
-            Conversations with your guests
+            Bookings & guests
           </h1>
           <p className="text-sm text-gray-500">
-            Look up any booking and reply without leaving the ops console.
+            Look up any booking, see its details, and email the guest.
           </p>
         </div>
 
@@ -474,7 +480,7 @@ export default function AdminMessagesPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                      Messages
+                      Bookings
                     </p>
                     <h2 className="mt-1 text-2xl font-sans font-semibold text-gray-900">
                       All bookings
@@ -524,19 +530,21 @@ export default function AdminMessagesPage() {
           }
           conversation={
             activeThread ? (
-              <BookingMessages
-                variant="clean"
-                viewerRole="host"
-                bookingId={activeThread.id}
-                bookingReference={activeThread.referenceCode}
-                guestEmail={activeThread.guestEmail}
-                guestName={activeThread.guestName}
-                propertyName={activeThread.property.name}
-                hostSupportEmail={
-                  activeThread.property.hostSupportEmail ?? "ops@bunks.com"
-                }
-                onConversationSummaryChange={handleActiveThreadSummaryChange}
-              />
+              (
+              <div className="flex h-full flex-col items-start justify-center gap-3 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Guest contact</p>
+                <h3 className="font-serif text-2xl text-gray-900">{activeThread.guestName}</h3>
+                <p className="text-sm text-gray-600">
+                  Guests contact us by email. Replies to booking emails go to {SUPPORT_EMAIL}.
+                </p>
+                <a
+                  href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
+                  className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  Email {activeThread.guestEmail}
+                </a>
+              </div>
+            )
             ) : (
               <div className="flex h-full items-center justify-center p-6 text-sm text-gray-500">
                 Select a booking on the left to open the message thread.
@@ -624,7 +632,7 @@ export default function AdminMessagesPage() {
                     </p>
                     <p className="font-semibold text-gray-900 text-sm">
                       {activeThread.property.hostSupportEmail ??
-                        "ops@bunks.com"}
+                        SUPPORT_EMAIL}
                     </p>
                     <p className="text-xs text-gray-500">
                       Use this for escalations.

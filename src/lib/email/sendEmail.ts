@@ -1,4 +1,5 @@
 import { MessageStream, postmarkClient } from './postmark';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -49,7 +50,8 @@ export async function sendEmail(options: SendEmailOptions) {
     Subject: subject,
     HtmlBody: html,
     MessageStream: messageStream ?? MessageStream.transactional,
-    ...(replyTo ? { ReplyTo: replyTo } : {}),
+    // Guest replies go to the support inbox unless a sender overrides it.
+    ReplyTo: replyTo ?? SUPPORT_EMAIL,
     ...(cc ? { Cc: normalizeRecipients(cc) } : {}),
     ...(bcc ? { Bcc: normalizeRecipients(bcc) } : {}),
   });

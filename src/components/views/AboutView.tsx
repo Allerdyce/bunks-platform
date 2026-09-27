@@ -4,6 +4,7 @@ import type { NavigateHandler } from "@/types";
 import { Button } from "@/components/shared/Button";
 import { WhyBook } from "@/components/home/WhyBook";
 import { GuestStories } from "@/components/home/GuestStories";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
   return (
@@ -103,7 +104,7 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
             Have a question about a stay, or a home you’d like to share with
             Bunks? We’d love to hear from you.
           </p>
-          <a href="mailto:stay@bunks.com" className="marketing-button">
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="marketing-button">
             Get in touch
           </a>
         </div>

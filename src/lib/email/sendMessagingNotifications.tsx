@@ -3,8 +3,9 @@ import type { MessagingBooking } from "@/lib/messaging/server";
 import { logEmailSend, renderEmail, sendEmail } from "@/lib/email";
 import { NewMessageHostEmail } from "@/emails/NewMessageHostEmail";
 import { NewMessageGuestEmail } from "@/emails/NewMessageGuestEmail";
+import { OPS_ALERT_EMAIL } from "@/lib/contact";
 
-const DEFAULT_HOST_EMAIL = process.env.MESSAGING_HOST_FALLBACK_EMAIL ?? process.env.ADMIN_EMAIL ?? "ops@bunks.com";
+const DEFAULT_HOST_EMAIL = process.env.MESSAGING_HOST_FALLBACK_EMAIL ?? OPS_ALERT_EMAIL;
 const HOST_PORTAL_URL = process.env.HOST_PORTAL_URL ?? "https://bunks.com/admin";
 const GUEST_PORTAL_URL = process.env.GUEST_PORTAL_URL ?? "https://bunks.com/manage";
 

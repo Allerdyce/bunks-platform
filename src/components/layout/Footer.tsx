@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { NavigateHandler } from "@/types";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 interface FooterProps {
   onNavigate: NavigateHandler;
@@ -46,15 +47,6 @@ export function Footer({ onNavigate }: FooterProps) {
                 About
               </Link>
             </li>
-            <li>
-              <Link
-                href="/?view=journal"
-                onClick={() => onNavigate("journal")}
-                className="transition hover:text-[var(--color-text-primary)]"
-              >
-                Journal
-              </Link>
-            </li>
           </ul>
         </div>
         <div>
@@ -64,7 +56,7 @@ export function Footer({ onNavigate }: FooterProps) {
           <ul className="mt-4 space-y-2 text-sm text-[var(--color-text-secondary)]">
             <li>
               <a
-                href="mailto:stay@bunks.com"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="transition hover:text-[var(--color-text-primary)]"
               >
                 Contact

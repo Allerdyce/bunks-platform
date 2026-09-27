@@ -16,6 +16,7 @@ import {
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
 import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
+import { PAUSED_EMAIL_TYPES } from '@/lib/email/deliverySettings';
 
 export const runtime = 'nodejs';
 
@@ -170,7 +171,7 @@ async function runAutomations(request: Request) {
   });
 
   const summary: Record<string, BatchSummary> = {};
-  for (const job of DAILY_JOBS) {
+  for (const job of DAILY_JOBS.filter((entry) => !PAUSED_EMAIL_TYPES.has(entry.type))) {
     summary[job.key] = await runDailyJob(job, bookings, now, opsDetails);
   }
   summary.wifiBookDirect = await handleWiFiBookDirect(now);

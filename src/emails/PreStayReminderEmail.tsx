@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button, Heading, Hr, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 function normalizeHref(href?: string | null) {
   if (!href) {
@@ -202,7 +203,7 @@ export function PreStayReminderEmail(props: PreStayReminderEmailProps) {
           Text or email us anytime
         </Heading>
         <Text className="text-sm text-[#475467]">
-          {hostSupportEmail ?? 'hello@bunks.com'}
+          {hostSupportEmail ?? SUPPORT_EMAIL}
           {supportPhone ? ` · ${supportPhone}` : ''}
         </Text>
       </Section>

@@ -11,6 +11,7 @@ import {
   pendingHoldCutoff,
   withPropertyLock,
 } from '@/lib/bookingAvailability';
+import { minimumNightsFor } from '@/lib/stayRules';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
 
 export const runtime = 'nodejs';
@@ -37,10 +38,6 @@ type PropertyWithRates = {
 
 const toISODate = (date: Date) => date.toISOString().split('T')[0];
 
-const PROPERTY_MINIMUM_NIGHTS: Record<string, number> = {
-  'summerland-ocean-view-beach-bungalow': 3,
-  'steamboat-downtown-townhome': 3,
-};
 const DEFAULT_ACTIVITY_TIME_SLOT = '16:00';
 
 // Removed unused imports and constants
@@ -190,7 +187,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nights = nightsBetween(checkInDate, checkOutDate);
-    const minimumNights = PROPERTY_MINIMUM_NIGHTS[property.slug] ?? 1;
+    const minimumNights = minimumNightsFor(property.slug);
 
     if (nights < minimumNights) {
       return NextResponse.json(
@@ -222,55 +219,6 @@ export async function POST(req: NextRequest) {
 
     // Note: This re-fetches property internally but ensures consistency with frontend quote
     const quote = await calculatePricing(property.slug, checkInDate, checkOutDate, partySize);
-
-    // Check min stay (using check-in date rules from PriceLabs if available in Quote?)
-    // Our calculator returns `nightlyLineItems`. We can inspect the first one if we want deep validation,
-    // but `calculatePricing` doesn't currently return minStay rules.
-    // The original code did: `const checkInPricing = priceLabsByDate.get(toISODate(checkInDate));`
-    // We should probably MOVE min stay check INTO calculator or expose PriceLabs data from it.
-    // For now, let's keep the PriceLabs min stay check if possible, or assume calculator handles "validity"?
-    // Calculator DOES NOT validate min stay.
-    // I should add Min Stay validation to `calculatePricing` or return the raw data needed.
-    // Or I can re-query existing logic?
-    // The previous code queried `propertyPricing` manually.
-    // IMPORTANT: The user wants PRICING to be correct.
-    // Min stay rules are critical too.
-    // I can leave the Min Stay check (lines 263-294) but purely for validation, then use calculator for price.
-    // Actually, `calculatePricing` uses `PropertyPricing` table.
-    // If I remove the query here, I lose the local `priceLabsRates` variable used for Min Stay check.
-    // I should Update `calculatePricing` to return minStay requirements or validate them.
-    // BUT, for now, to minimize risk of breaking validation, I will duplicatedly fetch for validation or just rely on the existing fetch if I keep it?
-    // No, I want to remove the duplicate pricing logic.
-    // Let's use `calculatePricing` for the MONEY part.
-    // I will KEEP the `PropertyPricing` fetch for VALIDATION (Min Stay) for now, but use `calculatePricing` for the TOTAL.
-    // Or better: Let's trust the logic I just wrote? No, `calculatePricing` returns a Quote, not validation.
-
-    // Re-fetch for validation (lightweight) or just accept the double fetch cost for correctness.
-    let minStay = PROPERTY_MINIMUM_NIGHTS[property.slug] ?? 1;
-    if ((prisma as any).propertyPricing) {
-      const checkInPrice = await (prisma as any).propertyPricing.findUnique({
-        where: {
-          propertyId_date: {
-            propertyId: property.id,
-            date: checkInDate
-          }
-        }
-      });
-      if (checkInPrice?.minNights) {
-        minStay = checkInPrice.minNights;
-      }
-    }
-
-    if (nights < minStay) {
-      return NextResponse.json(
-        {
-          error: 'MINIMUM_STAY',
-          message: `This property requires a minimum stay of ${minStay} nights.`,
-          minimumNights: minStay,
-        },
-        { status: 400 }
-      );
-    }
 
     const {
       totalPriceCents,
@@ -431,8 +379,6 @@ export async function POST(req: NextRequest) {
         throw stripeError;
       }
     }
-
-    // PriceLabs is only told about bookings once they're paid (see the Stripe webhook).
 
     return NextResponse.json({
       ok: true,

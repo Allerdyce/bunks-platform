@@ -11,7 +11,9 @@ export type OpsPreset = {
   quickLinks: Array<{ label: string; href: string; description?: string }>;
 };
 
-const STEAMBOAT_GUIDE_BASE_URL = "/guide/steamboat-alpenglow-2";
+// Guests reach codes and the guide from their trip page; the full guide is the PDF.
+const STEAMBOAT_GUIDE_BASE_URL = "/my-trips";
+const STEAMBOAT_GUIDE_PDF = "/Steamboat Welcome Guide.pdf";
 
 const propertyLabel = (slug: string, fallback: string) =>
   PROPERTIES.find((property) => property.slug === slug)?.name ?? fallback;
@@ -25,11 +27,11 @@ export const OPS_PRESETS: OpsPreset[] = [
     label: STEAMBOAT_LABEL,
     description: "Uses the structured Steamboat guest guide for links, hosts, and key codes.",
     defaults: {
-      doorCodesDocUrl: `${STEAMBOAT_GUIDE_BASE_URL}#essential-info`,
-      arrivalNotesUrl: `${STEAMBOAT_GUIDE_BASE_URL}#checkin`,
-      liveInstructionsUrl: `${STEAMBOAT_GUIDE_BASE_URL}#checkin`,
-      recommendationsUrl: `${STEAMBOAT_GUIDE_BASE_URL}#dining`,
-      guestBookUrl: STEAMBOAT_GUIDE_BASE_URL,
+      doorCodesDocUrl: `${STEAMBOAT_GUIDE_BASE_URL}`,
+      arrivalNotesUrl: `${STEAMBOAT_GUIDE_BASE_URL}`,
+      liveInstructionsUrl: `${STEAMBOAT_GUIDE_BASE_URL}`,
+      recommendationsUrl: `${STEAMBOAT_GUIDE_BASE_URL}`,
+      guestBookUrl: STEAMBOAT_GUIDE_PDF,
       checkInWindow: `Check-in after ${STEAMBOAT_GUIDE.propertyBasics.checkInTime}`,
       checkOutTime: `Checkout by ${STEAMBOAT_GUIDE.propertyBasics.checkOutTime}`,
     },
@@ -50,10 +52,10 @@ export const OPS_PRESETS: OpsPreset[] = [
       },
     ],
     quickLinks: [
-      { label: "Essential info", href: `${STEAMBOAT_GUIDE_BASE_URL}#essential-info`, description: "Codes, Wi-Fi, and parking." },
-      { label: "Check-in & checkout", href: `${STEAMBOAT_GUIDE_BASE_URL}#checkin`, description: "Arrival flow + checkout steps." },
-      { label: "Dining & drinks", href: `${STEAMBOAT_GUIDE_BASE_URL}#dining`, description: "Local favorites to surface in emails." },
-      { label: "Guest guide", href: STEAMBOAT_GUIDE_BASE_URL, description: "Full Steamboat guest experience." },
+      { label: "Essential info", href: `${STEAMBOAT_GUIDE_BASE_URL}`, description: "Codes, Wi-Fi, and parking." },
+      { label: "Check-in & checkout", href: `${STEAMBOAT_GUIDE_BASE_URL}`, description: "Arrival flow + checkout steps." },
+      { label: "Dining & drinks", href: `${STEAMBOAT_GUIDE_BASE_URL}`, description: "Local favorites to surface in emails." },
+      { label: "Guest guide", href: STEAMBOAT_GUIDE_PDF, description: "Full Steamboat guest experience." },
     ],
   },
   {

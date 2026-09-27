@@ -302,20 +302,14 @@ export function PropertyCard({
           </p>
         </div>
         <div className="flex gap-2">
-          {property.pricelabsListingId ? (
-            <div className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-3 py-1 inline-flex items-center gap-1 font-medium">
-              <CheckCircle2 className="w-3 h-3" /> Managed by PriceLabs
-            </div>
-          ) : (
-            <div className="text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1 inline-flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Connected
-            </div>
-          )}
+          <div className="text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1 inline-flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Connected
+          </div>
         </div>
       </div>
 
       <div
-        className={`grid gap-6 lg:grid-cols-2 ${property.pricelabsListingId ? "opacity-75" : ""}`}
+        className="grid gap-6 lg:grid-cols-2"
       >
         <form
           className="border border-gray-100 rounded-xl p-5 space-y-4"
@@ -325,46 +319,35 @@ export function PropertyCard({
             <CalendarIcon className="w-4 h-4 text-gray-500" /> Base Rates & Fees
           </h3>
           <p className="text-xs text-gray-500">
-            {property.pricelabsListingId
-              ? "Rates are synced automatically from PriceLabs. Cleaning and service fees can still be updated here."
-              : "Cleaning fee defaults to $85 and service fee to $20 for every property—update as needed here."}
+            Enter the nightly rate you charge on Airbnb. Direct guests pay 10% less, plus a 5% Bunks service fee.
+            Use Special Pricing for holidays and events.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <LabeledField
-              label="Weekday Rate"
+              label="Airbnb rate · Sun–Thu"
               value={rateForm.weekday}
               onChange={(value) =>
                 setRateForm((prev) => ({ ...prev, weekday: value }))
               }
               prefix="$"
               step="1"
-              disabled={!!property.pricelabsListingId || savingRates}
+              disabled={savingRates}
             />
             <LabeledField
-              label="Weekend Rate"
+              label="Airbnb rate · Fri–Sat"
               value={rateForm.weekend}
               onChange={(value) =>
                 setRateForm((prev) => ({ ...prev, weekend: value }))
               }
               prefix="$"
               step="1"
-              disabled={!!property.pricelabsListingId || savingRates}
+              disabled={savingRates}
             />
             <LabeledField
               label="Cleaning Fee"
               value={rateForm.cleaning}
               onChange={(value) =>
                 setRateForm((prev) => ({ ...prev, cleaning: value }))
-              }
-              prefix="$"
-              step="1"
-              disabled={savingRates} // Fees usually not managed by PL (unless mapped specially), assuming manual for now
-            />
-            <LabeledField
-              label="Service Fee"
-              value={rateForm.service}
-              onChange={(value) =>
-                setRateForm((prev) => ({ ...prev, service: value }))
               }
               prefix="$"
               step="1"
@@ -384,13 +367,6 @@ export function PropertyCard({
           className="border border-amber-100 rounded-xl p-5 space-y-4 bg-amber-50/40 relative"
           onSubmit={handleSpecialSubmit}
         >
-          {!!property.pricelabsListingId && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-xl z-10 flex items-center justify-center">
-              <div className="text-sm font-medium text-gray-500 bg-white px-4 py-2 rounded-xl  border border-gray-100">
-                Calendar is managed by PriceLabs
-              </div>
-            </div>
-          )}
           <h3 className="font-medium text-gray-900 flex items-center gap-2">
             <PlusCircle className="w-4 h-4 text-amber-500" /> Special Pricing /
             Blocks

@@ -1,15 +1,20 @@
 import { Booking, Property } from '@prisma/client';
 import { toAbsoluteUrl } from '@/lib/url';
+import { SUPPORT_EMAIL } from '@/lib/contact';
+import { guideUrlFor } from '@/data/guides';
 
 const DEFAULT_CURRENCY = 'USD';
 
+// Stay dates are calendar dates stored as UTC midnight, so always format them in UTC.
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
   weekday: 'short',
   month: 'long',
   day: 'numeric',
 });
 
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
   month: 'short',
   day: 'numeric',
 });
@@ -32,24 +37,25 @@ export function formatCurrencyFromCents(amountCents: number, currency = DEFAULT_
 }
 
 export function resolveGuestBookUrl(booking: Booking & { property: Property }) {
-  const url = booking.guestBookUrlOverride ?? booking.property.guestBookUrl ?? undefined;
-  return toAbsoluteUrl(url);
+  const url = guideUrlFor(booking.property.slug, booking.guestBookUrlOverride, booking.property.guestBookUrl);
+  return toAbsoluteUrl(url ?? undefined);
 }
 
 export function resolveCheckInGuideUrl(booking: Booking & { property: Property }) {
-  const url = booking.checkInInstructionsOverride ?? booking.property.checkInGuideUrl ?? undefined;
-  return toAbsoluteUrl(url);
+  const url =
+    guideUrlFor(booking.property.slug, booking.checkInInstructionsOverride, booking.property.checkInGuideUrl);
+  return toAbsoluteUrl(url ?? undefined);
 }
 
 export function resolveHostSupportEmail(booking: Booking & { property: Property }) {
-  return booking.property.hostSupportEmail ?? 'ali@bunks.com';
+  return booking.property.hostSupportEmail ?? SUPPORT_EMAIL;
 }
 
 export function formatStayDates(checkIn: Date, checkOut: Date) {
   const start = shortDateFormatter.format(checkIn);
   const end = shortDateFormatter.format(checkOut);
-  const sameYear = checkIn.getFullYear() === checkOut.getFullYear();
-  const year = checkOut.getFullYear();
+  const sameYear = checkIn.getUTCFullYear() === checkOut.getUTCFullYear();
+  const year = checkOut.getUTCFullYear();
 
   if (sameYear) {
     return `${start} – ${end}, ${year}`;

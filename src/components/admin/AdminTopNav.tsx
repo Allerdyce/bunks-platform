@@ -8,7 +8,7 @@ interface AdminTopNavProps {
     | "setup"
     | "pricing"
     | "emails"
-    | "resources"
+   
     | "messages"
     | "marketing";
   actions?: ReactNode;
@@ -19,8 +19,7 @@ const NAV_ITEMS = [
   { id: "setup" as const, label: "Setup", href: "/admin/setup" },
   { id: "pricing" as const, label: "Pricing", href: "/admin/pricing" },
   { id: "emails" as const, label: "Emails", href: "/admin/emails" },
-  { id: "resources" as const, label: "Resources", href: "/admin/resources" },
-  { id: "messages" as const, label: "Messages", href: "/admin/messages" },
+  { id: "messages" as const, label: "Bookings", href: "/admin/messages" },
   { id: "marketing" as const, label: "Guests", href: "/admin/marketing" },
 ];
 

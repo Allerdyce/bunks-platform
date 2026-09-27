@@ -86,12 +86,10 @@ export function MessageThreadList({
                 </p>
               )}
               <div className="mt-2 space-y-2 text-xs text-gray-500">
-                {thread.lastMessageSnippet ? (
+                {thread.lastMessageSnippet && (
                   <p className="line-clamp-2 text-gray-500">
                     {thread.lastMessageSnippet}
                   </p>
-                ) : (
-                  <p className="truncate pr-2 text-gray-400">No messages yet</p>
                 )}
                 {thread.lastMessageAtLabel && (
                   <span className="inline-flex items-center gap-1 whitespace-nowrap">

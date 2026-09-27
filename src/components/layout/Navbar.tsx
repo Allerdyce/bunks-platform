@@ -74,13 +74,6 @@ export function Navbar({
           target: "booking-guide",
           section: "guide",
         },
-        {
-          label: "Messages",
-          type: "booking",
-          href: `${base}/inbox`,
-          target: "booking-messages",
-          section: "messages",
-        },
         { label: "Exit", type: "route", href: "/", target: "home" },
       ];
     }
@@ -93,12 +86,6 @@ export function Navbar({
         href: "/#listings",
       },
       { label: "About", type: "route", target: "about", href: "/?view=about" },
-      {
-        label: "Journal",
-        type: "route",
-        target: "journal",
-        href: "/?view=journal",
-      },
       // { label: "SB Tax Tool", type: "route", target: "about", href: "/tools/sb-tot" }, // Moved to Footer
       {
         label: "My trips",
