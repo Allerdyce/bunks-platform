@@ -11,10 +11,15 @@ interface BlogPostViewProps {
   onOpenPost: (post: JournalPost) => void;
 }
 
-export function BlogPostView({ post, relatedPosts, onBack, onOpenPost }: BlogPostViewProps) {
+export function BlogPostView({
+  post,
+  relatedPosts,
+  onBack,
+  onOpenPost,
+}: BlogPostViewProps) {
   return (
     <div className="animate-fade-in pb-24">
-      <div className="h-[50vh] relative">
+      <div className="min-h-[480px] h-[60vh] relative">
         <Image
           src={post.image}
           alt={post.title}
@@ -31,26 +36,34 @@ export function BlogPostView({ post, relatedPosts, onBack, onOpenPost }: BlogPos
               <span>•</span>
               <span>{post.date}</span>
             </div>
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4 text-white">{post.title}</h1>
+            <h1 className="marketing-title text-4xl sm:text-5xl lg:text-6xl mb-4 text-white">
+              {post.title}
+            </h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
-        <div className="bg-white p-8 sm:p-12 shadow-xl rounded-t-3xl min-h-[50vh]">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 relative">
+        <div className="bg-white py-8 sm:py-12 min-h-[50vh]">
           <button
             onClick={onBack}
-            className="flex items-center text-gray-400 hover:text-gray-900 mb-12 transition-colors text-sm font-medium uppercase tracking-wider"
+            className="flex items-center text-gray-500 hover:text-gray-900 mb-12 transition-colors text-sm font-medium uppercase tracking-wider"
           >
             <ChevronLeft className="w-4 h-4 mr-2" /> Back to Journal
           </button>
-          <div className="prose prose-lg prose-stone mx-auto">{post.content}</div>
+          <div className="reading-copy mx-auto">{post.content}</div>
 
           <div className="border-t border-gray-200 mt-16 pt-12">
-            <h4 className="font-serif text-2xl text-gray-900 mb-6">Read Next</h4>
+            <h4 className="font-serif text-2xl text-gray-900 mb-6">
+              Read Next
+            </h4>
             <div className="grid sm:grid-cols-2 gap-6">
               {relatedPosts.map((related) => (
-                <button key={related.id} onClick={() => onOpenPost(related)} className="group text-left">
+                <button
+                  key={related.id}
+                  onClick={() => onOpenPost(related)}
+                  className="group text-left"
+                >
                   <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 mb-3 relative">
                     <Image
                       src={related.image}
@@ -60,7 +73,9 @@ export function BlogPostView({ post, relatedPosts, onBack, onOpenPost }: BlogPos
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <h5 className="font-serif text-lg text-gray-900 group-hover:text-gray-600">{related.title}</h5>
+                  <h5 className="font-serif text-lg text-gray-900 group-hover:text-gray-600">
+                    {related.title}
+                  </h5>
                 </button>
               ))}
             </div>

@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { StripeElementsOptions, StripePaymentElementOptions } from "@stripe/stripe-js";
+import type {
+  StripeElementsOptions,
+  StripePaymentElementOptions,
+} from "@stripe/stripe-js";
 import { AlertCircle, Info, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/shared/Button";
 import {
@@ -26,13 +29,24 @@ const formatAmount = (amountCents: number, currency: string) =>
     minimumFractionDigits: 2,
   }).format(amountCents / 100);
 
-function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: number; currency: string; onSuccess: () => void }) {
+function CheckoutForm({
+  amountCents,
+  currency,
+  onSuccess,
+}: {
+  amountCents: number;
+  currency: string;
+  onSuccess: () => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isElementReady, setIsElementReady] = useState(false);
-  const formattedAmount = useMemo(() => formatAmount(amountCents, currency), [amountCents, currency]);
+  const formattedAmount = useMemo(
+    () => formatAmount(amountCents, currency),
+    [amountCents, currency],
+  );
 
   const paymentElementOptions = useMemo<StripePaymentElementOptions>(
     () => ({ layout: "tabs" }),
@@ -52,14 +66,18 @@ function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: numbe
       });
 
       if (error) {
-        setMessage(error.message ?? "Payment failed. Please verify your card details.");
+        setMessage(
+          error.message ?? "Payment failed. Please verify your card details.",
+        );
         return;
       }
 
       onSuccess();
     } catch (error) {
       const fallbackMessage =
-        error instanceof Error ? error.message : "Payment failed. Please try again.";
+        error instanceof Error
+          ? error.message
+          : "Payment failed. Please try again.";
       setMessage(fallbackMessage);
     } finally {
       setIsLoading(false);
@@ -73,13 +91,14 @@ function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: numbe
         options={paymentElementOptions}
         onReady={() => setIsElementReady(true)}
       />
-      <div className="p-4 bg-slate-50 text-slate-700 rounded-xl text-sm flex flex-col gap-1">
+      <div className="p-4 bg-gray-50 text-gray-700 rounded-xl text-sm flex flex-col gap-1">
         <div className="flex items-center gap-2 font-medium">
-          <Info className="w-4 h-4 text-slate-500" /> Stripe sandbox mode
+          <Info className="w-4 h-4 text-gray-500" /> Stripe sandbox mode
         </div>
-        <p className="text-slate-500">
-          Use test card <span className="font-semibold">4242 4242 4242 4242</span>, any future expiry, and any CVC
-          to simulate a successful charge.
+        <p className="text-gray-500">
+          Use test card{" "}
+          <span className="font-semibold">4242 4242 4242 4242</span>, any future
+          expiry, and any CVC to simulate a successful charge.
         </p>
       </div>
       {message && (
@@ -87,17 +106,26 @@ function CheckoutForm({ amountCents, currency, onSuccess }: { amountCents: numbe
           <AlertCircle className="w-4 h-4" /> {message}
         </div>
       )}
-      <Button disabled={isLoading || !stripe || !elements || !isElementReady} className="w-full">
+      <Button
+        disabled={isLoading || !stripe || !elements || !isElementReady}
+        className="w-full"
+      >
         {isLoading ? "Processing..." : `Pay ${formattedAmount}`}
       </Button>
       <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gray-500">
-        <ShieldCheck className="w-3 h-3 text-green-600" /> Payments are processed securely by Stripe.
+        <ShieldCheck className="w-3 h-3 text-green-600" /> Payments are
+        processed securely by Stripe.
       </div>
     </form>
   );
 }
 
-export function PaymentSection({ clientSecret, amountCents, currency = "USD", onSuccess }: PaymentSectionProps) {
+export function PaymentSection({
+  clientSecret,
+  amountCents,
+  currency = "USD",
+  onSuccess,
+}: PaymentSectionProps) {
   const elementOptions = useMemo<StripeElementsOptions | undefined>(() => {
     if (!clientSecret) return undefined;
     return {
@@ -110,8 +138,8 @@ export function PaymentSection({ clientSecret, amountCents, currency = "USD", on
           },
         },
         variables: {
-          colorPrimary: "#0f172a",
-          colorText: "#0f172a",
+          colorPrimary: "#252723",
+          colorText: "#252723",
           colorDanger: "#b91c1c",
           borderRadius: "12px",
         },
@@ -122,8 +150,16 @@ export function PaymentSection({ clientSecret, amountCents, currency = "USD", on
   if (!elementOptions) return null;
 
   return (
-    <Elements stripe={stripePromise} options={elementOptions} key={clientSecret}>
-      <CheckoutForm amountCents={amountCents} currency={currency} onSuccess={onSuccess} />
+    <Elements
+      stripe={stripePromise}
+      options={elementOptions}
+      key={clientSecret}
+    >
+      <CheckoutForm
+        amountCents={amountCents}
+        currency={currency}
+        onSuccess={onSuccess}
+      />
     </Elements>
   );
 }

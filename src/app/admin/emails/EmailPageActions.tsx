@@ -18,7 +18,10 @@ export function EmailPageActions() {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
       router.push("/admin");
       router.refresh();
     } finally {
@@ -30,7 +33,7 @@ export function EmailPageActions() {
     <>
       <button
         onClick={handleRefresh}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-70"
         disabled={refreshing || loggingOut}
         type="button"
       >
@@ -39,7 +42,7 @@ export function EmailPageActions() {
       </button>
       <button
         onClick={handleLogout}
-        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
         disabled={loggingOut}
         type="button"
       >

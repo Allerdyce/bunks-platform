@@ -1,14 +1,22 @@
-import { EMAIL_TEMPLATES, type EmailTemplateSpec } from '@/lib/email/catalog';
-import { TEMPLATE_RENDERERS } from '@/lib/email/templateRenderers';
-import { renderSubjectWithSample, buildSampleSubject } from '@/lib/email/subjectHelpers';
-import { getEmailSubject } from '@/lib/email/subjects';
-import { TemplateControls } from './TemplateControls';
+import { EMAIL_TEMPLATES, type EmailTemplateSpec } from "@/lib/email/catalog";
+import { TEMPLATE_RENDERERS } from "@/lib/email/templateRenderers";
+import {
+  renderSubjectWithSample,
+  buildSampleSubject,
+} from "@/lib/email/subjectHelpers";
+import { getEmailSubject } from "@/lib/email/subjects";
+import { TemplateControls } from "./TemplateControls";
 
-import type { TemplatePreview } from './types';
-import { AdminTopNav } from '@/components/admin/AdminTopNav';
-import { EmailPageActions } from './EmailPageActions';
+import type { TemplatePreview } from "./types";
+import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { EmailPageActions } from "./EmailPageActions";
 
-const STATUS_ORDER: EmailTemplateSpec['status'][] = ['shipped', 'in-progress', 'planned', 'parked'];
+const STATUS_ORDER: EmailTemplateSpec["status"][] = [
+  "shipped",
+  "in-progress",
+  "planned",
+  "parked",
+];
 
 async function buildPreviews(): Promise<TemplatePreview[]> {
   return Promise.all(
@@ -17,8 +25,10 @@ async function buildPreviews(): Promise<TemplatePreview[]> {
       const sampleProps = renderer?.getSampleProps();
       const subject = sampleProps
         ? renderSubjectWithSample(spec.slug, sampleProps)
-        : getEmailSubject(spec.slug) ?? null;
-      const sampleSubject = sampleProps ? buildSampleSubject(spec.slug, sampleProps) : null;
+        : (getEmailSubject(spec.slug) ?? null);
+      const sampleSubject = sampleProps
+        ? buildSampleSubject(spec.slug, sampleProps)
+        : null;
       return {
         spec,
         html: renderer ? await renderer.render() : null,
@@ -30,34 +40,45 @@ async function buildPreviews(): Promise<TemplatePreview[]> {
 }
 
 export default async function EmailPreviewGallery() {
-
   const previews = await buildPreviews();
-  const templateControls = EMAIL_TEMPLATES.map(({ slug, name, audience, status, trigger, category }) => ({
-    slug,
-    name,
-    audience,
-    status,
-    trigger,
-    category,
-  }));
-  const previewMap = previews.reduce<Record<string, TemplatePreview>>((acc, preview) => {
-    acc[preview.spec.slug] = preview;
-    return acc;
-  }, {});
+  const templateControls = EMAIL_TEMPLATES.map(
+    ({ slug, name, audience, status, trigger, category }) => ({
+      slug,
+      name,
+      audience,
+      status,
+      trigger,
+      category,
+    }),
+  );
+  const previewMap = previews.reduce<Record<string, TemplatePreview>>(
+    (acc, preview) => {
+      acc[preview.spec.slug] = preview;
+      return acc;
+    },
+    {},
+  );
   const totalTemplates = previews.length;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-16">
       <AdminTopNav active="emails" actions={<EmailPageActions />} />
 
       <main className="w-full px-6 lg:px-12 mt-8 space-y-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bunks Ops</p>
-          <h1 className="text-2xl font-serif text-slate-900 mt-1">Email System</h1>
-          <p className="text-sm text-slate-500">Manage automated guest and host communications.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+            Bunks Ops
+          </p>
+          <h1 className="page-title   text-gray-900 mt-1">Stay in touch.</h1>
+          <p className="text-sm text-gray-500">
+            Manage automated guest and host communications.
+          </p>
         </div>
 
-        <TemplateControls templates={templateControls} previewMap={previewMap} />
+        <TemplateControls
+          templates={templateControls}
+          previewMap={previewMap}
+        />
       </main>
     </div>
   );

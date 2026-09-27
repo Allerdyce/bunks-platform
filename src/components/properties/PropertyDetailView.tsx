@@ -23,7 +23,12 @@ import {
   Wifi,
   X,
 } from "lucide-react";
-import type { DateRange, NavigateHandler, PricingQuote, Property } from "@/types";
+import type {
+  DateRange,
+  NavigateHandler,
+  PricingQuote,
+  Property,
+} from "@/types";
 import { Calendar } from "@/components/shared/Calendar";
 import { Button } from "@/components/shared/Button";
 import { ImageLightbox } from "@/components/shared/ImageLightbox";
@@ -67,9 +72,12 @@ const calculateNights = (range: DateRange) => {
 const formatRangeSummary = (range: DateRange) => {
   if (!range.start || !range.end) return "";
   const sameMonth =
-    range.start.getMonth() === range.end.getMonth() && range.start.getFullYear() === range.end.getFullYear();
+    range.start.getMonth() === range.end.getMonth() &&
+    range.start.getFullYear() === range.end.getFullYear();
   const startDay = range.start.toLocaleDateString("en-GB", { day: "numeric" });
-  const startMonth = range.start.toLocaleDateString("en-GB", { month: "short" });
+  const startMonth = range.start.toLocaleDateString("en-GB", {
+    month: "short",
+  });
   const endDay = range.end.toLocaleDateString("en-GB", { day: "numeric" });
   const endMonth = range.end.toLocaleDateString("en-GB", { month: "short" });
 
@@ -81,9 +89,15 @@ const formatRangeSummary = (range: DateRange) => {
 };
 
 const formatDateField = (date: Date | null) =>
-  date ? date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Add date";
+  date
+    ? date.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "Add date";
 
-const noopSelectDates: (range: DateRange) => void = () => { };
+const noopSelectDates: (range: DateRange) => void = () => {};
 
 export function PropertyDetailView({
   property,
@@ -96,7 +110,10 @@ export function PropertyDetailView({
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [pendingRange, setPendingRange] = useState<DateRange>({ start: bookingDates.start, end: bookingDates.end });
+  const [pendingRange, setPendingRange] = useState<DateRange>({
+    start: bookingDates.start,
+    end: bookingDates.end,
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const propertyReviews = PROPERTY_REVIEWS[property.slug] ?? [];
@@ -104,7 +121,8 @@ export function PropertyDetailView({
   const nightlyRateLabel = formatCurrency(property.price);
   const comparableRateLabel = formatCurrency(comparableNightlyRate);
   const reviewCount = property.reviews;
-  const savingsCopy = "Save 10% compared to the same listing on other platforms";
+  const savingsCopy =
+    "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
   const [quote, setQuote] = useState<PricingQuote | null>(null);
   const [pendingQuote, setPendingQuote] = useState<PricingQuote | null>(null);
@@ -120,14 +138,17 @@ export function PropertyDetailView({
       }
       setIsLoadingQuote(true);
       try {
-        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
-          method: 'POST',
-          body: JSON.stringify({
-            checkIn: bookingDates.start.toISOString(),
-            checkOut: bookingDates.end.toISOString(),
-            guests: guestCount
-          })
-        });
+        const res = await fetch(
+          `/api/properties/${property.slug}/check-availability`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              checkIn: bookingDates.start.toISOString(),
+              checkOut: bookingDates.end.toISOString(),
+              guests: guestCount,
+            }),
+          },
+        );
         const data = await res.json();
         if (isMounted && data.quote) {
           setQuote(data.quote);
@@ -141,7 +162,9 @@ export function PropertyDetailView({
       }
     };
     fetchQuote();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [bookingDates, property.slug, guestCount]);
 
   const [minStay, setMinStay] = useState<Record<string, number>>({});
@@ -151,7 +174,8 @@ export function PropertyDetailView({
     let isMounted = true;
     const loadBlockedDates = async () => {
       try {
-        const { blockedDates: dates, minStay: minStayData } = await api.fetchBlockedDates(property.slug);
+        const { blockedDates: dates, minStay: minStayData } =
+          await api.fetchBlockedDates(property.slug);
         if (isMounted) {
           setBlockedDates(dates);
           setMinStay(minStayData);
@@ -161,7 +185,9 @@ export function PropertyDetailView({
       }
     };
     loadBlockedDates();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [property.slug]);
 
   // Fetch quote for pending dates (Calendar Overlay)
@@ -174,14 +200,17 @@ export function PropertyDetailView({
       }
       // Simple debounce could be added here if needed, but for now direct fetch is okay
       try {
-        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
-          method: 'POST',
-          body: JSON.stringify({
-            checkIn: pendingRange.start.toISOString(),
-            checkOut: pendingRange.end.toISOString(),
-            guests: guestCount
-          })
-        });
+        const res = await fetch(
+          `/api/properties/${property.slug}/check-availability`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              checkIn: pendingRange.start.toISOString(),
+              checkOut: pendingRange.end.toISOString(),
+              guests: guestCount,
+            }),
+          },
+        );
         const data = await res.json();
         if (isMounted && data.quote) {
           setPendingQuote(data.quote);
@@ -239,28 +268,39 @@ export function PropertyDetailView({
   // If static, apply 0.9 discount manually.
 
   const displayTotal = quote
-    ? (quote.totalPriceCents / 100)
-    : (confirmedNights * property.price * 0.9);
+    ? quote.totalPriceCents / 100
+    : confirmedNights * property.price * 0.9;
 
   // For the "Original" (strikethrough) price:
   // If Quote: approximate original by using undiscounted nightly rates + current fees (conservative estimate)
   // If Static: standard nightly rate * nights
   const originalTotal = quote
-    ? (quote.undiscountedNightlySubtotalCents + quote.cleaningFeeCents + quote.serviceFeeCents + quote.taxCents) / 100
-    : (confirmedNights * property.price);
+    ? (quote.undiscountedNightlySubtotalCents +
+        quote.cleaningFeeCents +
+        quote.serviceFeeCents +
+        quote.taxCents) /
+      100
+    : confirmedNights * property.price;
 
   // Pending total: Use pendingQuote if available, else static
   const pendingDisplayTotal = pendingQuote
-    ? (pendingQuote.totalPriceCents / 100)
-    : (pendingNights * property.price * 0.9);
+    ? pendingQuote.totalPriceCents / 100
+    : pendingNights * property.price * 0.9;
 
   const pendingOriginalTotal = pendingQuote
-    ? (pendingQuote.undiscountedNightlySubtotalCents + pendingQuote.cleaningFeeCents + pendingQuote.serviceFeeCents + pendingQuote.taxCents) / 100
-    : (pendingNights * property.price);
+    ? (pendingQuote.undiscountedNightlySubtotalCents +
+        pendingQuote.cleaningFeeCents +
+        pendingQuote.serviceFeeCents +
+        pendingQuote.taxCents) /
+      100
+    : pendingNights * property.price;
 
   const confirmedRangeSummary = formatRangeSummary(bookingDates);
-  const dateSummaryLabel = canBook ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
-    }` : "";
+  const dateSummaryLabel = canBook
+    ? `for ${confirmedNights} night${confirmedNights > 1 ? "s" : ""}${
+        confirmedRangeSummary ? ` · ${confirmedRangeSummary}` : ""
+      }`
+    : "";
 
   const openCalendarOverlay = () => {
     setPendingRange({ start: bookingDates.start, end: bookingDates.end });
@@ -291,8 +331,13 @@ export function PropertyDetailView({
 
   const checkInLabel = formatDateField(bookingDates.start);
   const checkOutLabel = formatDateField(bookingDates.end);
-  const footerPrimaryText = canBook ? formatCurrency(displayTotal) : "Add dates for prices";
-  const footerSecondaryText = canBook && dateSummaryLabel ? dateSummaryLabel : "Select dates to unlock tailored pricing";
+  const footerPrimaryText = canBook
+    ? formatCurrency(displayTotal)
+    : "Add dates for prices";
+  const footerSecondaryText =
+    canBook && dateSummaryLabel
+      ? dateSummaryLabel
+      : "Select dates to unlock tailored pricing";
   const reviewCountLabel = `${reviewCount} review${reviewCount === 1 ? "" : "s"}`;
   const hasPropertyReviews = propertyReviews.length > 0;
 
@@ -318,13 +363,17 @@ export function PropertyDetailView({
     label: property.name,
   }));
 
-  const galleryBase = galleryFromGroups.length ? galleryFromGroups : fallbackGalleryItems;
+  const galleryBase = galleryFromGroups.length
+    ? galleryFromGroups
+    : fallbackGalleryItems;
   const gallery: GalleryItem[] = galleryBase.map((item, index) => ({
     ...item,
     globalIndex: index,
   }));
 
-  const galleryIndexLookup = new Map(gallery.map((item) => [item.id, item.globalIndex]));
+  const galleryIndexLookup = new Map(
+    gallery.map((item) => [item.id, item.globalIndex]),
+  );
 
   const openLightboxAt = (index: number) => {
     if (!gallery.length) return;
@@ -340,7 +389,9 @@ export function PropertyDetailView({
   }));
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-fade-in ${isMobile ? "pb-32" : ""}`}>
+    <div
+      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-fade-in ${isMobile ? "pb-32" : ""}`}
+    >
       <button
         onClick={() => onNavigate("home")}
         className="flex items-center text-gray-500 hover:text-gray-900 mb-6 transition-colors"
@@ -351,25 +402,44 @@ export function PropertyDetailView({
 
       <div className="relative mb-10 grid h-[320px] grid-cols-1 gap-2 overflow-hidden rounded-xl sm:h-[460px] md:grid-cols-4 md:grid-rows-2 lg:h-[520px]">
         {gallery.slice(0, 5).map((tile, index) => (
-          <button key={tile.id} type="button" onClick={() => openLightboxAt(tile.globalIndex)}
-            className={`group relative min-h-0 overflow-hidden bg-gray-100 ${index === 0 ? "h-full md:col-span-2 md:row-span-2" : "hidden md:block"}`}>
-            <Image src={tile.src} alt={`${tile.label} photo ${index + 1}`} fill priority={index === 0}
+          <button
+            key={tile.id}
+            type="button"
+            onClick={() => openLightboxAt(tile.globalIndex)}
+            className={`group relative min-h-0 overflow-hidden bg-gray-100 ${index === 0 ? "h-full md:col-span-2 md:row-span-2" : "hidden md:block"}`}
+          >
+            <Image
+              src={tile.src}
+              alt={`${tile.label} photo ${index + 1}`}
+              fill
+              priority={index === 0}
               sizes={index === 0 ? "(max-width: 768px) 100vw, 50vw" : "25vw"}
-              className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            />
             <span className="sr-only">Open photo {index + 1}</span>
           </button>
         ))}
-        {gallery.length > 0 && <button type="button" onClick={() => openLightboxAt(0)} className="absolute bottom-4 right-4 flex min-h-11 items-center gap-2 rounded-full bg-white/95 px-5 py-2 text-sm font-medium hover:bg-white">
-          <ImageIcon className="h-4 w-4" aria-hidden="true" /> View all photos
-        </button>}
+        {gallery.length > 0 && (
+          <button
+            type="button"
+            onClick={() => openLightboxAt(0)}
+            className="absolute bottom-4 right-4 flex min-h-11 items-center gap-2 rounded-full bg-white/95 px-5 py-2 text-sm font-medium hover:bg-white"
+          >
+            <ImageIcon className="h-4 w-4" aria-hidden="true" /> View all photos
+          </button>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="mb-4 text-lg font-semibold text-gray-900">{property.location}</p>
-              <h1 className="editorial-title text-3xl sm:text-4xl mb-3">{property.name}</h1>
+              <p className="mb-4 text-lg font-semibold text-gray-900">
+                {property.location}
+              </p>
+              <h1 className="editorial-title text-3xl sm:text-4xl mb-3">
+                {property.name}
+              </h1>
             </div>
             <div className="text-right hidden sm:block shrink-0">
               <div className="flex items-center gap-1 justify-end mb-1">
@@ -404,16 +474,22 @@ export function PropertyDetailView({
           </div>
 
           <div className="mb-12">
-            <h2 className="section-heading text-gray-900 mb-4">About this space</h2>
+            <h2 className="section-heading text-gray-900 mb-4">
+              About this space
+            </h2>
             <p className="property-copy max-w-[65ch]">{property.description}</p>
             {property.heroTagline && (
-              <p className="property-copy mt-4 max-w-[65ch]">{property.heroTagline}</p>
+              <p className="property-copy mt-4 max-w-[65ch]">
+                {property.heroTagline}
+              </p>
             )}
           </div>
 
           {property.highlights?.length ? (
             <div className="mb-12">
-              <h2 className="section-heading text-gray-900 mb-4">Why you'll love it</h2>
+              <h2 className="section-heading text-gray-900 mb-4">
+                Why you'll love it
+              </h2>
               <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
                 {property.highlights.map((highlight) => (
                   <div key={highlight} className="flex items-start gap-3">
@@ -428,8 +504,13 @@ export function PropertyDetailView({
           {property.aboutSections?.length ? (
             <div className="mb-12 space-y-8">
               {property.aboutSections.map((section) => (
-                <div key={section.title} className="border-t border-gray-200 pt-8">
-                  <h3 className="section-heading text-gray-900 mb-3">{section.title}</h3>
+                <div
+                  key={section.title}
+                  className="border-t border-gray-200 pt-8"
+                >
+                  <h3 className="section-heading text-gray-900 mb-3">
+                    {section.title}
+                  </h3>
                   <div className="property-copy max-w-[65ch] space-y-3">
                     {section.body.map((paragraph) => (
                       <p key={paragraph}>{paragraph}</p>
@@ -442,15 +523,24 @@ export function PropertyDetailView({
 
           {property.sleepingArrangements?.length ? (
             <div className="mb-12">
-              <h2 className="section-heading text-gray-900 mb-6">Sleeping arrangements</h2>
+              <h2 className="section-heading text-gray-900 mb-6">
+                Sleeping arrangements
+              </h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {property.sleepingArrangements.map((arrangement) => (
-                  <div key={arrangement.title} className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+                  <div
+                    key={arrangement.title}
+                    className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm"
+                  >
                     <div className="flex items-start gap-3 mb-3">
                       <Layers className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="font-semibold text-gray-900">{arrangement.title}</p>
-                        <p className="text-sm text-gray-500">{arrangement.bedDetails}</p>
+                        <p className="font-semibold text-gray-900">
+                          {arrangement.title}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {arrangement.bedDetails}
+                        </p>
                       </div>
                     </div>
                     {arrangement.description && (
@@ -468,7 +558,9 @@ export function PropertyDetailView({
                 <div className="p-5 border border-gray-200 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
                     <DoorOpen className="w-5 h-5 text-gray-500" />
-                    <h3 className="section-heading text-gray-900">Guest access</h3>
+                    <h3 className="section-heading text-gray-900">
+                      Guest access
+                    </h3>
                   </div>
                   <ul className="property-copy space-y-3">
                     {property.guestAccess.map((item) => (
@@ -481,7 +573,9 @@ export function PropertyDetailView({
                 <div className="p-5 bg-white border border-gray-200 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
                     <Info className="w-5 h-5 text-gray-500" />
-                    <h3 className="section-heading text-gray-900">Good to know</h3>
+                    <h3 className="section-heading text-gray-900">
+                      Good to know
+                    </h3>
                   </div>
                   <ul className="property-copy space-y-3">
                     {property.otherNotes.map((item) => (
@@ -496,10 +590,15 @@ export function PropertyDetailView({
           {property.notices?.length ? (
             <div className="mb-12 space-y-6">
               {property.notices.map((notice) => (
-                <div key={notice.title} className="border border-amber-200 rounded-2xl bg-amber-50/70 p-6">
+                <div
+                  key={notice.title}
+                  className="border border-amber-200 rounded-2xl bg-amber-50/70 p-6"
+                >
                   <div className="flex items-start gap-3 mb-3">
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
-                    <h3 className="section-heading text-gray-900">{notice.title}</h3>
+                    <h3 className="section-heading text-gray-900">
+                      {notice.title}
+                    </h3>
                   </div>
                   <div className="space-y-3 text-gray-700">
                     {notice.body.map((paragraph) => (
@@ -513,14 +612,23 @@ export function PropertyDetailView({
 
           {property.photoGroups?.length ? (
             <div className="mb-12 space-y-8">
-              <h2 className="section-heading text-gray-900">Room-by-room gallery</h2>
+              <h2 className="section-heading text-gray-900">
+                Room-by-room gallery
+              </h2>
               {property.photoGroups.map((group) => (
-                <div key={group.title} className="border border-gray-200 rounded-2xl p-6">
+                <div
+                  key={group.title}
+                  className="border border-gray-200 rounded-2xl p-6"
+                >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{group.title}</h3>
+                      <h3 className="font-semibold text-gray-900">
+                        {group.title}
+                      </h3>
                       {group.description && (
-                        <p className="text-sm text-gray-500">{group.description}</p>
+                        <p className="text-sm text-gray-500">
+                          {group.description}
+                        </p>
                       )}
                     </div>
                     <div className="inline-flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400">
@@ -549,7 +657,9 @@ export function PropertyDetailView({
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
-                        <span className="sr-only">Open {group.title} photo {imageIndex + 1}</span>
+                        <span className="sr-only">
+                          Open {group.title} photo {imageIndex + 1}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -559,11 +669,20 @@ export function PropertyDetailView({
           ) : null}
 
           <div className="mb-12">
-            <h2 className="section-heading text-gray-900 mb-6">What this place offers</h2>
+            <h2 className="section-heading text-gray-900 mb-6">
+              What this place offers
+            </h2>
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
               {property.features.map((feature, index) => (
-                <div key={feature} className="flex items-center gap-3 text-gray-600 p-4 bg-gray-50 rounded-xl">
-                  {index % 2 === 0 ? <Wifi className="w-5 h-5" /> : <Car className="w-5 h-5" />}
+                <div
+                  key={feature}
+                  className="flex items-center gap-3 text-gray-600 p-4 bg-gray-50 rounded-xl"
+                >
+                  {index % 2 === 0 ? (
+                    <Wifi className="w-5 h-5" />
+                  ) : (
+                    <Car className="w-5 h-5" />
+                  )}
                   {feature}
                 </div>
               ))}
@@ -573,7 +692,8 @@ export function PropertyDetailView({
           <div className="mb-12" id="availability-calendar">
             <h2 className="section-heading text-gray-900 mb-2">Availability</h2>
             <p className="text-sm text-gray-500">
-              View blocked nights below. Tap anywhere on the calendar to open the interactive picker and lock your stay.
+              View blocked nights below. Tap anywhere on the calendar to open
+              the interactive picker and lock your stay.
             </p>
             <div className="relative mt-4">
               <Calendar
@@ -616,7 +736,9 @@ export function PropertyDetailView({
                   )}
                 </div>
                 {canBook && (
-                  <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">Direct booking rate</p>
+                  <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">
+                    Direct booking rate
+                  </p>
                 )}
               </div>
               <button
@@ -639,7 +761,9 @@ export function PropertyDetailView({
                   <label className="block text-xs font-bold text-gray-800 uppercase mb-1">
                     Check-in
                   </label>
-                  <div className={`text-sm truncate ${bookingDates.start ? "text-gray-900" : "text-gray-400"}`}>
+                  <div
+                    className={`text-sm truncate ${bookingDates.start ? "text-gray-900" : "text-gray-400"}`}
+                  >
                     {checkInLabel}
                   </div>
                 </button>
@@ -650,7 +774,9 @@ export function PropertyDetailView({
                   <label className="block text-xs font-bold text-gray-800 uppercase mb-1">
                     Check-out
                   </label>
-                  <div className={`text-sm truncate ${bookingDates.end ? "text-gray-900" : "text-gray-400"}`}>
+                  <div
+                    className={`text-sm truncate ${bookingDates.end ? "text-gray-900" : "text-gray-400"}`}
+                  >
                     {checkOutLabel}
                   </div>
                 </button>
@@ -663,7 +789,9 @@ export function PropertyDetailView({
                   <select
                     className="w-full appearance-none text-sm text-gray-900 bg-transparent border-none outline-none p-0 pr-6 cursor-pointer"
                     value={guestCount}
-                    onChange={(event) => onGuestCountChange(Number(event.target.value))}
+                    onChange={(event) =>
+                      onGuestCountChange(Number(event.target.value))
+                    }
                   >
                     {[...Array(property.guests)].map((_, idx) => (
                       <option key={idx} value={idx + 1}>
@@ -671,15 +799,15 @@ export function PropertyDetailView({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -trangray-y-1/2 text-gray-500" />
                 </div>
               </div>
             </div>
 
-
-
             <Button
-              onClick={() => (canBook ? onNavigate("booking") : openCalendarOverlay())}
+              onClick={() =>
+                canBook ? onNavigate("booking") : openCalendarOverlay()
+              }
               className="w-full mb-4"
             >
               {canBook ? "Reserve" : "Check availability"}
@@ -694,13 +822,18 @@ export function PropertyDetailView({
       {calendarOpen && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-gray-900/70 px-0 sm:px-4">
           <div
-            className={`bg-white w-full shadow-2xl flex flex-col ${isMobile ? "rounded-t-3xl max-h-[90vh] overflow-hidden" : "max-w-3xl rounded-3xl overflow-hidden"
-              }`}
+            className={`bg-white w-full shadow-2xl flex flex-col ${
+              isMobile
+                ? "rounded-t-3xl max-h-[90vh] overflow-hidden"
+                : "max-w-3xl rounded-xl overflow-hidden"
+            }`}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <div>
                 <p className="font-semibold text-gray-900">Choose your stay</p>
-                <p className="text-sm text-gray-500">Select check-in and check-out dates</p>
+                <p className="text-sm text-gray-500">
+                  Select check-in and check-out dates
+                </p>
               </div>
               <button
                 type="button"
@@ -730,16 +863,23 @@ export function PropertyDetailView({
                       {formatCurrency(pendingOriginalTotal)}
                     </p>
                     <p className="text-base font-semibold text-gray-900">
-                      {formatCurrency(pendingDisplayTotal)} for {pendingNights} night{pendingNights > 1 ? "s" : ""}
+                      {formatCurrency(pendingDisplayTotal)} for {pendingNights}{" "}
+                      night{pendingNights > 1 ? "s" : ""}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-base font-semibold text-gray-900">{pendingSummary}</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {pendingSummary}
+                  </p>
                 )}
                 {pendingNights ? (
-                  <p className="text-sm text-gray-500">{formatRangeSummary(pendingRange)}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatRangeSummary(pendingRange)}
+                  </p>
                 ) : (
-                  <p className="text-sm text-gray-500">Tap nights to build your stay.</p>
+                  <p className="text-sm text-gray-500">
+                    Tap nights to build your stay.
+                  </p>
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -752,7 +892,11 @@ export function PropertyDetailView({
                     Clear
                   </button>
                 )}
-                <Button onClick={handleSavePendingRange} disabled={!hasPendingSelection} className="flex-1 sm:flex-none">
+                <Button
+                  onClick={handleSavePendingRange}
+                  disabled={!hasPendingSelection}
+                  className="flex-1 sm:flex-none"
+                >
                   {hasPendingSelection ? "Save" : "Select dates"}
                 </Button>
               </div>
@@ -763,11 +907,13 @@ export function PropertyDetailView({
 
       {reviewsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 px-4">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div>
                 <p className="section-heading text-gray-900">Guest reviews</p>
-                <p className="text-sm text-gray-500">{reviewCountLabel} · Rated {property.rating}</p>
+                <p className="text-sm text-gray-500">
+                  {reviewCountLabel} · Rated {property.rating}
+                </p>
               </div>
               <button
                 type="button"
@@ -784,20 +930,34 @@ export function PropertyDetailView({
                   <div key={review.id} className="px-6 py-5 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-gray-900">{review.guestName}</p>
-                        <p className="text-xs text-gray-500">Stayed {review.nights} night{review.nights > 1 ? "s" : ""} · {review.stayDate}</p>
+                        <p className="font-semibold text-gray-900">
+                          {review.guestName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Stayed {review.nights} night
+                          {review.nights > 1 ? "s" : ""} · {review.stayDate}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1 text-amber-500 text-sm">
-                        {Array.from({ length: Math.max(1, Math.round(review.rating)) }).map((_, idx) => (
-                          <Star key={`${review.id}-star-${idx}`} className="w-4 h-4 fill-current" />
+                        {Array.from({
+                          length: Math.max(1, Math.round(review.rating)),
+                        }).map((_, idx) => (
+                          <Star
+                            key={`${review.id}-star-${idx}`}
+                            className="w-4 h-4 fill-current"
+                          />
                         ))}
                       </div>
                     </div>
-                    <p className="text-gray-600 leading-relaxed">{review.body}</p>
+                    <p className="text-gray-600 leading-relaxed">
+                      {review.body}
+                    </p>
                   </div>
                 ))
               ) : (
-                <div className="px-6 py-8 text-center text-gray-500">No reviews yet for this listing.</div>
+                <div className="px-6 py-8 text-center text-gray-500">
+                  No reviews yet for this listing.
+                </div>
               )}
             </div>
           </div>
@@ -825,15 +985,21 @@ export function PropertyDetailView({
                       </p>
                     </div>
                   ) : (
-                    <p className="text-base font-semibold text-gray-900">{footerPrimaryText}</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {footerPrimaryText}
+                    </p>
                   )}
                   <p className="text-xs text-gray-500">{footerSecondaryText}</p>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-900 underline">Edit</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-900 underline">
+                  Edit
+                </span>
               </div>
             </button>
             <Button
-              onClick={() => (canBook ? onNavigate("booking") : openCalendarOverlay())}
+              onClick={() =>
+                canBook ? onNavigate("booking") : openCalendarOverlay()
+              }
               className="min-w-[140px]"
             >
               {canBook ? "Reserve" : "Check availability"}

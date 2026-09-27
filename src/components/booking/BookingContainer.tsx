@@ -18,7 +18,10 @@ interface BookingContainerProps {
   dates: DateRange;
   guestCount: number;
   onBack: () => void;
-  onSuccess: (payload: { bookingReference: string; guestEmail: string }) => void;
+  onSuccess: (payload: {
+    bookingReference: string;
+    guestEmail: string;
+  }) => void;
 }
 
 const SERVICE_FEE = 20;
@@ -29,14 +32,26 @@ const calculateNights = (range: DateRange) => {
   return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 };
 
-export function BookingContainer({ property, dates, guestCount, onBack, onSuccess }: BookingContainerProps) {
+export function BookingContainer({
+  property,
+  dates,
+  guestCount,
+  onBack,
+  onSuccess,
+}: BookingContainerProps) {
   const [step, setStep] = useState<"details" | "payment">("details");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [createdBookingReference, setCreatedBookingReference] = useState<string | null>(null);
+  const [createdBookingReference, setCreatedBookingReference] = useState<
+    string | null
+  >(null);
   const [isLoadingIntent, setIsLoadingIntent] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [quoteTotals, setQuoteTotals] = useState<{ totalCents: number; currency: string } | null>(null);
-  const [pricingBreakdown, setPricingBreakdown] = useState<BookingBreakdown | null>(null);
+  const [quoteTotals, setQuoteTotals] = useState<{
+    totalCents: number;
+    currency: string;
+  } | null>(null);
+  const [pricingBreakdown, setPricingBreakdown] =
+    useState<BookingBreakdown | null>(null);
   const [guestDetails, setGuestDetails] = useState<BookingClientState>({
     firstName: "",
     lastName: "",
@@ -56,7 +71,14 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
     const serviceFee = Math.round(subtotal * 0.15); // 15% Service Fee
     const total = subtotal + cleaningFee + serviceFee;
 
-    return { subtotal, cleaningFee, serviceFee, total, undiscountedNightlyRate, discountedNightlyRate };
+    return {
+      subtotal,
+      cleaningFee,
+      serviceFee,
+      total,
+      undiscountedNightlyRate,
+      discountedNightlyRate,
+    };
   }, [nights, property.price]);
   // Fetch dynamic quote on mount to show correct pricing immediately
   useEffect(() => {
@@ -64,14 +86,17 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
     const fetchQuote = async () => {
       if (!dates.start || !dates.end) return;
       try {
-        const res = await fetch(`/api/properties/${property.slug}/check-availability`, {
-          method: 'POST',
-          body: JSON.stringify({
-            checkIn: dates.start.toISOString(),
-            checkOut: dates.end.toISOString(),
-            guests: guestCount
-          })
-        });
+        const res = await fetch(
+          `/api/properties/${property.slug}/check-availability`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              checkIn: dates.start.toISOString(),
+              checkOut: dates.end.toISOString(),
+              guests: guestCount,
+            }),
+          },
+        );
         const data = await res.json();
 
         if (isMounted && data.quote) {
@@ -81,14 +106,15 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
             cleaningFeeCents: q.cleaningFeeCents,
             serviceFeeCents: q.serviceFeeCents,
             taxCents: q.taxCents,
-            undiscountedNightlySubtotalCents: q.undiscountedNightlySubtotalCents,
-            nightlyLineItems: q.nightlyLineItems
+            undiscountedNightlySubtotalCents:
+              q.undiscountedNightlySubtotalCents,
+            nightlyLineItems: q.nightlyLineItems,
           });
-          // Also update totals to ensure spinner/payment matches if possible? 
+          // Also update totals to ensure spinner/payment matches if possible?
           // Actually payment logic uses createBooking response, but for visual consistency this is good.
           setQuoteTotals({
             totalCents: q.totalPriceCents,
-            currency: "USD"
+            currency: "USD",
           });
         }
       } catch (err) {
@@ -96,10 +122,14 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
       }
     };
     fetchQuote();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [dates, property.slug, guestCount]);
 
-  const handleDetailsSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+  const handleDetailsSubmit: React.FormEventHandler<HTMLFormElement> = async (
+    event,
+  ) => {
     event.preventDefault();
     if (!dates.start || !dates.end) return;
 
@@ -119,14 +149,18 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
       const response = await api.createBooking(payload);
       setClientSecret(response.clientSecret);
       setCreatedBookingReference(response.bookingReference);
-      setQuoteTotals({ totalCents: response.totalPriceCents, currency: response.currency.toUpperCase() });
+      setQuoteTotals({
+        totalCents: response.totalPriceCents,
+        currency: response.currency.toUpperCase(),
+      });
       setPricingBreakdown(response.breakdown);
       setStep("payment");
     } catch (error) {
       console.error("Failed to initialize booking", error);
-      const message = error instanceof Error && error.message
-        ? error.message
-        : "Could not initialize payment. Please try again.";
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Could not initialize payment. Please try again.";
       setFormError(message);
       setPricingBreakdown(null);
       setQuoteTotals(null);
@@ -139,11 +173,16 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
 
   const handlePaymentSuccess = () => {
     if (!createdBookingReference) {
-      setFormError("We could not locate your booking reference. Please contact support.");
+      setFormError(
+        "We could not locate your booking reference. Please contact support.",
+      );
       return;
     }
 
-    onSuccess({ bookingReference: createdBookingReference, guestEmail: guestDetails.email.trim() });
+    onSuccess({
+      bookingReference: createdBookingReference,
+      guestEmail: guestDetails.email.trim(),
+    });
   };
 
   const handleRequestContinue = () => {
@@ -162,11 +201,15 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> Back to property
           </button>
-          <h2 className="font-serif text-3xl text-gray-900 mb-2">
-            {step === "details" ? "Guest Details" : "Confirm and Pay"}
-          </h2>
+          <h1 className="page-title text-gray-900 mb-4">
+            {step === "details"
+              ? "Make yourself at home."
+              : "Confirm your stay."}
+          </h1>
           <p className="text-gray-500 mb-6">
-            {step === "details" ? "Who is coming?" : "Complete your secure transaction."}
+            {step === "details"
+              ? "A few details for your host before you arrive."
+              : "Review the details and complete your booking securely."}
           </p>
 
           {step === "details" ? (
@@ -185,7 +228,10 @@ export function BookingContainer({ property, dates, guestCount, onBack, onSucces
           ) : (
             <PaymentSection
               clientSecret={clientSecret}
-              amountCents={quoteTotals?.totalCents ?? Math.round(fallbackTotals.total * 100)}
+              amountCents={
+                quoteTotals?.totalCents ??
+                Math.round(fallbackTotals.total * 100)
+              }
               currency={quoteTotals?.currency ?? "USD"}
               onSuccess={handlePaymentSuccess}
             />

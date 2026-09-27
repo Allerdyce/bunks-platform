@@ -39,10 +39,10 @@ export function HomeView({ properties, onSelectProperty }: HomeViewProps) {
               Our collection
             </p>
             <h2 className="marketing-title text-3xl sm:text-[38px] mb-4">
-              A place by the ocean. A home in the mountains.
+              Find a home worth coming back to.
             </h2>
             <p className="text-gray-500">
-              From slow mornings by the coast to weekends in the mountains.
+              Discover your next stay, or return to a familiar favorite.
             </p>
           </div>
         </div>

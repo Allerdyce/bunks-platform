@@ -10,23 +10,33 @@ interface JournalViewProps {
   onOpenPost: (post: JournalPost) => void;
 }
 
-export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps) {
+export function JournalView({
+  posts,
+  onNavigate,
+  onOpenPost,
+}: JournalViewProps) {
   return (
     <div className="animate-fade-in">
-      <div className="bg-gray-900 text-white py-24 px-4 sm:px-6 lg:px-8 text-center mb-16">
-        <h1 className="font-serif text-4xl sm:text-5xl mb-4 text-white">Travel Notes</h1>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light">
+      <div className="marketing-section bg-white px-6 text-center mb-8">
+        <h1 className="marketing-title text-4xl sm:text-6xl mb-6">
+          Travel Notes
+        </h1>
+        <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
           Part inspiration, part storytelling, part host perspective.
         </p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">
+      <div className="marketing-container mb-24">
+        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">
           Featured Stories
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-12 mb-20">
           {posts.slice(0, 2).map((post) => (
-            <button key={post.id} className="group text-left" onClick={() => onOpenPost(post)}>
+            <button
+              key={post.id}
+              className="group text-left"
+              onClick={() => onOpenPost(post)}
+            >
               <div className="aspect-[4/3] overflow-hidden rounded-xl mb-6 bg-gray-100 relative">
                 <Image
                   src={post.image}
@@ -36,7 +46,7 @@ export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps)
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
-              <div className="flex items-center gap-2 mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
+              <div className="flex items-center gap-2 mb-3 text-xs font-medium uppercase tracking-wider text-gray-500">
                 <span>{post.category}</span>
                 <span>•</span>
                 <span>{post.date}</span>
@@ -44,7 +54,9 @@ export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps)
               <h3 className="font-serif text-2xl text-gray-900 mb-2 group-hover:text-gray-600 transition-colors">
                 {post.title}
               </h3>
-              <p className="text-gray-500 leading-relaxed mb-4 line-clamp-2">{post.excerpt}</p>
+              <p className="text-gray-500 leading-relaxed mb-4 line-clamp-2">
+                {post.excerpt}
+              </p>
               <span className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-4">
                 Read story
               </span>
@@ -54,7 +66,11 @@ export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps)
 
         <div className="grid md:grid-cols-3 gap-8 mb-24">
           {posts.slice(2).map((post) => (
-            <button key={post.id} className="group text-left" onClick={() => onOpenPost(post)}>
+            <button
+              key={post.id}
+              className="group text-left"
+              onClick={() => onOpenPost(post)}
+            >
               <div className="aspect-[3/2] overflow-hidden rounded-lg mb-4 bg-gray-100 relative">
                 <Image
                   src={post.image}
@@ -67,19 +83,30 @@ export function JournalView({ posts, onNavigate, onOpenPost }: JournalViewProps)
               <h4 className="font-serif text-lg text-gray-900 mb-1 group-hover:text-gray-600 line-clamp-1">
                 {post.title}
               </h4>
-              <p className="text-sm text-gray-500 line-clamp-2">{post.excerpt}</p>
+              <p className="text-sm text-gray-500 line-clamp-2">
+                {post.excerpt}
+              </p>
             </button>
           ))}
         </div>
 
-        <div className="bg-gray-50 rounded-3xl p-8 sm:p-12">
+        <div className="bg-gray-100 rounded-xl p-8 sm:p-12">
           <div className="flex flex-col md:flex-row gap-12 items-center">
             <div className="flex-1">
-              <h2 className="font-serif text-2xl text-gray-900 mb-4">Renovation Diaries</h2>
+              <h2 className="font-serif text-2xl text-gray-900 mb-4">
+                Renovation Diaries
+              </h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                We believe in transparency and craftsmanship. Follow along as we restore the Summerland garden, update the Steamboat cabin interiors, and work with local artisans to create spaces that tell a story.
+                We believe in transparency and craftsmanship. Follow along as we
+                restore the Summerland garden, update the Steamboat cabin
+                interiors, and work with local artisans to create spaces that
+                tell a story.
               </p>
-              <Button variant="outline" className="border-gray-900 text-gray-900 hover:bg-gray-200" onClick={() => onNavigate("journal")}>
+              <Button
+                variant="outline"
+                className="border-gray-900 text-gray-900 hover:bg-gray-200"
+                onClick={() => onNavigate("journal")}
+              >
                 View Series
               </Button>
             </div>

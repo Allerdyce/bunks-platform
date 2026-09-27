@@ -21,8 +21,12 @@
     --radius-lg: 12px;
     --radius-2xl: 24px;
   }
-  * { border-color: var(--color-border); }
-  html { scroll-padding-top: 112px; }
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-padding-top: 112px;
+  }
   body {
     background: var(--color-surface);
     color: var(--color-text-primary);
@@ -30,11 +34,33 @@
     font-weight: 400;
     min-height: 100vh;
   }
-  h1, h2, h3, h4, h5, h6 { font-weight: 500; letter-spacing: -0.025em; }
-  button, input, select, textarea { font: inherit; }
-  button:not(:disabled), summary { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--color-brand-light); outline-offset: 4px; }
-  ::selection { background: #dbe0d2; color: #252723; }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 500;
+    letter-spacing: -0.025em;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-light);
+    outline-offset: 4px;
+  }
+  ::selection {
+    background: #dbe0d2;
+    color: #252723;
+  }
 }
 
 @theme inline {
@@ -57,19 +83,158 @@
 }
 
 @layer components {
-  .marketing-container { width: 100%; max-width: 1440px; margin-inline: auto; padding-inline: clamp(24px, 5vw, 72px); }
-  .marketing-section { padding-block: clamp(64px, 7vw, 112px); }
-  .marketing-title { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.025em; line-height: 1.16; text-wrap: balance; }
-  .marketing-button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 24px; border-radius: 999px; background: #20211f; color: white; font-size: 16px; font-weight: 600; transition: background 150ms; }
-  .marketing-button:hover { background: #454940; }
-  .eyebrow { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
-  .editorial-title { font-family: var(--font-serif); font-weight: 400; line-height: 1.12; letter-spacing: -0.045em; }
-  .section-heading { font-family: var(--font-sans); font-size: 1.25rem; font-weight: 600; line-height: 1.4; letter-spacing: -0.015em; }
-  .property-copy { color: var(--color-text-primary); font-size: 1.0625rem; line-height: 1.65; font-weight: 450; }
-  .guest-surface { background: var(--color-surface); }
-  .soft-panel { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: 12px; }
+  .marketing-container {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: clamp(24px, 5vw, 72px);
+  }
+  .marketing-section {
+    padding-block: clamp(64px, 7vw, 112px);
+  }
+  .marketing-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.16;
+    text-wrap: balance;
+  }
+  .marketing-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    border-radius: 999px;
+    background: #20211f;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 150ms;
+  }
+  .marketing-button:hover {
+    background: #454940;
+  }
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .editorial-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.045em;
+  }
+  .section-heading {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.015em;
+  }
+  .property-copy {
+    color: var(--color-text-primary);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    font-weight: 450;
+  }
+  .guest-surface {
+    background: var(--color-surface);
+  }
+  .soft-panel {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shared interior-page language. Operational screens keep a denser rhythm. */
+@layer components {
+  .page-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .reading-copy {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: var(--color-text-primary);
+  }
+  .reading-copy p + p {
+    margin-top: 1.25rem;
+  }
+  .reading-copy h2,
+  .reading-copy h3 {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .reading-copy ul,
+  .reading-copy ol {
+    padding-left: 1.5rem;
+    margin-block: 1.25rem;
+  }
+  .reading-copy ul {
+    list-style: disc;
+  }
+  .reading-copy ol {
+    list-style: decimal;
+  }
+  .ops-surface {
+    background: var(--color-surface);
+    min-height: 100vh;
+  }
+  .ops-surface h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(1.875rem, 3vw, 2.5rem);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    margin-bottom: 1rem;
+  }
+  .ops-surface h2,
+  .ops-surface h3 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .ops-surface main {
+    max-width: 1600px;
+    margin-inline: auto;
+  }
+  .ops-surface input:not([type="checkbox"]):not([type="radio"]),
+  .ops-surface select {
+    min-height: 44px;
+  }
+  .ops-surface button {
+    min-height: 40px;
+  }
+  .ops-surface table {
+    font-size: 0.875rem;
+  }
+  .ops-surface th {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+  .ops-surface td,
+  .ops-surface th {
+    padding-block: 1rem;
+  }
 }

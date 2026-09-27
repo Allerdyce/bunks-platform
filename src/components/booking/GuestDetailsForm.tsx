@@ -30,38 +30,52 @@ export function GuestDetailsForm({
     <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            First Name
+          </label>
           <input
             required
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
             value={value.firstName}
-            onChange={(event) => onChange({ ...value, firstName: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...value, firstName: event.target.value })
+            }
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Last Name
+          </label>
           <input
             required
             type="text"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
             value={value.lastName}
-            onChange={(event) => onChange({ ...value, lastName: event.target.value })}
+            onChange={(event) =>
+              onChange({ ...value, lastName: event.target.value })
+            }
           />
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Email Address
+        </label>
         <input
           required
           type="email"
           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white"
           value={value.email}
-          onChange={(event) => onChange({ ...value, email: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...value, email: event.target.value })
+          }
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Guests
+        </label>
         <div className="relative">
           <select
             className="w-full appearance-none px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none pr-10 bg-white"
@@ -76,7 +90,7 @@ export function GuestDetailsForm({
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -trangray-y-1/2 text-gray-500" />
         </div>
       </div>
       {!hideSubmitButton && (

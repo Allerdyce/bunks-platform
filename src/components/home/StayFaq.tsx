@@ -2,12 +2,12 @@ const QUESTIONS = [
   {
     title: "Where can I stay with Bunks?",
     answer:
-      "Our current collection includes a coastal home in Summerland, California, and a mountain townhome in Steamboat Springs, Colorado. Explore each home for photographs, sleeping arrangements, amenities, and availability.",
+      "Explore our growing collection of homes, starting in Summerland, California, and Steamboat Springs, Colorado. Each listing has photographs, sleeping arrangements, amenities, and availability.",
   },
   {
     title: "Why book directly?",
     answer:
-      "Booking with Bunks gives you a direct connection to your hosts and a 10% saving compared to the same listing on other platforms. Choose your dates to see the itemized price for your stay.",
+      "Bunks helps you return to homes you love and book directly with your host for 10% less than the same listing on other booking platforms. Choose your dates to see the itemized price for your stay.",
   },
   {
     title: "How do I check availability?",

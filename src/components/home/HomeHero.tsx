@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/shared/Button";
 
 export function HomeHero({ onExplore }: { onExplore: () => void }) {
@@ -19,7 +18,7 @@ export function HomeHero({ onExplore }: { onExplore: () => void }) {
         <div className="absolute inset-0 -z-10 bg-black/45" />
         <div className="mx-auto max-w-2xl">
           <p className="mb-6 text-sm font-medium text-white">
-            A small collection. A personal welcome.
+            Good stays deserve a return visit.
           </p>
           <h1 className="marketing-title text-[46px] sm:text-6xl lg:text-[68px]">
             Find your place.
@@ -27,7 +26,7 @@ export function HomeHero({ onExplore }: { onExplore: () => void }) {
             Feel at home.
           </h1>
           <p className="mx-auto mb-8 mt-6 max-w-lg text-lg leading-relaxed text-white">
-            Coastal mornings and mountain weekends.
+            Come back to a place you love.
             <br className="hidden sm:block" /> Beautiful homes, booked directly
             with your hosts.
           </p>
@@ -43,13 +42,9 @@ export function HomeHero({ onExplore }: { onExplore: () => void }) {
           At home in Summerland, California
         </p>
       </section>
-      <button
-        onClick={onExplore}
-        className="flex min-h-16 w-full items-center justify-center gap-4 bg-[#f9e8a6] px-6 py-4 text-sm font-semibold text-gray-950 sm:text-base"
-      >
-        A better way to stay. Book direct and save 10%.{" "}
-        <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
-      </button>
+      <div className="flex min-h-16 w-full items-center justify-center gap-4 bg-[#f9e8a6] px-6 py-4 text-sm font-semibold text-gray-950 sm:text-base">
+        A better way to stay. Book direct and save 10%.
+      </div>
     </>
   );
 }

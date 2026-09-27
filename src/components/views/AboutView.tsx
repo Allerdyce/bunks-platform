@@ -43,16 +43,19 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
           </h2>
           <div className="max-w-xl space-y-5 text-lg leading-relaxed">
             <p>
-              After years of traveling and hosting in California and Colorado,
-              we wanted a simpler way to bring guests and homes together.
+              When you find a stay you love, coming back should feel simple. You
+              already know the home, the neighborhood, and the people who
+              welcome you.
             </p>
             <p>
-              So we built Bunks: a small collection of homes you can book
-              directly with the people who care for them. From choosing a place
-              to finding your favorite neighborhood coffee, we want the
-              experience to feel welcoming and straightforward.
+              Bunks helps guests and hosts stay connected beyond the first
+              visit. Book your next stay directly with your host for 10% less
+              than the same listing on other booking platforms.
             </p>
-            <p>Our homes are different. The care behind them is the same.</p>
+            <p>
+              We’re growing our collection, one home and one good connection at
+              a time.
+            </p>
           </div>
         </div>
       </section>
@@ -70,7 +73,7 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
           </div>
           <div className="flex flex-col items-start justify-center px-7 py-12 sm:p-12 lg:p-16">
             <p className="mb-6 text-sm font-semibold uppercase tracking-wide">
-              From coast to mountains
+              Your next return visit
             </p>
             <h2 className="marketing-title mb-6 text-4xl lg:text-5xl">
               A change of scenery.
@@ -78,8 +81,8 @@ export function AboutView({ onNavigate }: { onNavigate: NavigateHandler }) {
               The comforts of home.
             </h2>
             <p className="mb-8 text-lg leading-relaxed">
-              Long lunches in Summerland. Fresh snow in Steamboat. Find the
-              setting for your next chapter, and we’ll help you settle in.
+              A favorite breakfast spot. The room everyone remembers. Find a
+              place that feels like yours, and an easier way to come back.
             </p>
             <Button
               onClick={() => onNavigate("listings")}

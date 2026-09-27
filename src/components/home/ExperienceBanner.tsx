@@ -16,9 +16,9 @@ export function ExperienceBanner() {
             <br className="hidden lg:block" /> for the trip.
           </h2>
           <p className="mb-8 max-w-md text-lg leading-relaxed">
-            Save 10% compared to the same listing on other platforms when you
-            book with Bunks. Pick your dates to see your stay and full price
-            breakdown.
+            Book your next stay directly with your host and save 10% compared to
+            the same home on other booking platforms. Familiar places, personal
+            connections, and more left for your trip.
           </p>
           <Link href="/#listings" className="marketing-button">
             Find your next stay
