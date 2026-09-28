@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-28T00:14:18.433Z",
+  "at": "2026-09-28T01:44:03.503Z",
   "pass": 171,
   "total": 171,
   "results": [
@@ -1294,7 +1294,7 @@
     {
       "scenario": "Airbnb price check (comparison only)",
       "id": "PC3",
-      "description": "comparison uses Bunks' pre-tax total; 20% saving passes quietly",
+      "description": "comparison uses Bunks' pre-tax total; 20% saving → OK, summary email lists both prices",
       "pass": true,
       "detail": "",
       "ticket": ""
