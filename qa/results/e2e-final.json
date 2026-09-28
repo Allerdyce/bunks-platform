@@ -1,7 +1,7 @@
 {
-  "at": "2026-09-27T23:31:00.261Z",
-  "pass": 162,
-  "total": 162,
+  "at": "2026-09-28T00:14:18.433Z",
+  "pass": 171,
+  "total": 171,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -1271,6 +1271,78 @@
       "scenario": "Address, Wi-Fi and guides only for paid guests",
       "id": "PV8",
       "description": "guide link stops working once the booking is cancelled",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC1",
+      "description": "scenarios need the price-check secret",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC2",
+      "description": "scenarios: Steamboat listing from its calendar link, 3- and 7-night stays, 2 adults, USD/en",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC3",
+      "description": "comparison uses Bunks' pre-tax total; 20% saving passes quietly",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC4",
+      "description": "saving below the 5% target → below-target and an alert email",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC5",
+      "description": "blocked/failed quotes are reported, not compared, and alerted",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC6",
+      "description": "a quote for a listing that isn't in the home's calendar links is rejected as invalid",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC7",
+      "description": "malformed quotes (zero price, non-USD) → 400",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC8",
+      "description": "stays already booked on Bunks aren't sent to the runner",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb price check (comparison only)",
+      "id": "PC9",
+      "description": "daily job alerts when the price runner hasn't reported for 36h",
       "pass": true,
       "detail": "",
       "ticket": ""

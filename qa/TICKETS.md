@@ -7,7 +7,7 @@ Branch `claude/bold-curie-7laxza` (on top of the design branch `codex/kindred-ui
 - `qa/ui/smoke.mjs`: real-browser tests.
 - `qa/unit/*.test.ts`: unit tests, run under 4 server timezones.
 
-The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing. Final runs: `qa/results/e2e-final.json` (162/162), `qa/results/ui-final.json` (56/56), unit tests (18/18 × 4 timezones) and `qa/results/build-final.log` (production build OK).
+The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 passing. Final runs: `qa/results/e2e-final.json` (171/171), `qa/results/ui-final.json` (56/56), unit tests (18/18 × 4 timezones) and `qa/results/build-final.log` (production build OK).
 
 ## Calendar and availability
 
@@ -91,6 +91,12 @@ The baseline run before any fixes is `qa/results/e2e-baseline.json`: 77/101 pass
 | T-UI-01 | P2 | Calendar days had no screen-reader labels. | Fixed. | used by all UI tests |
 | T-UI-02 | P3 | "$412 / night" on the property page is the all-in average, which isn't obvious. | Added "$1,647 total for 4 nights, incl. fees and taxes". | UB4 |
 | T-UI-04 | P3 | Admin check-in placeholder said 4 PM; everything else defaults to 3 PM. | Fixed. | — |
+
+## Pricing
+
+| ID | Sev | Problem | Status | Evidence |
+|---|---|---|---|---|
+| T-PR-01 | P2 | Nothing warned when Bunks' direct price stopped undercutting Airbnb for the same stay. | Built (28 Sep). Bunks issues stays to check, and an external runner (PR #8, GitHub Actions) posts back Airbnb's quotes. Bunks compares them before tax and alerts below the target, on failed or blocked quotes, and after 36h of silence. Airbnb prices are never used as Bunks prices. | PC1–PC9 |
 
 ## Build and infrastructure
 
