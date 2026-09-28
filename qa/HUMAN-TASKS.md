@@ -94,7 +94,7 @@ Checkout now asks Stripe for **cards only** (Q3). Apple Pay and Google Pay are c
   - Vercel (Production and Preview), then redeploy
   - GitHub → bunks-platform → Settings → Secrets and variables → Actions, alongside `BUNKS_BASE_URL` = `https://www.bunks.com`
 - [ ] Optional: set **`PRICE_CHECK_MIN_SAVINGS_PCT`** in Vercel (default 5). An alert fires when booking direct saves less than this, compared before tax.
-- [ ] **Tax check (once):** on Airbnb's checkout page for one listing, see whether taxes are added as a separate line after the displayed total. If the displayed total already includes tax, set `PRICE_CHECK_COMPARE_WITH_TAX=true` in Vercel.
+- [x] Tax check (28 Sep): Airbnb's checkout shows taxes as a separate line after the discounted price, so the default before-tax comparison is right. Leave `PRICE_CHECK_COMPARE_WITH_TAX` unset.
 - [ ] Run the "Airbnb price check" workflow manually once (GitHub → Actions → Run workflow), check the alert email or its absence, then enable the schedule as PR #8's README describes.
 - Set real rates in Admin → Pricing first. With the placeholder rates, every comparison is meaningless.
 
