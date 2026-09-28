@@ -12,7 +12,7 @@ export STRIPE_API_HOST=localhost STRIPE_API_PORT=12111 STRIPE_API_PROTOCOL=http
 export NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_mock
 export EMAIL_CAPTURE_DIR="$WORK/emails"
 export ADMIN_PASSWORD=qa-admin-password ADMIN_SESSION_SECRET=qa-session-secret-0123456789abcdef0123456789
-export CRON_SECRET=qa-cron-secret ICAL_FEED_SECRET=qa-ical-secret
+export CRON_SECRET=qa-cron-secret ICAL_FEED_SECRET=qa-ical-secret PRICE_CHECK_SECRET=qa-price-secret
 export NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # The E2E suite makes many requests from one IP.
 export RATE_LIMIT_DISABLED=true

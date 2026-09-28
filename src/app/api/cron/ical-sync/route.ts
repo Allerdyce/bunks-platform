@@ -5,6 +5,7 @@ import { IcalSyncError, syncAirbnbCalendar } from '@/lib/icalSync';
 import { sendEmail } from '@/lib/email/sendEmail';
 import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { escapeHtml } from '@/lib/html';
+import { alertIfPriceCheckStale } from '@/lib/priceCheck';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,5 +42,10 @@ export async function GET(request: Request) {
         `calendar link in Admin → Setup and press "Sync now".</p>`,
     }).catch((error) => console.error('[cron][ical-sync] failed to send alert', error));
   }
-  return NextResponse.json({ results });
+  // The Airbnb price runner reports twice a day; say so if it has gone quiet.
+  const priceCheckStale = await alertIfPriceCheckStale().catch((error) => {
+    console.error('[cron][ical-sync] price check staleness check failed', error);
+    return false;
+  });
+  return NextResponse.json({ results, priceCheckStale });
 }

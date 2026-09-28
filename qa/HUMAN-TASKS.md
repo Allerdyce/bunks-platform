@@ -88,6 +88,16 @@ Checkout now asks Stripe for **cards only** (Q3). Apple Pay and Google Pay are c
 - [ ] **Delete the test booking before connecting Airbnb (task 3c):**
   `DELETE FROM "Booking" WHERE "publicReference" = 'TESTA';`
 
+## 6b. Airbnb price check (after the Bunks endpoints and PR #8 are merged)
+
+- [ ] Generate one long random value (as in 1a) and add it as **`PRICE_CHECK_SECRET`** in both:
+  - Vercel (Production and Preview), then redeploy
+  - GitHub → bunks-platform → Settings → Secrets and variables → Actions, alongside `BUNKS_BASE_URL` = `https://www.bunks.com`
+- [ ] Optional: set **`PRICE_CHECK_MIN_SAVINGS_PCT`** in Vercel (default 5). An alert fires when booking direct saves less than this, compared before tax.
+- [ ] **Tax check (once):** on Airbnb's checkout page for one listing, see whether taxes are added as a separate line after the displayed total. If the displayed total already includes tax, set `PRICE_CHECK_COMPARE_WITH_TAX=true` in Vercel.
+- [ ] Run the "Airbnb price check" workflow manually once (GitHub → Actions → Run workflow), check the alert email or its absence, then enable the schedule as PR #8's README describes.
+- Set real rates in Admin → Pricing first. With the placeholder rates, every comparison is meaningless.
+
 ## 7. Later / optional
 
 - [ ] Airbnb: the old Steamboat export link (`…?s=fbedfa…`) is in this repo's git history. If it still works, Airbnb's **Reset link** makes it useless to anyone who has the repo. Then paste the new link into Setup (task 3a).
