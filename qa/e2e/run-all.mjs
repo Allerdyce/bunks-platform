@@ -546,6 +546,8 @@ def("Airbnb price check (comparison only)", async () => {
   fs.mkdirSync(`${ICAL_DIR}/calendar/ical`, { recursive: true });
   fs.copyFileSync(`${ICAL_DIR}/steamboat.ics`, `${ICAL_DIR}/calendar/ical/${LISTING}.ics`);
   await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: `http://localhost:8765/calendar/ical/${LISTING}.ics` } });
+  // Import the Airbnb blocks first, as production always has them, so scenarios skip those dates.
+  await forceSync(SB);
   try {
     check("PC1", "scenarios need the price-check secret", (await api("/api/price-check/scenarios")).status === 401, "open");
     const sc = await api("/api/price-check/scenarios", { headers: auth });
@@ -559,7 +561,9 @@ def("Airbnb price check (comparison only)", async () => {
     clearEmails();
     const good = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.25), currency: "USD", feesIncluded: true, cancellation: "Free cancellation before X" }]);
     const c = good.json?.comparisons?.[0];
-    check("PC3", "comparison uses Bunks' pre-tax total; 20% saving passes quietly", c?.status === "compared" && c?.bunksCents === preTax && c?.savingsPct === 20 && emails().length === 0, JSON.stringify(good.json));
+    const digest = emails().find((m) => /all 1 compared stays save at least 5%/.test(m.subject));
+    check("PC3", "comparison uses Bunks' pre-tax total; 20% saving → OK, summary email lists both prices", c?.status === "compared" && c?.bunksCents === preTax && c?.savingsPct === 20 && !!digest && digest.html.includes("20%") && digest.html.includes("OK"), JSON.stringify(good.json));
+    clearEmails();
     const low = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.02), currency: "USD", feesIncluded: true }]);
     const mail = emails().find((m) => /saves less than 5%/.test(m.subject));
     check("PC4", "saving below the 5% target → below-target and an alert email", low.json?.comparisons?.[0]?.status === "below-target" && !!mail, JSON.stringify(low.json?.comparisons));

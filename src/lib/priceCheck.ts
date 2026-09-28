@@ -239,41 +239,64 @@ export async function lastResultsAt() {
 const usd = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
-/** Emails ops when any stay is below the savings target or Airbnb quotes failed. */
+const STATUS_LABEL: Record<Comparison["status"], string> = {
+  compared: "OK",
+  "below-target": "Below target",
+  "airbnb-unavailable": "Not available on Airbnb",
+  "bunks-unavailable": "Booked on Bunks",
+  "airbnb-failed": "Airbnb quote failed",
+  invalid: "Invalid",
+};
+
+// During the pilot every run emails the full table so the prices can be checked by eye.
+// PRICE_CHECK_DIGEST=false limits emails to runs with a problem.
+const digestEnabled = () => process.env.PRICE_CHECK_DIGEST !== "false";
+
+/**
+ * Emails ops the run's results: always while the digest is on, otherwise only when a stay is
+ * below the savings target or Airbnb quotes failed.
+ */
 export async function alertOnComparisons(comparisons: Comparison[]) {
   const below = comparisons.filter((c) => c.status === "below-target");
   const failed = comparisons.filter((c) => c.status === "airbnb-failed" || c.status === "invalid");
-  if (!below.length && !failed.length) return false;
+  const compared = comparisons.filter((c) => c.status === "compared" || c.status === "below-target");
+  if (!below.length && !failed.length && !digestEnabled()) return false;
 
   const target = minSavingsPct();
   const basis = compareWithTax() ? "including tax" : "before tax";
-  const rows = below
-    .map(
-      (c) =>
-        `<tr><td>${escapeHtml(c.property)}</td><td>${c.checkIn} → ${c.checkOut} (${c.nights}n)</td>` +
-        `<td>${usd(c.bunksCents!)}</td><td>${usd(c.airbnbCents!)}</td><td><strong>${c.savingsPct}%</strong></td>` +
-        `<td>${escapeHtml(c.cancellation ?? "")}</td></tr>`,
-    )
-    .join("");
-  const failures = failed
-    .map((c) => `<li>${escapeHtml(c.property)} ${c.checkIn} → ${c.checkOut}: ${escapeHtml(c.note ?? "failed")}</li>`)
+  const rows = [...comparisons]
+    .sort((a, b) => a.property.localeCompare(b.property) || a.checkIn.localeCompare(b.checkIn) || a.nights - b.nights)
+    .map((c) => {
+      const flagged = c.status === "below-target" || c.status === "airbnb-failed" || c.status === "invalid";
+      return (
+        `<tr${flagged ? ' style="background:#fdecea"' : ""}><td>${escapeHtml(c.property)}</td>` +
+        `<td>${c.checkIn} → ${c.checkOut} (${c.nights}n)</td>` +
+        `<td>${c.bunksCents !== undefined ? usd(c.bunksCents) : "—"}</td>` +
+        `<td>${c.airbnbCents !== undefined ? usd(c.airbnbCents) : "—"}</td>` +
+        `<td>${c.savingsPct !== undefined ? `${c.savingsPct}%` : "—"}</td>` +
+        `<td>${escapeHtml(STATUS_LABEL[c.status])}${c.note ? `: ${escapeHtml(c.note)}` : ""}</td>` +
+        `<td>${escapeHtml(c.cancellation ?? "")}</td></tr>`
+      );
+    })
     .join("");
   const subject = below.length
     ? `Price check: Bunks saves less than ${target}% on ${below.length} stay${below.length === 1 ? "" : "s"}`
-    : `Price check: ${failed.length} Airbnb quote${failed.length === 1 ? "" : "s"} failed`;
+    : failed.length
+      ? `Price check: ${failed.length} Airbnb quote${failed.length === 1 ? "" : "s"} failed`
+      : `Price check: all ${compared.length} compared stays save at least ${target}%`;
 
   await sendEmail({
     to: OPS_ALERT_EMAIL,
     subject,
     html:
-      (below.length
-        ? `<p>For these stays, booking direct saves guests less than your ${target}% target (compared ${basis}, 2 adults, same dates):</p>` +
-          `<table cellpadding="6" border="1" style="border-collapse:collapse"><tr><th>Home</th><th>Stay</th><th>Bunks</th><th>Airbnb</th><th>Saving</th><th>Airbnb cancellation</th></tr>${rows}</table>` +
-          `<p>Bunks' prices come from Admin → Pricing. Bunks' cancellation policy: full refund 30+ days before check-in.</p>`
-        : "") +
-      (failures
-        ? `<p>These Airbnb quotes couldn't be read, so they weren't compared:</p><ul>${failures}</ul>` +
-          `<p>If this repeats, Airbnb may have changed its page or blocked the checker. See scripts/airbnb-price-runner/README.md.</p>`
+      `<p>Bunks vs Airbnb for the same dates, 2 adults, compared ${basis}. Target saving: ${target}%. ` +
+      `Rows in red need attention.</p>` +
+      `<table cellpadding="6" border="1" style="border-collapse:collapse"><tr><th>Home</th><th>Stay</th><th>Bunks</th>` +
+      `<th>Airbnb</th><th>Saving</th><th>Result</th><th>Airbnb cancellation</th></tr>${rows}</table>` +
+      `<p>Bunks' prices come from Admin → Pricing (10% off your nightly rate, plus cleaning and the 5% service fee). ` +
+      `Bunks' cancellation policy: full refund 30+ days before check-in.</p>` +
+      (failed.length
+        ? `<p>If quotes keep failing, Airbnb may have changed its page or blocked the checker. See scripts/airbnb-price-runner/README.md.</p>`
         : ""),
   }).catch((error) => console.error("[price-check] failed to send alert", error));
   return true;
