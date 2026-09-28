@@ -1,0 +1,47 @@
+name: Airbnb price check
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Fetch scenarios and print requests without calling Airbnb or posting results
+        type: boolean
+        default: true
+  # Disabled until the Bunks scenarios and results endpoints are live.
+  # schedule:
+  #   - cron: '0 15 * * *'
+  #   - cron: '0 3 * * *'
+  # 08:00 / 20:00 America/Los_Angeles during PDT; 07:00 / 19:00 during PST.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: airbnb-price-check
+  cancel-in-progress: false
+
+jobs:
+  price-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run offline tests
+        run: node --test scripts/airbnb-price-runner/*.test.mjs
+      - name: Fetch and report quotes
+        env:
+          BUNKS_BASE_URL: ${{ secrets.BUNKS_BASE_URL }}
+          PRICE_CHECK_SECRET: ${{ secrets.PRICE_CHECK_SECRET }}
+          AIRBNB_API_KEY: ${{ secrets.AIRBNB_API_KEY }}
+          AIRBNB_BOOKIT_HASH: ${{ secrets.AIRBNB_BOOKIT_HASH }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          args=()
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+          fi
+          node scripts/airbnb-price-runner/index.mjs "${args[@]}"

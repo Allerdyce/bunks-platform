@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import {
   api, stripe, db, resetData, clearEmails, emails, writeIcal, removeIcal, restoreIcal, adminCookie, forceSync,
-  book, pay, expireHold, scenario, check, results, SB, SL, CRON_SECRET,
+  book, pay, expireHold, scenario, check, results, SB, SL, CRON_SECRET, ICAL_DIR,
 } from "./lib.mjs";
 
 const filter = process.argv[2];
@@ -537,6 +537,55 @@ def("Address, Wi-Fi and guides only for paid guests", async () => {
   check("PV7", "guest emails link the signed guide, not a public PDF", mailHtml.includes("/api/guides/") && !/Steamboat%20|Lillie%20Guidebook/.test(mailHtml), "no signed guide link in emails");
   await db.booking.update({ where: { publicReference: ref }, data: { status: "CANCELLED" } });
   check("PV8", "guide link stops working once the booking is cancelled", (await api(secure?.guideUrl ?? "/api/guides/x/guide")).status === 403, "still served");
+});
+
+def("Airbnb price check (comparison only)", async () => {
+  const LISTING = "1552191060469626901";
+  const auth = { authorization: "Bearer qa-price-secret" };
+  const original = (await db.property.findUnique({ where: { slug: SB } })).airbnbIcalUrl;
+  fs.mkdirSync(`${ICAL_DIR}/calendar/ical`, { recursive: true });
+  fs.copyFileSync(`${ICAL_DIR}/steamboat.ics`, `${ICAL_DIR}/calendar/ical/${LISTING}.ics`);
+  await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: `http://localhost:8765/calendar/ical/${LISTING}.ics` } });
+  try {
+    check("PC1", "scenarios need the price-check secret", (await api("/api/price-check/scenarios")).status === 401, "open");
+    const sc = await api("/api/price-check/scenarios", { headers: auth });
+    const mine = (sc.json?.scenarios ?? []).filter((s) => s.listingId === LISTING);
+    const nights = new Set(mine.map((s) => (Date.parse(s.checkOut) - Date.parse(s.checkIn)) / 86400000));
+    check("PC2", "scenarios: Steamboat listing from its calendar link, 3- and 7-night stays, 2 adults, USD/en", sc.json?.currency === "USD" && sc.json?.locale === "en" && typeof sc.json?.runId === "string" && mine.length >= 4 && nights.has(3) && nights.has(7) && mine.every((s) => s.adults === 2 && s.pets === 0), JSON.stringify(sc.json).slice(0, 300));
+    const pick = mine[0];
+    const bunks = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: pick.checkIn, checkOut: pick.checkOut, guests: 2 } });
+    const preTax = bunks.json.quote.totalPriceCents - bunks.json.quote.taxCents;
+    const post = (quotes) => api("/api/price-check/results", { method: "POST", headers: auth, body: { runId: sc.json.runId, capturedAt: new Date().toISOString(), runner: { bookItHash: "x", version: "qa" }, quotes } });
+    clearEmails();
+    const good = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.25), currency: "USD", feesIncluded: true, cancellation: "Free cancellation before X" }]);
+    const c = good.json?.comparisons?.[0];
+    check("PC3", "comparison uses Bunks' pre-tax total; 20% saving passes quietly", c?.status === "compared" && c?.bunksCents === preTax && c?.savingsPct === 20 && emails().length === 0, JSON.stringify(good.json));
+    const low = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.02), currency: "USD", feesIncluded: true }]);
+    const mail = emails().find((m) => /saves less than 5%/.test(m.subject));
+    check("PC4", "saving below the 5% target → below-target and an alert email", low.json?.comparisons?.[0]?.status === "below-target" && !!mail, JSON.stringify(low.json?.comparisons));
+    clearEmails();
+    const blocked = await post([{ scenarioId: pick.scenarioId, status: "blocked", error: "Airbnb denied access (HTTP 403)" }]);
+    check("PC5", "blocked/failed quotes are reported, not compared, and alerted", blocked.json?.comparisons?.[0]?.status === "airbnb-failed" && emails().some((m) => /quote.* failed/.test(m.subject)), JSON.stringify(blocked.json));
+    const forged = await post([{ scenarioId: `${SB}|999|${pick.checkIn}|${pick.checkOut}|2|0`, status: "ok", totalCents: 100000, currency: "USD" }]);
+    check("PC6", "a quote for a listing that isn't in the home's calendar links is rejected as invalid", forged.json?.comparisons?.[0]?.status === "invalid", JSON.stringify(forged.json));
+    const bad = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: 0, currency: "USD" }]);
+    const eur = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: 1000, currency: "EUR" }]);
+    check("PC7", "malformed quotes (zero price, non-USD) → 400", bad.status === 400 && eur.status === 400, `${bad.status}/${eur.status}`);
+    // Booked on Bunks → dropped from scenarios.
+    const held = await book({ checkIn: pick.checkIn, checkOut: pick.checkOut, guestEmail: "pc@example.com" });
+    if (held.status !== 200) throw new Error(`booking for PC8 failed: ${held.status} ${held.text}`);
+    await pay(held);
+    const after = await api("/api/price-check/scenarios", { headers: auth });
+    check("PC8", "stays already booked on Bunks aren't sent to the runner", !(after.json?.scenarios ?? []).some((s) => s.scenarioId === pick.scenarioId), "still listed");
+    // Staleness: last report 40h ago → the daily cron alerts.
+    clearEmails();
+    await db.featureToggle.update({ where: { key: "price-check:last-results" }, data: { updatedAt: new Date(Date.now() - 40 * 3600_000) } });
+    await api("/api/cron/ical-sync", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+    check("PC9", "daily job alerts when the price runner hasn't reported for 36h", emails().some((m) => /no Airbnb results in over 36 hours/.test(m.subject)), emails().map((m) => m.subject).join(" | "));
+  } finally {
+    await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: original } });
+    await db.featureToggle.deleteMany({ where: { key: "price-check:last-results" } });
+  }
 });
 
 def("Admin endpoints require a session", async () => {
