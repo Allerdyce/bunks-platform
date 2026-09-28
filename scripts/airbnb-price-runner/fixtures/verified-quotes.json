@@ -1,0 +1,275 @@
+[
+  {
+    "listing_id": "1552191060469626901",
+    "check_in": "2026-11-10",
+    "check_out": "2026-11-13",
+    "adults": 2,
+    "currency": "USD",
+    "http_status": 200,
+    "display_price": "$1,450",
+    "available": true,
+    "fees_included": true,
+    "taxes": "not separately reported; final checkout total not verified",
+    "response": {
+      "data": {
+        "node": {
+          "__typename": "DemandStayListing",
+          "pdpPresentation": {
+            "__typename": "DemandStayListingPdpPresentationContainer",
+            "bookIt": {
+              "__typename": "StandardBookIt",
+              "structuredDisplayPrice": {
+                "__typename": "StructuredDisplayPrice",
+                "primaryLine": {
+                  "__typename": "QualifiedDisplayPriceLine",
+                  "accessibilityLabel": "$1,450 for 3 nights",
+                  "price": "$1,450",
+                  "qualifier": "for 3 nights",
+                  "concatQualifierLeft": false,
+                  "trailing": null
+                },
+                "secondaryLine": null,
+                "explanationData": {
+                  "__typename": "DisplayPriceExplanationData",
+                  "title": "Price details",
+                  "subtitle": null,
+                  "priceDetails": [
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "DefaultExplanationLineItem",
+                          "description": "3 nights x $483.33",
+                          "priceString": "$1,450.00",
+                          "explanationData": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": null
+                    },
+                    {
+                      "__typename": "DisplayPriceExplanationDisclaimer",
+                      "content": "Pay $0 today with no extra fees."
+                    }
+                  ]
+                },
+                "explanationDataDisplayPosition": "PRIMARY_LINE",
+                "displayPriceStyle": "TOTAL_ONLY",
+                "loggingMetadata": {
+                  "__typename": "StructuredDisplayPriceLoggingMetadata",
+                  "loggingCorrelationId": "2f51a2e3-2bfe-4dec-9562-922868712431"
+                }
+              },
+              "availability": {
+                "__typename": "BookItAvailability",
+                "isAvailable": true,
+                "canInstantBook": false,
+                "unavailabilityMessage": null,
+                "eligibility": null
+              },
+              "productItemDetail": {
+                "__typename": "BasicPriceDetail",
+                "explanationData": {
+                  "__typename": "DisplayPriceExplanationData",
+                  "title": "Price details",
+                  "priceDetails": [
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "DefaultExplanationLineItem",
+                          "description": "3 nights x $483.33",
+                          "priceString": "$1,450.00",
+                          "explanationData": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": false
+                    },
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "HighlightExplanationLineItem",
+                          "description": "Price after discount",
+                          "priceString": "$1,450.00",
+                          "explanationData": null,
+                          "originalPriceString": null,
+                          "accessibilityLabel": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": null
+                    }
+                  ]
+                }
+              },
+              "selectedDates": "Nov 10\u2009\u2013\u200913",
+              "availabilityDetailsKicker": "Free cancellation before October 11",
+              "integratedTip": {
+                "__typename": "SimpleMerchandisingTip",
+                "title": "$0 today \u00b7 Free cancellation before <b>October 11</b>",
+                "type": "PAY_ZERO_UPFRONT",
+                "messageType": "LISTING_PAY_LESS_UPFRONT_EDUCATION"
+              },
+              "announcement": {
+                "__typename": "SimpleMerchandisingTip",
+                "title": "Prices include all fees",
+                "type": "PRICE_TRANSPARENCY_FEE_INCLUSIVE",
+                "messageType": "PRICE_TRANSPARENCY_FEE_INCLUSIVE"
+              },
+              "priceDetailTips": null,
+              "priceMerchandisingMessage": null
+            },
+            "merchandisingSuite": {
+              "__typename": "PDPMerchandisingSuite",
+              "priceValueTips": [
+                {
+                  "__typename": "SimpleMerchandisingTip",
+                  "title": "Pay $0 today",
+                  "type": "PAY_ZERO_UPFRONT"
+                },
+                {
+                  "__typename": "SimpleMerchandisingTip",
+                  "title": "Free cancellation",
+                  "type": "FREE_CANCELLATION"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "listing_id": "1734161844121212601",
+    "check_in": "2026-11-10",
+    "check_out": "2026-11-13",
+    "adults": 2,
+    "currency": "USD",
+    "http_status": 200,
+    "display_price": "$3,003",
+    "available": true,
+    "fees_included": true,
+    "taxes": "not separately reported; final checkout total not verified",
+    "response": {
+      "data": {
+        "node": {
+          "__typename": "DemandStayListing",
+          "pdpPresentation": {
+            "__typename": "DemandStayListingPdpPresentationContainer",
+            "bookIt": {
+              "__typename": "StandardBookIt",
+              "structuredDisplayPrice": {
+                "__typename": "StructuredDisplayPrice",
+                "primaryLine": {
+                  "__typename": "QualifiedDisplayPriceLine",
+                  "accessibilityLabel": "$3,003 for 3 nights",
+                  "price": "$3,003",
+                  "qualifier": "for 3 nights",
+                  "concatQualifierLeft": false,
+                  "trailing": null
+                },
+                "secondaryLine": null,
+                "explanationData": {
+                  "__typename": "DisplayPriceExplanationData",
+                  "title": "Price details",
+                  "subtitle": null,
+                  "priceDetails": [
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "DefaultExplanationLineItem",
+                          "description": "3 nights x $1,001.00",
+                          "priceString": "$3,003.00",
+                          "explanationData": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": null
+                    },
+                    {
+                      "__typename": "DisplayPriceExplanationDisclaimer",
+                      "content": "Pay $0 today with no extra fees."
+                    }
+                  ]
+                },
+                "explanationDataDisplayPosition": "PRIMARY_LINE",
+                "displayPriceStyle": "TOTAL_ONLY",
+                "loggingMetadata": {
+                  "__typename": "StructuredDisplayPriceLoggingMetadata",
+                  "loggingCorrelationId": "826262b5-028f-4f81-a6aa-1bc4e23ae068"
+                }
+              },
+              "availability": {
+                "__typename": "BookItAvailability",
+                "isAvailable": true,
+                "canInstantBook": false,
+                "unavailabilityMessage": null,
+                "eligibility": null
+              },
+              "productItemDetail": {
+                "__typename": "BasicPriceDetail",
+                "explanationData": {
+                  "__typename": "DisplayPriceExplanationData",
+                  "title": "Price details",
+                  "priceDetails": [
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "DefaultExplanationLineItem",
+                          "description": "3 nights x $1,001.00",
+                          "priceString": "$3,003.00",
+                          "explanationData": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": false
+                    },
+                    {
+                      "__typename": "DisplayPriceExplanationLineGroup",
+                      "items": [
+                        {
+                          "__typename": "HighlightExplanationLineItem",
+                          "description": "Price after discount",
+                          "priceString": "$3,003.00",
+                          "explanationData": null,
+                          "originalPriceString": null,
+                          "accessibilityLabel": null
+                        }
+                      ],
+                      "renderBorderTop": false,
+                      "collapsable": null
+                    }
+                  ]
+                }
+              },
+              "selectedDates": "Nov 10\u2009\u2013\u200913",
+              "availabilityDetailsKicker": "Free cancellation before October 11",
+              "integratedTip": {
+                "__typename": "SimpleMerchandisingTip",
+                "title": "$0 today \u00b7 Free cancellation before <b>October 11</b>",
+                "type": "PAY_ZERO_UPFRONT",
+                "messageType": "LISTING_PAY_LESS_UPFRONT_EDUCATION"
+              },
+              "announcement": {
+                "__typename": "SimpleMerchandisingTip",
+                "title": "Prices include all fees",
+                "type": "PRICE_TRANSPARENCY_FEE_INCLUSIVE",
+                "messageType": "PRICE_TRANSPARENCY_FEE_INCLUSIVE"
+              },
+              "priceDetailTips": null,
+              "priceMerchandisingMessage": null
+            },
+            "merchandisingSuite": {
+              "__typename": "PDPMerchandisingSuite",
+              "priceValueTips": null
+            }
+          }
+        }
+      }
+    }
+  }
+]
