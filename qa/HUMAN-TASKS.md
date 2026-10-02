@@ -1,109 +1,175 @@
-# Things only you can do (before Oct 1)
+# Bunks launch checklist: things only you can do
 
-Updated after your answers to Q1–Q7 (27 Sep). Work through the tasks in order and tick each box as you go. **Bold** tasks block a safe launch.
+Updated 2 Oct 2026. [x] = done and confirmed. [ ] = still to do. Do the sections in order.
+**Bold** items affect guests or money, so do those first.
 
-## 0. Steamboat codes (owner is keeping them)
+---
 
-- [ ] **Check Admin → Setup (Steamboat) matches the codes printed in the guides.** The trip page shows what's in Setup; the PDFs show what's printed. They should agree:
-  - Garage 0409
-  - Lockbox 1009
-  - Ski locker: door 47754, locker #36, locker code 2482
-  - Wi-Fi: Townhouse2 / Steamboat
-- [ ] The brochure's first page says "10am Check-in time"; everything else says 3 p.m. check-in, 10 a.m. checkout. Worth fixing when it's next re-exported.
-- The guides open only for paid guests (trip page and emails) and for admins (Admin → Setup → Guide/Brochure links). Until this deploys, they're still public at bunks.com.
+## Already done (no action)
 
-## 1. Vercel environment variables
+- [x] Privacy fix is live: addresses, Wi-Fi and the guide PDFs are no longer public. You confirmed `/Steamboat%20Brochure.pdf` says "not found".
+- [x] Vercel: `ICAL_FEED_SECRET` and `PRICE_CHECK_SECRET` added and redeployed. The Bunks calendar links changed as expected.
+- [x] GitHub: repository secrets `PRICE_CHECK_SECRET` and `BUNKS_BASE_URL` added.
+- [x] Airbnb → Bunks calendars: Steamboat (1 Airbnb link) and Summerland (2 Airbnb links, including Briggs Direct). Live check on 28 Sep: 0 differences for both homes.
+- [x] Bunks → Airbnb calendars: "Bunks direct" imported into all 3 Airbnb listings, confirmed by Airbnb on 27 Sep.
+- [x] Tax check: Airbnb shows taxes as a separate line after the price, so the price check compares before tax. Nothing to set.
+- [x] Price check code merged. The twice-daily schedule is still off (see section 6).
 
-Where: vercel.com → bunks-platform (the Allerdyce project, not the old `bunks` one) → Settings → Environment Variables. For each variable:
-1. Press **Add New**.
-2. Tick **Production** and **Preview**.
-3. Save.
+---
 
-When all of 1a–1c are done, redeploy once (step 1d).
+## 1. Pricing: blocks correct charges (do first)
 
-- [ ] **1a. Check `CRON_SECRET` exists.**
-  - If it's missing, add it with any long random value, e.g. from 1Password's generator or `openssl rand -hex 32`.
-  - Without it, the daily jobs refuse to run in production: no reminder or door-code emails, and no daily Airbnb import or failure alert.
-- [ ] **1b. Add `ICAL_FEED_SECRET`** (Q4). Use a **new** long random value, generated the same way as 1a. It must not be the same as any other secret.
-  - This changes your Bunks calendar link. That's fine, because Airbnb hasn't imported it yet (task 3c).
-  - Do 1b before 3c. If Airbnb has already imported the old link, paste the new link from Admin → Setup into Airbnb again.
-- [ ] 1b2. Optional: add `GUIDE_LINK_SECRET` (another new random value). It signs the guide PDF links in guest emails. Without it, `ADMIN_SESSION_SECRET` is used; changing that secret later would break links in emails already sent (guests can still open the guide from their trip page).
-- [ ] **1c. Add `ADMIN_EMAILS`** (Q6) with the value `ali@bunks.com,matt@bunks.com,alissa@bunks.com`.
-  - This list is now the full admin list. Adding or removing someone later is just editing it and redeploying.
-  - Until it's set, the code falls back to those same three. `trumandavies7@gmail.com` has been removed from the code.
-- [ ] **1d. Redeploy.** Deployments → latest Production deployment → ⋯ → Redeploy. Environment changes only apply to new deployments.
-- [ ] Leave `EMAIL_SENDING_PAUSED` unset or `true` until marketing is ready (task 7).
+**1a. Real nightly rates**
+1. Go to bunks.com/admin → **Pricing**.
+2. Steamboat: enter the real **Sun–Thu rate**, **Fri–Sat rate** and **cleaning fee**. It's currently on the $350 placeholder.
+3. Summerland: same three values.
+4. Save each one.
+5. Check: open bunks.com/property/steamboat-downtown-townhome, pick a 3-night stay, and confirm the nightly price is 10% below your rate.
 
-## 2. Admin → Details (production)
+Enter the price you charge on Airbnb. Bunks takes 10% off it automatically and adds its 5% service fee.
 
-- [ ] **Clear any made-up contacts** if you see them:
-  - phone numbers ending 555-01xx
-  - "Priya" or "Slack #host-support"
-  - "Share property code 8821"
-  - links like `bunks.com/?property=…/door-codes`
+**1b. Taxes**
+1. Admin → **Pricing** → Summerland → add **Transient Occupancy Tax** at the confirmed rate, applied to nightly and cleaning.
+2. Steamboat: check a lodging tax is listed. If not, add it.
+3. Check: a quote should now show a tax line.
 
-  Enter a real phone number or leave the field blank; only the support email is required. The code already hides these exact values from guests, but they shouldn't sit in the database.
+Without these, guests pay no tax at checkout.
 
-## 3. Admin → Setup (each property)
+---
 
-- [ ] **3a. Airbnb calendar link.**
-  - Steamboat: replace the old `airbnb.co.uk …?s=` link with the new `?t=` link.
-  - Summerland: add its link.
-  - Press **Sync now** for each and check that the "upcoming Airbnb nights" count looks right.
-- [ ] 3b. Fill in the rest:
-  - Guest support email → `alissa@bunks.com`
-  - check-in and check-out times
-  - Wi-Fi network and password
-  - lockbox or garage code
-  - parking notes
-  - max guests
-  - timezone
+## 2. Stripe (dashboard.stripe.com, toggle **Live mode** on, top right)
 
-  These now override the built-in listing text. Blank times fall back to 3:00 PM and 10:00 AM.
-- [ ] **3c. Connect Airbnb to Bunks** (after 1b and 1d). Copy each property's **Bunks calendar link** from Setup into Airbnb → Calendar → Availability → Connect calendars → Import.
+**2a. Webhook events**
+1. Developers → **Webhooks** → click the endpoint ending in `/api/stripe`.
+2. Check "Listening to" shows exactly these three:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `charge.refunded`
+3. If not: ⋯ → **Update details** → **Select events** → tick those three → **Update endpoint**.
 
-## 4. Admin → Pricing
+Without this, paid bookings never confirm and guests get no confirmation email.
 
-- [ ] 4a. Enter the real Airbnb nightly rates (Sun–Thu and Fri–Sat) and the cleaning fee. The stored values are placeholders.
-- [ ] 4b. Summerland: add the Transient Occupancy Tax once the rate is confirmed. Steamboat's lodging tax too, if it isn't there yet.
+**2b. Apple Pay domain**
+1. Settings → Payments → **Payment method domains** → **Add a new domain**.
+2. Add `bunks.com`, then add `www.bunks.com`.
+3. Both should show as verified.
 
-## 5. Stripe dashboard (dashboard.stripe.com, **live mode**)
+**2c. Wallets**
+Settings → Payments → **Payment methods**: leave **Cards**, **Apple Pay** and **Google Pay** on. Checkout asks for cards only, so nothing else needs switching off.
 
-Checkout now asks Stripe for **cards only** (Q3). Apple Pay and Google Pay are cards, so they still work; bank debits and pay-later can't appear. Nothing to switch off for Bunks. Two checks:
+---
 
-- [ ] **5a. Webhook events.**
-  - Where: Developers → Webhooks → the endpoint ending `/api/stripe`.
-  - Make sure it sends exactly these three events:
-    - `payment_intent.succeeded`
-    - `payment_intent.payment_failed`
-    - `charge.refunded`
-  - To fix it: ⋯ → Update details → Select events.
-- [ ] 5b. Wallets.
-  - Where: Settings → Payments → Payment methods.
-  - Leave **Cards**, **Apple Pay** and **Google Pay** on.
-  - Apple Pay also needs the domain verified: Settings → Payments → Payment method domains → add `bunks.com` (and `www.bunks.com`, if you use it).
+## 3. Vercel: confirm the last two settings
 
-## 6. Neon (production database)
+Go to vercel.com → **bunks-platform** (the Allerdyce project) → Settings → **Environment Variables**.
 
-- [ ] **Delete the test booking before connecting Airbnb (task 3c):**
-  `DELETE FROM "Booking" WHERE "publicReference" = 'TESTA';`
+- [ ] **3a. `CRON_SECRET`.** Check it is listed. If it's missing:
+  1. Run `openssl rand -hex 32` in Terminal.
+  2. Press **Add New**, enter key `CRON_SECRET` and that value, tick **Production** and **Preview**, turn on **Sensitive**, and **Save**.
 
-## 6b. Airbnb price check (after the Bunks endpoints and PR #8 are merged)
+  Without it there are no reminder or door-code emails, and no daily calendar backstop.
+- [ ] **3b. `ADMIN_EMAILS`.** Check it is listed with the value `ali@bunks.com,matt@bunks.com,alissa@bunks.com`. If it's missing, add it the same way (Sensitive not needed).
+- [ ] 3c. Optional: `GUIDE_LINK_SECRET` (another `openssl rand -hex 32` value). It signs the guide-PDF links in guest emails.
+- [ ] 3d. **If you added or changed anything above:** Deployments → top **Production** deployment → ⋯ → **Redeploy**.
+- Leave `EMAIL_SENDING_PAUSED` unset or `true` until marketing is ready (section 8).
 
-- [ ] Generate one long random value (as in 1a) and add it as **`PRICE_CHECK_SECRET`** in both:
-  - Vercel (Production and Preview), then redeploy
-  - GitHub → bunks-platform → Settings → Secrets and variables → Actions, alongside `BUNKS_BASE_URL` = `https://www.bunks.com`
-- [ ] Optional: set **`PRICE_CHECK_MIN_SAVINGS_PCT`** in Vercel (default 5). An alert fires when booking direct saves less than this, compared before tax.
-- [x] Tax check (28 Sep): Airbnb's checkout shows taxes as a separate line after the discounted price, so the default before-tax comparison is right. Leave `PRICE_CHECK_COMPARE_WITH_TAX` unset.
-- [ ] Run the "Airbnb price check" workflow manually once (GitHub → Actions → Run workflow), check the alert email or its absence, then enable the schedule as PR #8's README describes.
-- Set real rates in Admin → Pricing first. With the placeholder rates, every comparison is meaningless.
+---
 
-## 7. Later / optional
+## 4. Bookings and data cleanup
 
-- [ ] Airbnb: the old Steamboat export link (`…?s=fbedfa…`) is in this repo's git history. If it still works, Airbnb's **Reset link** makes it useless to anyone who has the repo. Then paste the new link into Setup (task 3a).
-- [ ] When you're ready for marketing email, set `EMAIL_SENDING_PAUSED=false`. The postal address is already in the footer (Bunks LLC, 144 E Carrillo St, Santa Barbara).
-- [ ] Rate limits (Q5): nothing to do for launch. If you see abuse, tell me and I'll set up Upstash.
+**4a. Test booking #45 (Summerland, 28 Sep → 1 Oct)**
+1. Admin → **Bookings** → find the Summerland stay for **Sep 28 → Oct 1**.
+2. Look at the guest name and email.
+   - **If it's your test** ("TESTA" or your own email): press **Cancel** → choose **No refund** → confirm. This removes it from the calendar Airbnb reads. It doesn't touch Stripe.
+   - **If it's a real guest:** don't cancel. Tell Claude, because it overlaps an Airbnb reservation.
+
+**4b. Admin → Details: remove made-up contacts**
+1. Admin → **Details**, for each home.
+2. Delete any of these:
+   - phone numbers ending 555-01xx
+   - "Priya" or "Slack #host-support"
+   - "Share property code 8821"
+   - links like `bunks.com/?property=…/door-codes`
+3. Enter a real phone number or leave the field blank. Only the support email is required.
+4. Save.
+
+---
+
+## 5. Admin → Setup: each home's guest details
+
+Go to bunks.com/admin → **Setup**, one card per home. Fill in, then **Save**:
+
+| Field | Steamboat | Summerland |
+|---|---|---|
+| Guest support email | `alissa@bunks.com` | `alissa@bunks.com` |
+| Check-in / check-out | 3:00 PM / 10:00 AM (or your real times) | your times |
+| Wi-Fi network / password | Townhouse2 / Steamboat | Lillie Ave Guest / Welcome! |
+| Garage code | 0409 | (if any) |
+| Lockbox code | 1009 | (if any) |
+| Ski locker | door 47754, locker #36, code 2482 | — |
+| Parking notes | your text | your text |
+| Max guests | 6 | 8 |
+| Timezone | America/Denver | America/Los_Angeles |
+
+- The trip page shows guests exactly what's in Setup, 24 hours before check-in. The codes must match the printed guides; the owner is keeping these codes.
+- Then press **Check calendars** on each card. You want the green result.
+
+**5b. Summerland's two Airbnb listings aren't linked to each other on Airbnb**
+- If both are the same house and both take bookings, a booking on one doesn't block the other on Airbnb.
+- Listing 657758541446156325 is connected to property management software. Check in that software that it syncs both Summerland listings.
+- If it doesn't: in Airbnb, import each listing's export link into the other (Calendar → Availability → Connect calendars).
+
+---
+
+## 6. Airbnb price check: first real run, then turn on the schedule
+
+1. Wait until any Vercel deploy shows **Ready**.
+2. Go to github.com/Allerdyce/bunks-platform → **Actions** → **Airbnb price check** (left list).
+   - Use the **Run workflow** dropdown on the right.
+   - Do **not** use "Re-run all jobs": a re-run repeats the old dry-run settings.
+3. Branch: **main**. **Untick `dry_run`**. Click the green **Run workflow**.
+4. The new run (#2 or later) should take about 1–2 minutes and turn green.
+5. Check the alert inbox (alissa@bunks.com) for **"Price check: …"**. It has a table of every stay: Bunks price, Airbnb price and the saving.
+   - Rows in red are below the 5% target, which is expected until section 1 is done.
+   - "Airbnb quote failed" or "blocked" rows: send Claude the email.
+   - A red workflow or no email: send Claude a screenshot of the **price-check** job log.
+6. When a run looks right, tell Claude to **turn on the twice-daily schedule** (8 am and 8 pm Pacific).
+7. Optional: change the 5% target with `PRICE_CHECK_MIN_SAVINGS_PCT` in Vercel, then redeploy.
+
+---
+
+## 7. Optional: prove a real payment end to end
+
+1. On bunks.com, book a 3-night stay on dates you don't mind blocking, using **your own card**.
+2. Check:
+   - the confirmation and receipt emails arrive
+   - the booking shows **Paid** in Admin → Bookings
+   - My Trips shows the address and Wi-Fi
+3. Admin → Bookings → **Cancel** → **Full refund** → confirm. Check the refund appears in Stripe.
+
+Airbnb blocks those dates until it next reads the Bunks calendar (a few hours), so choose dates you're unlikely to sell on Airbnb that day.
+
+---
+
+## 8. Later
+
+- [ ] Re-export the Steamboat brochure PDF: page 1 says "10am Check-in", but check-in is 3 pm. Send Claude the new file when it's ready.
+- [ ] Marketing email: when ready, set `EMAIL_SENDING_PAUSED=false` in Vercel and redeploy. The postal address is already in the footer.
+- [ ] Airbnb's old Steamboat export link (`…?s=fbedfa…`) is in the code history. Airbnb's **Reset link** makes it useless. If you reset it, paste the new export link into Admin → Setup → Steamboat.
+- [ ] Rate limits: nothing to do unless you see abuse, then tell Claude (Upstash).
+
+---
 
 ## Your rulings (27 Sep)
 
-Q1 pause checkout when the Airbnb calendar can't be read: **yes**. Q2 cancellation policy: **confirmed**. Q3 cards and wallets only: **yes, now enforced in code**. Q4 separate calendar secret: **yes** (task 1b). Q5 rate limits: **launch as-is**. Q6 admins: **ali@, matt@, alissa@, list managed in Vercel** (task 1c). Q7 60 nights / 2 years: **keep**.
+| | |
+|---|---|
+| Q1 | Pause checkout if Airbnb can't be read: **yes** |
+| Q2 | Cancellation policy: **confirmed** |
+| Q3 | Cards and wallets only: **yes** |
+| Q4 | Separate calendar secret: **yes, done** |
+| Q5 | Rate limits: **launch as-is** |
+| Q6 | Admins: **ali@, matt@, alissa@, managed in Vercel** |
+| Q7 | 60 nights / 2 years: **keep** |
+| Owner | Keep the Steamboat codes; the guides are visible only on the trip page and in admin |
+| Pricing | Airbnb quotes are a comparison check only; Bunks prices come from Admin → Pricing |
