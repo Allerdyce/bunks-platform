@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAdminAuth } from "@/lib/adminAuth";
-import { calendarFeedToken, isUsableIcalUrl } from "@/lib/icalSync";
+import { isUsableIcalUrl } from "@/lib/icalSync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
   const [properties, airbnbCounts] = await Promise.all([
     prisma.property.findMany({ orderBy: { id: "asc" }, include: { taxes: true } }),
     prisma.blockedDate.groupBy({
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
       airbnbIcalUrl: property.airbnbIcalUrl,
       airbnbImportConfigured: isUsableIcalUrl(property.airbnbIcalUrl),
       upcomingAirbnbNights: upcomingAirbnbNights.get(property.id) ?? 0,
-      exportUrl: `${origin}/api/ical/${property.slug}.ics?token=${calendarFeedToken(property.slug)}`,
       maxGuests: property.maxGuests,
       timezone: property.timezone,
       checkInTime: property.checkInTime,
