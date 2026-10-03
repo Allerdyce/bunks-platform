@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { specialRateClient } from '@/lib/specialRateClient';
+import { isUsableSpecialRate, PriceUnavailableError, pricedFromAirbnb } from '@/lib/airbnbRates';
 import type { Prisma } from '@prisma/client';
 import type { PricingQuote, NightlyLineItem } from '@/types';
 
@@ -41,9 +42,20 @@ export async function calculatePricing(
         },
     });
 
+    // Automatic (Airbnb-derived) rates only count while fresh; the base rates cover the rest.
     const specialByDate = new Map(
-        specialRates.map((rate) => [toISODate(rate.date), rate])
+        specialRates.filter((rate) => isUsableSpecialRate(rate)).map((rate) => [toISODate(rate.date), rate])
     );
+
+    // Homes priced from Airbnb have no fallback: every night needs a current Airbnb (or manual) rate.
+    if (await pricedFromAirbnb(property.slug)) {
+        const missing: string[] = [];
+        for (const night = new Date(checkInDate); night < checkOutDate; night.setUTCDate(night.getUTCDate() + 1)) {
+            const special = specialByDate.get(toISODate(night));
+            if (!special || special.isBlocked) missing.push(toISODate(night));
+        }
+        if (missing.length) throw new PriceUnavailableError(missing);
+    }
 
     const nightlyLineItems: NightlyLineItem[] = [];
     let undiscountedNightlySubtotalCents = 0;

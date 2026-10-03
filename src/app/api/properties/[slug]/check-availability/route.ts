@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUnavailableNights, parseStayDate } from '@/lib/bookingAvailability';
 import { checkStayRules } from '@/lib/stayRules';
+import { PriceUnavailableError } from '@/lib/airbnbRates';
 
 export const runtime = 'nodejs';
 
@@ -89,6 +90,9 @@ export async function POST(req: NextRequest) {
       const { calculatePricing } = await import('@/lib/pricing/calculator');
       quote = await calculatePricing(property.slug, checkInDate, checkOutDate, guests);
     } catch (e) {
+      if (e instanceof PriceUnavailableError) {
+        return NextResponse.json({ available: false, reason: 'PRICE_UNAVAILABLE', message: e.message });
+      }
       console.warn('Failed to calculate pricing quote:', e);
     }
 

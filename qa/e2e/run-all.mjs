@@ -592,6 +592,62 @@ def("Airbnb price check (comparison only)", async () => {
   }
 });
 
+def("Airbnb pricing: nightly rates copied from Airbnb", async () => {
+  const LISTING = "1552191060469626901"; // Steamboat's source listing
+  const auth = { authorization: "Bearer qa-price-secret" };
+  const original = (await db.property.findUnique({ where: { slug: SB } })).airbnbIcalUrl;
+  const property = await db.property.findUnique({ where: { slug: SB } });
+  fs.mkdirSync(`${ICAL_DIR}/calendar/ical`, { recursive: true });
+  fs.copyFileSync(`${ICAL_DIR}/steamboat.ics`, `${ICAL_DIR}/calendar/ical/${LISTING}.ics`);
+  await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: `http://localhost:8765/calendar/ical/${LISTING}.ics` } });
+  await forceSync(SB);
+  await db.featureToggle.update({ where: { key: "airbnbPricing" }, data: { enabled: true } });
+  const quoteFor = (s) => api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: s.checkIn, checkOut: s.checkOut, guests: 2 } });
+  const post = (quotes) => api("/api/price-check/results", { method: "POST", headers: auth, body: { runId: "qa", capturedAt: new Date().toISOString(), runner: { bookItHash: "x", version: "qa" }, quotes } });
+  // Airbnb all-in quote for 3 nights at $400 with $250 cleaning and a 14.1% guest fee.
+  const ALL_IN = Math.round((3 * 40000 + 25000) * 1.141);
+  try {
+    const sc = (await api("/api/price-check/scenarios", { headers: auth })).json?.scenarios ?? [];
+    const mine = sc.filter((s) => s.listingId === LISTING);
+    const nights = (s) => (Date.parse(s.checkOut) - Date.parse(s.checkIn)) / 86400000;
+    check("AR1", "scenarios: rotating 3-night windows on the source listing, at most 30, earliest first", mine.length > 4 && sc.length <= 30 && mine.every((s) => nights(s) === 3 && s.adults === 2) && mine[0].checkIn < mine[mine.length - 1].checkIn, JSON.stringify(sc.slice(0, 3)));
+    const [w1, w2, w3] = mine;
+    const before = await quoteFor(w1);
+    check("AR2", "no Airbnb rate yet → the stay can't be priced (no fallback to base rates)", before.json?.available === false && before.json?.reason === "PRICE_UNAVAILABLE" && /email us/.test(before.json?.message ?? ""), before.text);
+    const blocked = await book({ checkIn: w3.checkIn, checkOut: w3.checkOut, guestEmail: "ar@example.com" });
+    check("AR3", "checkout refuses an unpriced stay (409, friendly message)", blocked.status === 409 && blocked.json?.reason === "PRICE_UNAVAILABLE", `${blocked.status} ${blocked.text}`);
+    clearEmails();
+    const res = await post([{ scenarioId: w1.scenarioId, status: "ok", totalCents: ALL_IN, currency: "USD", feesIncluded: true }]);
+    const rows = await db.specialRate.findMany({ where: { propertyId: property.id, date: { gte: new Date(w1.checkIn), lt: new Date(w1.checkOut) } } });
+    check("AR4", "quote → nightly rate backed out ($400) and saved for each night as auto:airbnb", rows.length === 3 && rows.every((r) => Math.abs(r.price - 40000) <= 1 && r.note === "auto:airbnb") && res.json?.rateUpdates?.[0]?.nightlyCents !== undefined, JSON.stringify(res.json?.rateUpdates));
+    const after = await quoteFor(w1);
+    check("AR5", "the stay is now bookable at Airbnb's rate less 10%", after.json?.available === true && Math.abs(after.json.quote.nightlySubtotalCents - 3 * 36000) <= 3, after.text.slice(0, 300));
+    check("AR6", "run email lists the copied rates", emails().some((m) => /repriced from Airbnb/.test(m.subject) && /Nightly rates copied from Airbnb/.test(m.html)), emails().map((m) => m.subject).join(" | "));
+    // A manual override wins over Airbnb.
+    await db.specialRate.create({ data: { propertyId: property.id, date: new Date(w2.checkIn), price: 99900, note: "Owner holiday rate" } });
+    const manual = await post([{ scenarioId: w2.scenarioId, status: "ok", totalCents: ALL_IN, currency: "USD" }]);
+    const kept = await db.specialRate.findUnique({ where: { propertyId_date: { propertyId: property.id, date: new Date(w2.checkIn) } } });
+    check("AR7", "a manual date override is never overwritten by Airbnb", kept.price === 99900 && kept.note === "Owner holiday rate" && manual.json?.rateUpdates?.[0]?.skippedManual === 1, JSON.stringify(manual.json?.rateUpdates));
+    const silly = await post([{ scenarioId: w3.scenarioId, status: "ok", totalCents: 30000, currency: "USD" }]);
+    const none = await db.specialRate.count({ where: { propertyId: property.id, price: { lt: 5000 } } });
+    check("AR8", "an implausible derived rate (<$50/night) is reported, not saved", none === 0 && /outside/.test(silly.json?.rateUpdates?.[0]?.error ?? ""), JSON.stringify(silly.json?.rateUpdates));
+    const next = (await api("/api/price-check/scenarios", { headers: auth })).json?.scenarios ?? [];
+    check("AR9", "freshly priced nights aren't re-quoted in the next run", !next.some((s) => s.checkIn === w1.checkIn && s.listingId === LISTING), "w1 re-quoted");
+    // Stale Airbnb rates are ignored.
+    await db.specialRate.updateMany({ where: { propertyId: property.id, note: "auto:airbnb" }, data: { updatedAt: new Date(Date.now() - 8 * 86400000) } });
+    const stale = await quoteFor(w1);
+    check("AR10", "Airbnb rates older than 7 days are not used", stale.json?.reason === "PRICE_UNAVAILABLE", stale.text.slice(0, 200));
+    // Switch off → base rates again.
+    await db.featureToggle.update({ where: { key: "airbnbPricing" }, data: { enabled: false } });
+    const off = await quoteFor(w3);
+    check("AR11", "switching Airbnb pricing off in Admin → Pricing falls back to the base rates", off.json?.available === true && !!off.json?.quote, off.text.slice(0, 200));
+  } finally {
+    await db.featureToggle.update({ where: { key: "airbnbPricing" }, data: { enabled: false } });
+    await db.specialRate.deleteMany({ where: { propertyId: property.id } });
+    await db.property.update({ where: { slug: SB }, data: { airbnbIcalUrl: original } });
+  }
+});
+
 def("Admin endpoints require a session", async () => {
   const routes = [
     ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],
