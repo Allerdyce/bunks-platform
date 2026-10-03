@@ -1,4 +1,5 @@
 // src/app/api/bookings/route.ts
+import { PriceUnavailableError } from '@/lib/airbnbRates';
 import { Prisma } from '@prisma/client';
 import { rateLimitResponse } from '@/lib/rateLimit';
 import { randomInt, randomUUID } from 'crypto';
@@ -206,7 +207,18 @@ export async function POST(req: NextRequest) {
     const partySize = body.guests ?? 1;
 
     // Note: This re-fetches property internally but ensures consistency with frontend quote
-    const quote = await calculatePricing(property.slug, checkInDate, checkOutDate, partySize);
+    let quote: Awaited<ReturnType<typeof calculatePricing>>;
+    try {
+      quote = await calculatePricing(property.slug, checkInDate, checkOutDate, partySize);
+    } catch (pricingError) {
+      if (pricingError instanceof PriceUnavailableError) {
+        return NextResponse.json(
+          { available: false, reason: 'PRICE_UNAVAILABLE', error: pricingError.message },
+          { status: 409 }
+        );
+      }
+      throw pricingError;
+    }
 
     const {
       totalPriceCents,

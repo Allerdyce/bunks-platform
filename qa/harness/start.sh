@@ -16,6 +16,8 @@ export CRON_SECRET=qa-cron-secret ICAL_FEED_SECRET=qa-ical-secret PRICE_CHECK_SE
 export NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # The E2E suite makes many requests from one IP.
 export RATE_LIMIT_DISABLED=true
+# Airbnb pricing is configured but switched off per scenario (see qa/e2e/lib.mjs resetData).
+export AIRBNB_GUEST_FEE_PCT=14.1 FEATURE_FLAG_CACHE_MS=0
 (cd "$WORK/ical" && nohup python3 -m http.server 8765 > "$WORK/ical.log" 2>&1 < /dev/null &)
 nohup node "$ROOT/qa/harness/stripe-mock.mjs" > "$WORK/stripe-mock.log" 2>&1 < /dev/null &
 cd "$ROOT" && nohup npx next dev -p 3000 > "$WORK/next.log" 2>&1 < /dev/null &

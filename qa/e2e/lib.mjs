@@ -40,6 +40,8 @@ export async function resetData() {
   await db.blockedDate.deleteMany({});
   await db.specialRate.deleteMany({});
   await db.booking.deleteMany({});
+  // Airbnb pricing off by default; its own scenario switches it on.
+  await db.featureToggle.upsert({ where: { key: "airbnbPricing" }, update: { enabled: false }, create: { key: "airbnbPricing", enabled: false } });
   clearEmails();
   restoreIcal();
 }

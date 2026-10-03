@@ -137,13 +137,18 @@ export function PropertyDetailView({
   const [quote, setQuote] = useState<PricingQuote | null>(null);
   const [pendingQuote, setPendingQuote] = useState<PricingQuote | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  // Set when the chosen dates can't be priced (e.g. no current Airbnb rate yet).
+  const [priceMessage, setPriceMessage] = useState<string | null>(null);
 
   // Fetch quote for confirmed dates (Booking Sidebar)
   useEffect(() => {
     let isMounted = true;
     const fetchQuote = async () => {
       if (!bookingDates.start || !bookingDates.end) {
-        if (isMounted) setQuote(null);
+        if (isMounted) {
+          setQuote(null);
+          setPriceMessage(null);
+        }
         return;
       }
       setIsLoadingQuote(true);
@@ -162,8 +167,10 @@ export function PropertyDetailView({
         const data = await res.json();
         if (isMounted && data.quote) {
           setQuote(data.quote);
+          setPriceMessage(null);
         } else if (isMounted) {
           setQuote(null);
+          setPriceMessage(data.reason === "PRICE_UNAVAILABLE" ? (data.message ?? null) : null);
         }
       } catch (e) {
         console.error("Failed to fetch quote", e);
@@ -742,7 +749,9 @@ export function PropertyDetailView({
             <div className="flex justify-between items-start gap-3 mb-6">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline gap-3">
-                  {canBook ? (
+                  {canBook && priceMessage ? (
+                    <span className="text-base font-medium text-gray-900">{priceMessage}</span>
+                  ) : canBook ? (
                     <>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xl font-medium text-gray-900">
@@ -757,7 +766,7 @@ export function PropertyDetailView({
                     </span>
                   )}
                 </div>
-                {canBook && (
+                {canBook && !priceMessage && (
                   <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">
                     Direct booking rate
                   </p>

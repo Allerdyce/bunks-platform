@@ -8,6 +8,15 @@ import { checkStayRules, minimumNightsFor, propertyToday, resolvePropertyTimeZon
 import { calculatePricing } from "@/lib/pricing/calculator";
 import { sendEmail } from "@/lib/email/sendEmail";
 import { escapeHtml } from "@/lib/html";
+import {
+  AIRBNB_RATE_SOURCES,
+  applyAutoRate,
+  autoRatesEnabled,
+  planRateWindows,
+  PriceUnavailableError,
+  type RateChange,
+  type RateWindow,
+} from "@/lib/airbnbRates";
 
 // Airbnb price comparison. An external runner (scripts/airbnb-price-runner, GitHub Actions)
 // asks Bunks which stays to check, fetches Airbnb's guest-facing quotes for them, and posts
@@ -19,6 +28,8 @@ import { escapeHtml } from "@/lib/html";
 // PRICE_CHECK_COMPARE_WITH_TAX=true if Airbnb's displayed total turns out to include tax.
 
 const ARRIVAL_OFFSETS_DAYS = [14, 30, 60, 90];
+// The runner allows 40 Airbnb requests per run (including its page-key request and retries).
+const MAX_SCENARIOS = 30;
 const STAY_LENGTHS = [3, 7];
 const ADULTS = 2;
 const DAY_MS = 86_400_000;
@@ -91,13 +102,26 @@ const propertySelect = {
   airbnbIcalUrl: true,
 } as const;
 
-/** The stays to price on Airbnb: 3- and 7-night stays at four upcoming arrival dates. */
+/**
+ * The stays to quote on Airbnb this run.
+ * - Homes priced from Airbnb (AIRBNB_GUEST_FEE_PCT set, see lib/airbnbRates): rotating 3-night
+ *   windows on the home's source listing, oldest-priced first, so every open night in the next
+ *   six months is refreshed every couple of days.
+ * - Otherwise: comparison stays, 3 and 7 nights at four upcoming arrival dates, on every
+ *   linked Airbnb listing.
+ */
 export async function buildScenarios(now = new Date()): Promise<Scenario[]> {
   const properties = await prisma.property.findMany({ select: propertySelect });
-  const scenarios: Scenario[] = [];
+  const comparisons: Scenario[] = [];
+  const windowsByHome: Array<{ adults: number; windows: RateWindow[] }> = [];
   for (const property of properties) {
     const listingIds = airbnbListingIds(property.airbnbIcalUrl);
     if (!listingIds.length) continue;
+    const adults = Math.min(ADULTS, property.maxGuests ?? ADULTS);
+    if ((await autoRatesEnabled()) && AIRBNB_RATE_SOURCES[property.slug] && listingIds.includes(AIRBNB_RATE_SOURCES[property.slug].listingId)) {
+      windowsByHome.push({ adults, windows: await planRateWindows(property, listingIds, now) });
+      continue;
+    }
     const today = propertyToday(resolvePropertyTimeZone(property), now);
     const lengths = [...new Set(STAY_LENGTHS.map((n) => Math.max(n, minimumNightsFor(property.slug))))];
     for (const offset of ARRIVAL_OFFSETS_DAYS) {
@@ -114,12 +138,25 @@ export async function buildScenarios(now = new Date()): Promise<Scenario[]> {
             listingId,
             checkIn: toISODate(checkIn),
             checkOut: toISODate(checkOut),
-            adults: Math.min(ADULTS, property.maxGuests ?? ADULTS),
+            adults,
             pets: 0,
           };
-          scenarios.push({ scenarioId: encodeScenarioId(key), ...key });
+          comparisons.push({ scenarioId: encodeScenarioId(key), ...key });
         }
       }
+    }
+  }
+
+  // Share the request budget between homes: take each home's most overdue window in turn.
+  const scenarios = comparisons.slice(0, MAX_SCENARIOS);
+  for (let round = 0; scenarios.length < MAX_SCENARIOS; round += 1) {
+    const picks = windowsByHome.filter((home) => home.windows[round]);
+    if (!picks.length) break;
+    for (const home of picks) {
+      if (scenarios.length >= MAX_SCENARIOS) break;
+      const w = home.windows[round];
+      const key = { slug: w.slug, listingId: w.listingId, checkIn: w.checkIn, checkOut: w.checkOut, adults: home.adults, pets: 0 };
+      scenarios.push({ scenarioId: encodeScenarioId(key), ...key });
     }
   }
   return scenarios;
@@ -166,6 +203,25 @@ export function validateQuote(raw: unknown): IncomingQuote | null {
 
 const text = (value: unknown, max = 300) => (typeof value === "string" ? value.slice(0, max) : null);
 
+export type RateUpdate = RateChange | { slug: string; checkIn: string; checkOut: string; error: string };
+
+/** Saves Airbnb-derived nightly rates from the ok quotes on each home's source listing. */
+export async function applyAutoRates(quotes: IncomingQuote[]): Promise<RateUpdate[]> {
+  if (!(await autoRatesEnabled())) return [];
+  const properties = await prisma.property.findMany({ select: propertySelect });
+  const bySlug = new Map(properties.map((p) => [p.slug, p]));
+  const updates: RateUpdate[] = [];
+  for (const quote of quotes) {
+    if (quote.status !== "ok") continue;
+    const key = decodeScenarioId(quote.scenarioId);
+    const property = key ? bySlug.get(key.slug) : undefined;
+    if (!key || !property || !airbnbListingIds(property.airbnbIcalUrl).includes(key.listingId)) continue;
+    const update = await applyAutoRate(property, key, quote.totalCents as number);
+    if (update) updates.push(update);
+  }
+  return updates;
+}
+
 /** Compares each Airbnb quote with Bunks' current price for the same stay. */
 export async function compareQuotes(quotes: IncomingQuote[]): Promise<Comparison[]> {
   const properties = await prisma.property.findMany({ select: propertySelect });
@@ -207,7 +263,14 @@ export async function compareQuotes(quotes: IncomingQuote[]): Promise<Comparison
       continue;
     }
 
-    const bunks = await calculatePricing(property.slug, checkIn, checkOut, key.adults);
+    let bunks: Awaited<ReturnType<typeof calculatePricing>>;
+    try {
+      bunks = await calculatePricing(property.slug, checkIn, checkOut, key.adults);
+    } catch (error) {
+      if (!(error instanceof PriceUnavailableError)) throw error;
+      results.push({ ...base, status: "bunks-unavailable", note: "No Airbnb rate yet for some of these nights." });
+      continue;
+    }
     const bunksCents = compareWithTax() ? bunks.totalPriceCents : bunks.totalPriceCents - bunks.taxCents;
     const airbnbCents = quote.totalCents as number;
     const savingsPct = Math.round(((airbnbCents - bunksCents) / airbnbCents) * 1000) / 10;
@@ -257,11 +320,13 @@ const digestEnabled = () => process.env.PRICE_CHECK_DIGEST !== "false";
  * Emails ops the run's results: always while the digest is on, otherwise only when a stay is
  * below the savings target or Airbnb quotes failed.
  */
-export async function alertOnComparisons(comparisons: Comparison[]) {
+export async function alertOnComparisons(comparisons: Comparison[], rateUpdates: RateUpdate[] = []) {
   const below = comparisons.filter((c) => c.status === "below-target");
   const failed = comparisons.filter((c) => c.status === "airbnb-failed" || c.status === "invalid");
+  const rateErrors = rateUpdates.filter((u): u is Extract<RateUpdate, { error: string }> => "error" in u);
+  const rateChanges = rateUpdates.filter((u): u is RateChange => !("error" in u));
   const compared = comparisons.filter((c) => c.status === "compared" || c.status === "below-target");
-  if (!below.length && !failed.length && !digestEnabled()) return false;
+  if (!below.length && !failed.length && !rateErrors.length && !digestEnabled()) return false;
 
   const target = minSavingsPct();
   const basis = compareWithTax() ? "including tax" : "before tax";
@@ -284,7 +349,20 @@ export async function alertOnComparisons(comparisons: Comparison[]) {
     ? `Price check: Bunks saves less than ${target}% on ${below.length} stay${below.length === 1 ? "" : "s"}`
     : failed.length
       ? `Price check: ${failed.length} Airbnb quote${failed.length === 1 ? "" : "s"} failed`
-      : `Price check: all ${compared.length} compared stays save at least ${target}%`;
+      : rateErrors.length
+        ? `Price check: ${rateErrors.length} Airbnb rate${rateErrors.length === 1 ? "" : "s"} not saved`
+        : rateChanges.length
+          ? `Price check: ${rateChanges.length} stay${rateChanges.length === 1 ? "" : "s"} repriced from Airbnb`
+          : `Price check: all ${compared.length} compared stays save at least ${target}%`;
+  const rateRows = rateUpdates
+    .map((u) =>
+      "error" in u
+        ? `<tr style="background:#fdecea"><td>${escapeHtml(u.slug)}</td><td>${u.checkIn} → ${u.checkOut}</td><td colspan="2">${escapeHtml(u.error)}</td></tr>`
+        : `<tr><td>${escapeHtml(u.slug)}</td><td>${u.checkIn} → ${u.checkOut}</td><td>${usd(u.nightlyCents)}/night</td>` +
+          `<td>${u.previousCents === null ? "new" : u.previousCents === u.nightlyCents ? "unchanged" : `was ${usd(u.previousCents)}`}` +
+          `${u.skippedManual ? ` · ${u.skippedManual} night(s) kept your manual rate` : ""}</td></tr>`,
+    )
+    .join("");
 
   await sendEmail({
     to: PRICE_CHECK_EMAIL,
@@ -294,7 +372,11 @@ export async function alertOnComparisons(comparisons: Comparison[]) {
       `Rows in red need attention.</p>` +
       `<table cellpadding="6" border="1" style="border-collapse:collapse"><tr><th>Home</th><th>Stay</th><th>Bunks</th>` +
       `<th>Airbnb</th><th>Saving</th><th>Result</th><th>Airbnb cancellation</th></tr>${rows}</table>` +
-      `<p>Bunks' prices come from Admin → Pricing (10% off your nightly rate, plus cleaning and the 5% service fee). ` +
+      (rateRows
+        ? `<p><strong>Nightly rates copied from Airbnb</strong> (Bunks charges 10% less, plus cleaning and its 5% fee):</p>` +
+          `<table cellpadding="6" border="1" style="border-collapse:collapse"><tr><th>Home</th><th>Nights</th><th>Airbnb nightly</th><th>Change</th></tr>${rateRows}</table>`
+        : "") +
+      `<p>Bunks' prices: Airbnb's nightly rate where copied, otherwise Admin → Pricing (10% off, plus cleaning and the 5% service fee). ` +
       `Bunks' cancellation policy: full refund 30+ days before check-in.</p>` +
       (failed.length
         ? `<p>If quotes keep failing, Airbnb may have changed its page or blocked the checker. See scripts/airbnb-price-runner/README.md.</p>`

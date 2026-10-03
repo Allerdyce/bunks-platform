@@ -6,6 +6,11 @@ export const FEATURE_FLAG_DEFINITIONS = {
     label: "Automated guest + host emails",
     description: "Send scheduled reminders, checkout nudges, and host prep digests when enabled.",
   },
+  airbnbPricing: {
+    label: "Price homes from Airbnb",
+    description:
+      "Nightly rates copied from each home's Airbnb listing twice a day; Bunks charges 10% less. Turn off to use the rates below instead.",
+  },
 } as const;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAG_DEFINITIONS;
@@ -15,9 +20,11 @@ export type FeatureFlagMap = Record<FeatureFlagKey, boolean>;
 const FEATURE_FLAG_DEFAULTS: FeatureFlagMap = {
 
   automatedEmails: true,
+  airbnbPricing: true,
 };
 
-const CACHE_TTL_MS = 30_000;
+// Each server instance (and route bundle) caches flags separately; QA sets FEATURE_FLAG_CACHE_MS=0.
+const CACHE_TTL_MS = Number(process.env.FEATURE_FLAG_CACHE_MS ?? 30_000);
 let cachedFlags: FeatureFlagMap | null = null;
 let cacheExpiresAt = 0;
 
