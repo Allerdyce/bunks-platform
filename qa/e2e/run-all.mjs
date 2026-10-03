@@ -562,7 +562,7 @@ def("Airbnb price check (comparison only)", async () => {
     const good = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.25), currency: "USD", feesIncluded: true, cancellation: "Free cancellation before X" }]);
     const c = good.json?.comparisons?.[0];
     const digest = emails().find((m) => /all 1 compared stays save at least 5%/.test(m.subject));
-    check("PC3", "comparison uses Bunks' pre-tax total; 20% saving → OK, summary email lists both prices", c?.status === "compared" && c?.bunksCents === preTax && c?.savingsPct === 20 && !!digest && digest.html.includes("20%") && digest.html.includes("OK"), JSON.stringify(good.json));
+    check("PC3", "comparison uses Bunks' pre-tax total; 20% saving → OK, summary email to ali@ lists both prices", c?.status === "compared" && c?.bunksCents === preTax && c?.savingsPct === 20 && digest?.to === "ali@bunks.com" && digest.html.includes("20%") && digest.html.includes("OK"), JSON.stringify(good.json));
     clearEmails();
     const low = await post([{ scenarioId: pick.scenarioId, status: "ok", totalCents: Math.round(preTax * 1.02), currency: "USD", feesIncluded: true }]);
     const mail = emails().find((m) => /saves less than 5%/.test(m.subject));

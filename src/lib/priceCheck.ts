@@ -7,7 +7,6 @@ import { getUnavailableNights, parseStayDate, toISODate } from "@/lib/bookingAva
 import { checkStayRules, minimumNightsFor, propertyToday, resolvePropertyTimeZone } from "@/lib/stayRules";
 import { calculatePricing } from "@/lib/pricing/calculator";
 import { sendEmail } from "@/lib/email/sendEmail";
-import { OPS_ALERT_EMAIL } from "@/lib/contact";
 import { escapeHtml } from "@/lib/html";
 
 // Airbnb price comparison. An external runner (scripts/airbnb-price-runner, GitHub Actions)
@@ -25,6 +24,8 @@ const ADULTS = 2;
 const DAY_MS = 86_400_000;
 const LAST_RESULTS_KEY = "price-check:last-results";
 export const STALE_AFTER_MS = 36 * 60 * 60 * 1000;
+// Price-check emails go to whoever is reviewing prices, separately from other ops alerts.
+const PRICE_CHECK_EMAIL = process.env.PRICE_CHECK_ALERT_EMAIL || "ali@bunks.com";
 
 export const minSavingsPct = () => {
   const value = Number(process.env.PRICE_CHECK_MIN_SAVINGS_PCT ?? "5");
@@ -286,7 +287,7 @@ export async function alertOnComparisons(comparisons: Comparison[]) {
       : `Price check: all ${compared.length} compared stays save at least ${target}%`;
 
   await sendEmail({
-    to: OPS_ALERT_EMAIL,
+    to: PRICE_CHECK_EMAIL,
     subject,
     html:
       `<p>Bunks vs Airbnb for the same dates, 2 adults, compared ${basis}. Target saving: ${target}%. ` +
@@ -307,7 +308,7 @@ export async function alertIfPriceCheckStale(now = new Date()) {
   const last = await lastResultsAt();
   if (!last || now.getTime() - last.getTime() < STALE_AFTER_MS) return false;
   await sendEmail({
-    to: OPS_ALERT_EMAIL,
+    to: PRICE_CHECK_EMAIL,
     subject: "Price check: no Airbnb results in over 36 hours",
     html:
       `<p>The Airbnb price checker last reported ${escapeHtml(last.toUTCString())}.</p>` +
