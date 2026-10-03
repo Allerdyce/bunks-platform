@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   alertOnComparisons,
+  applyAutoRates,
   compareQuotes,
   isAuthorizedPriceCheckRequest,
   minSavingsPct,
@@ -42,9 +43,11 @@ export async function POST(request: Request) {
     // Any well-formed report counts as the runner being alive, even if every quote failed:
     // the failures are alerted on below.
     await recordResultsReceived();
+    // Airbnb is the rule: save the nightly rates first, so the comparison shows the new prices.
+    const rateUpdates = await applyAutoRates(quotes as IncomingQuote[]);
     const comparisons = await compareQuotes(quotes as IncomingQuote[]);
-    const alerted = await alertOnComparisons(comparisons);
-    return NextResponse.json({ runId: body.runId, targetSavingsPct: minSavingsPct(), alerted, comparisons });
+    const alerted = await alertOnComparisons(comparisons, rateUpdates);
+    return NextResponse.json({ runId: body.runId, targetSavingsPct: minSavingsPct(), alerted, rateUpdates, comparisons });
   } catch (error) {
     console.error("[price-check] failed to compare results", error);
     return NextResponse.json({ error: "Couldn't compare results" }, { status: 500 });

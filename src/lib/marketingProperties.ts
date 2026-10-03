@@ -4,6 +4,7 @@ import type { Property as PrismaProperty } from "@prisma/client";
 import type { Property } from "@/types";
 import { prisma } from "@/lib/prisma";
 import { PROPERTIES } from "@/data/properties";
+import { AUTO_NOTE, AUTO_RATE_MAX_AGE_MS, pricedFromAirbnb } from "@/lib/airbnbRates";
 
 type DbProperty = Pick<
   PrismaProperty,
@@ -143,12 +144,36 @@ async function hydrateFromDatabase(): Promise<Property[]> {
 
   const dbProperties = await withTimeout(prisma.property.findMany({ select: propertySelect }), DB_TIMEOUT_MS);
   const dbMap = new Map(dbProperties.map((property) => [property.slug, property] as const));
+  // Homes priced from Airbnb advertise their lowest current Airbnb nightly rate in the next 90 days.
+  const now = Date.now();
+  const airbnbFrom = new Map<number, number>();
+  const airbnbPriced = [];
+  for (const property of dbProperties) if (await pricedFromAirbnb(property.slug)) airbnbPriced.push(property);
+  if (airbnbPriced.length) {
+    const lowest = await withTimeout(
+      prisma.specialRate.groupBy({
+        by: ["propertyId"],
+        where: {
+          propertyId: { in: airbnbPriced.map((property) => property.id) },
+          note: AUTO_NOTE,
+          isBlocked: false,
+          updatedAt: { gte: new Date(now - AUTO_RATE_MAX_AGE_MS) },
+          date: { gte: new Date(now), lt: new Date(now + 90 * 86_400_000) },
+        },
+        _min: { price: true },
+      }),
+      DB_TIMEOUT_MS,
+    );
+    for (const row of lowest) if (row._min.price) airbnbFrom.set(row.propertyId, row._min.price);
+  }
   const hydrated = PROPERTIES.map((property) => {
     const dbProperty = dbMap.get(property.slug);
     if (!dbProperty) {
       return property;
     }
-    return mergeProperty(property, dbProperty as DbProperty);
+    const merged = mergeProperty(property, dbProperty as DbProperty);
+    const fromCents = airbnbFrom.get(dbProperty.id);
+    return fromCents ? { ...merged, price: fromCents / 100 } : merged;
   });
   return hydrated;
 }

@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-03T02:59:20.032Z",
-  "pass": 171,
-  "total": 171,
+  "at": "2026-10-03T03:27:11.752Z",
+  "pass": 182,
+  "total": 182,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -1343,6 +1343,94 @@
       "scenario": "Airbnb price check (comparison only)",
       "id": "PC9",
       "description": "daily job alerts when the price runner hasn't reported for 36h",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR1",
+      "description": "scenarios: rotating 3-night windows on the source listing, at most 30, earliest first",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR2",
+      "description": "no Airbnb rate yet → the stay can't be priced (no fallback to base rates)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR3",
+      "description": "checkout refuses an unpriced stay (409, friendly message)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR4",
+      "description": "quote → nightly rate backed out ($400) and saved for each night as auto:airbnb",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR5",
+      "description": "the stay is now bookable at Airbnb's rate less 10%",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR6",
+      "description": "run email lists the copied rates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR7",
+      "description": "a manual date override is never overwritten by Airbnb",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR8",
+      "description": "an implausible derived rate (<$50/night) is reported, not saved",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR9",
+      "description": "freshly priced nights aren't re-quoted in the next run",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR10",
+      "description": "Airbnb rates older than 7 days are not used",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR11",
+      "description": "switching Airbnb pricing off in Admin → Pricing falls back to the base rates",
       "pass": true,
       "detail": "",
       "ticket": ""
