@@ -1,20 +1,32 @@
 import { notAClaim } from '@/lib/email/claims';
 import * as React from 'react';
+import type { Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
+  firstNameOf,
   formatDateForEmail,
-  formatStayDates,
   logEmailSend,
   renderEmail,
   resolveBookingReference,
   resolveHostSupportEmail,
   sendEmail,
+  stayTimeLabels,
+  tripUrlFor,
 } from '@/lib/email';
 import { DoorCodeEmail, type DoorCodeInstruction } from '@/emails/DoorCodeEmail';
+import { mapsUrlFor, privateDetailsFor, wifiFor } from '@/lib/privatePropertyDetails';
+import { propertyToday, resolvePropertyTimeZone } from '@/lib/stayRules';
 
 const EMAIL_TYPE = 'DOOR_CODE_DELIVERY' as const;
+const DAY_MS = 86_400_000;
+
+// The building entry code; ski-locker codes are listed inside the email, not used as the door code.
+export function resolveDoorCode(property: Pick<Property, 'lockboxCode' | 'garageCode'>) {
+  return property.lockboxCode || property.garageCode || null;
+}
 
 type PropertyAccess = {
+  slug: string;
   lockboxCode: string | null;
   garageCode: string | null;
   skiLockerDoorCode: string | null;
@@ -23,14 +35,14 @@ type PropertyAccess = {
   parkingNotes: string | null;
 };
 
-/** Entry details built only from what's stored on the property; nothing is invented. */
+/** Entry details built only from what's stored for the property; nothing is invented. */
 export function buildAccessDetails(property: PropertyAccess) {
   const entrySteps: DoorCodeInstruction[] = [];
   if (property.lockboxCode && property.garageCode) {
     entrySteps.push({ title: 'Garage code', detail: property.garageCode });
   }
   if (property.skiLockerDoorCode) {
-    entrySteps.push({ title: 'Ski locker room door', detail: `Code ${property.skiLockerDoorCode}` });
+    entrySteps.push({ title: 'Ski locker room door', detail: property.skiLockerDoorCode });
   }
   if (property.skiLockerNumber || property.skiLockerCode) {
     entrySteps.push({
@@ -40,33 +52,24 @@ export function buildAccessDetails(property: PropertyAccess) {
         .join(' · '),
     });
   }
-  const parkingInfo: DoorCodeInstruction[] = property.parkingNotes?.trim()
-    ? [{ title: 'Where to park', detail: property.parkingNotes.trim() }]
-    : [];
+  const parking = property.parkingNotes?.trim() || privateDetailsFor(property.slug)?.parkingNotes;
+  const parkingInfo: DoorCodeInstruction[] = parking ? [{ title: 'Where to park', detail: parking }] : [];
   return { entrySteps, parkingInfo };
 }
 
-interface SendDoorCodeOptions {
-  doorCode: string;
-  codeLabel?: string;
-  codeValidWindow?: string;
-  arrivalWindow?: string;
-  parkingInfo?: DoorCodeInstruction[];
-  entrySteps?: DoorCodeInstruction[];
-  wifi?: { network: string; password: string };
-  backupPlan?: DoorCodeInstruction[];
-  securityNotes?: string[];
-  supportPhone?: string;
-  conciergePhone?: string;
-  supportNote?: string;
-  force?: boolean;
+function arrivalHeadline(checkIn: Date, today: Date) {
+  const days = Math.round((checkIn.getTime() - today.getTime()) / DAY_MS);
+  if (days === 0) return 'See you today';
+  if (days === 1) return 'See you tomorrow';
+  if (days < 0) return 'Your arrival details';
+  return `See you on ${formatDateForEmail(checkIn)}`;
 }
 
-export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCodeOptions) {
-  if (!options?.doorCode) {
-    throw new Error('doorCode is required to send the Door Code email.');
-  }
-
+/**
+ * The guest's arrival details (door code when the home has one, address, Wi-Fi, parking), sent
+ * from the day before check-in. Sent once per booking unless forced.
+ */
+export async function sendDoorCodeEmail(bookingId: number, options: { force?: boolean } = {}) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { property: true },
@@ -76,51 +79,41 @@ export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCode
     throw new Error(`Booking ${bookingId} not found`);
   }
 
-  const bookingReference = resolveBookingReference(booking);
-
   if (!options.force) {
     const alreadySent = await prisma.emailLog.findFirst({
       where: { bookingId: booking.id, type: EMAIL_TYPE, status: 'SENT', ...notAClaim },
     });
-
     if (alreadySent) {
       return null;
     }
   }
 
+  const { property } = booking;
   const checkIn = new Date(booking.checkInDate);
   const checkOut = new Date(booking.checkOutDate);
-  const stayDates = formatStayDates(checkIn, checkOut);
-  const supportEmail = resolveHostSupportEmail(booking);
-
-  const access = buildAccessDetails(booking.property);
-  const wifi =
-    options.wifi ??
-    (booking.property.wifiSsid && booking.property.wifiPassword
-      ? { network: booking.property.wifiSsid, password: booking.property.wifiPassword }
-      : undefined);
-  const checkInTime = booking.property.checkInTime?.trim();
+  const times = stayTimeLabels(property);
+  const access = buildAccessDetails(property);
+  const wifi = wifiFor(property.slug, property);
+  const address = privateDetailsFor(property.slug)?.address ?? null;
+  const today = propertyToday(resolvePropertyTimeZone(property));
 
   const html = await renderEmail(
     <DoorCodeEmail
-      guestName={booking.guestName}
-      propertyName={booking.property.name}
-      arrivalDate={formatDateForEmail(checkIn)}
-      arrivalWindow={options.arrivalWindow ?? (checkInTime ? `Self check-in from ${checkInTime}` : 'Self check-in')}
-      doorCode={options.doorCode}
-      codeLabel={options.codeLabel ?? (booking.property.lockboxCode ? 'Lockbox code' : 'Entry code')}
-      codeValidWindow={options.codeValidWindow}
-      parkingInfo={options.parkingInfo ?? access.parkingInfo}
-      entrySteps={options.entrySteps ?? access.entrySteps}
-      wifi={wifi}
-      backupPlan={options.backupPlan}
-      securityNotes={options.securityNotes}
-      support={{
-        email: supportEmail,
-        phone: options.supportPhone,
-        concierge: options.conciergePhone,
-        note: options.supportNote ?? `Reference booking ${bookingReference} (${stayDates}) when you contact us.`,
-      }}
+      guestFirstName={firstNameOf(booking.guestName)}
+      propertyName={property.name}
+      arrivalHeadline={arrivalHeadline(checkIn, today)}
+      checkIn={`${formatDateForEmail(checkIn)} · ${times.checkIn.replace(/^Check-in /, '')}`}
+      checkOut={`${formatDateForEmail(checkOut)} · ${times.checkOut.replace(/^Checkout /, '')}`}
+      address={address}
+      mapsUrl={address ? mapsUrlFor(address) : null}
+      codeLabel={property.lockboxCode ? 'Lockbox code' : 'Entry code'}
+      doorCode={resolveDoorCode(property)}
+      entrySteps={access.entrySteps}
+      parkingInfo={access.parkingInfo}
+      wifi={wifi ? { network: wifi.ssid, password: wifi.password } : null}
+      tripUrl={tripUrlFor(booking)}
+      bookingReference={resolveBookingReference(booking)}
+      supportEmail={resolveHostSupportEmail(booking)}
     />,
   );
 
@@ -137,7 +130,8 @@ export async function sendDoorCodeEmail(bookingId: number, options: SendDoorCode
   try {
     const response = await sendEmail({
       to: booking.guestEmail,
-      subject: `Door code · ${booking.property.name}`,
+      replyTo: resolveHostSupportEmail(booking),
+      subject: `Arrival details · ${property.name} · ${formatDateForEmail(checkIn)}`,
       html,
     });
 

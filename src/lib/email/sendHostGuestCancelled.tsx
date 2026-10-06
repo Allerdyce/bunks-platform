@@ -1,72 +1,39 @@
 import * as React from 'react';
-import { OPS_ALERT_EMAIL } from '@/lib/contact';
-import { HostGuestCancelledEmail, type HostGuestCancelledEmailProps } from '@/emails/HostGuestCancelledEmail';
-import { logEmailSend, renderEmail, sendEmail } from '@/lib/email';
+import { prisma } from '@/lib/prisma';
+import { HostGuestCancelledEmail } from '@/emails/HostGuestCancelledEmail';
+import { adminBookingsUrl, formatCurrencyFromCents, formatStayDates, renderEmail, resolveBookingReference, resolveHostSupportEmail } from '@/lib/email';
+import { sendLoggedEmail } from './sendLoggedEmail';
 
-const EMAIL_TYPE = 'HOST_GUEST_CANCELLED' as const;
+/** Tells the Bunks team a paid booking was cancelled in Admin. */
+export async function sendHostGuestCancelled({
+  bookingId,
+  refundCents,
+  cancelledBy,
+}: {
+  bookingId: number;
+  refundCents: number;
+  cancelledBy?: string | null;
+}) {
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { property: true } });
+  if (!booking) throw new Error(`Booking ${bookingId} not found`);
 
-export type SendHostGuestCancelledOptions = HostGuestCancelledEmailProps & {
-  to?: string | string[];
-  cc?: string | string[];
-  replyTo?: string;
-  subjectOverride?: string;
-  bookingId?: number;
-};
-
-function ensurePayload(options: SendHostGuestCancelledOptions) {
-  if (!options.propertyName) {
-    throw new Error('sendHostGuestCancelled requires propertyName.');
-  }
-  if (!options.guestName) {
-    throw new Error('sendHostGuestCancelled requires guestName.');
-  }
-}
-
-export async function sendHostGuestCancelled(options: SendHostGuestCancelledOptions) {
-  ensurePayload(options);
-
+  const stayDates = formatStayDates(booking.checkInDate, booking.checkOutDate);
   const html = await renderEmail(
     <HostGuestCancelledEmail
-      hostName={options.hostName}
-      propertyName={options.propertyName}
-      guestName={options.guestName}
-      cancelledAt={options.cancelledAt}
-      stayDates={options.stayDates}
-      policyApplied={options.policyApplied}
-      refundSummary={options.refundSummary}
-      lineItems={options.lineItems}
-      calendarActions={options.calendarActions}
-      rebookNote={options.rebookNote}
-      nextArrival={options.nextArrival}
-      attachments={options.attachments}
+      propertyName={booking.property.name}
+      guestName={booking.guestName}
+      stayDates={stayDates}
+      bookingReference={resolveBookingReference(booking)}
+      refundAmount={refundCents > 0 ? formatCurrencyFromCents(refundCents) : null}
+      cancelledBy={cancelledBy}
+      adminUrl={adminBookingsUrl()}
     />,
   );
-
-  const to = options.to ?? OPS_ALERT_EMAIL;
-  const subject = options.subjectOverride ?? `[Cancellation] ${options.propertyName}`;
-
-  const logResult = async (status: 'SENT' | 'FAILED', error?: unknown) => {
-    await logEmailSend({
-      bookingId: options.bookingId,
-      to: Array.isArray(to) ? to.join(',') : to,
-      type: EMAIL_TYPE,
-      status,
-      error: error ? String((error as Error)?.message ?? error) : undefined,
-    });
-  };
-
-  try {
-    const response = await sendEmail({
-      to,
-      cc: options.cc,
-      replyTo: options.replyTo,
-      subject,
-      html,
-    });
-    await logResult('SENT');
-    return response;
-  } catch (error) {
-    await logResult('FAILED', error);
-    throw error;
-  }
+  return sendLoggedEmail({
+    bookingId: booking.id,
+    type: 'HOST_GUEST_CANCELLED',
+    to: resolveHostSupportEmail(booking),
+    subject: `Booking cancelled · ${booking.property.name} · ${stayDates}`,
+    html,
+  });
 }

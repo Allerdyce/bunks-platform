@@ -81,3 +81,18 @@ export function stayTimeLabels(property: StayTimesSource, ops?: OpsTimes) {
     checkOutTime: checkOutTime || '10:00 a.m.',
   };
 }
+
+/** The guest's first name for greetings ("Hi Alex"), falling back to the full name. */
+export function firstNameOf(guestName: string) {
+  return guestName.trim().split(/\s+/)[0] || guestName.trim();
+}
+
+/** The guest's trip page (arrival details, Wi-Fi, guide; door codes from 24h before check-in). */
+export function tripUrlFor(booking: Pick<Booking, 'id' | 'publicReference'>) {
+  return toAbsoluteUrl(`/my-trips/${resolveBookingReference(booking)}/essential`) ?? 'https://www.bunks.com/my-trips';
+}
+
+/** Admin → Bookings, for links in emails to the Bunks team. */
+export function adminBookingsUrl() {
+  return toAbsoluteUrl('/admin/messages') ?? 'https://www.bunks.com/admin/messages';
+}

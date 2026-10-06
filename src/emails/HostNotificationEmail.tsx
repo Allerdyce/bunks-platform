@@ -1,118 +1,43 @@
 import * as React from 'react';
-import { Button, Column, Heading, Hr, Row, Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { DetailRows, EmailTitle, Paragraph, PrimaryButton } from './components/parts';
 
 export interface HostNotificationEmailProps {
-  hostName?: string;
   propertyName: string;
   guestName: string;
-  checkInDate: string;
-  checkOutDate: string;
+  guestEmail: string;
+  guests?: number | null;
+  stayDates: string;
   nights: number;
-  totalPayout: string;
-  addOns?: { name: string; notes?: string }[];
-  checklistItems?: string[];
-  calendarUrl?: string;
-  specialRequests?: string;
+  totalPaid: string;
+  bookingReference: string;
+  source: string; // "Website checkout" or "Private payment link (ali@bunks.com)"
+  adminUrl: string;
 }
 
+// To the Bunks team when a booking is paid.
 export function HostNotificationEmail(props: HostNotificationEmailProps) {
-  const {
-    hostName,
-    propertyName,
-    guestName,
-    checkInDate,
-    checkOutDate,
-    nights,
-    totalPayout,
-    addOns,
-    checklistItems,
-    calendarUrl,
-    specialRequests,
-  } = props;
-
   return (
-    <EmailLayout previewText={`New booking confirmed at ${propertyName}`}
-      footerText="Keep delighting guests — the Bunks crew is here when you need us."
+    <EmailLayout
+      previewText={`${props.guestName} booked ${props.propertyName}, ${props.stayDates}.`}
+      footerText="Sent to the Bunks team when a booking is paid."
     >
-      <Heading className="text-2xl font-semibold">
-        New booking locked in{hostName ? `, ${hostName}` : ''}!
-      </Heading>
-      <Text className="mt-2 text-base text-[#475467]">
-        {guestName} just confirmed {nights} night{nights === 1 ? '' : 's'} at {propertyName}. Here are the details so you can prep with ease.
-      </Text>
-
-      <Section className="mt-6 rounded-xl bg-[#F9F5FF] p-4">
-        <Row>
-          <Column>
-            <Text className="text-sm font-semibold text-[#7F56D9]">Check-in</Text>
-            <Text className="text-base text-[#1D2939]">{checkInDate}</Text>
-          </Column>
-          <Column>
-            <Text className="text-sm font-semibold text-[#7F56D9]">Check-out</Text>
-            <Text className="text-base text-[#1D2939]">{checkOutDate}</Text>
-          </Column>
-        </Row>
-        <Row className="mt-4">
-          <Column>
-            <Text className="text-sm font-semibold text-[#7F56D9]">Guest paid (incl. fees &amp; taxes)</Text>
-            <Text className="text-base text-[#1D2939]">{totalPayout}</Text>
-          </Column>
-          {calendarUrl && (
-            <Column className="text-right">
-              <Button
-                className="inline-flex rounded-lg bg-[#7F56D9] px-3 py-2 text-sm font-semibold text-white"
-                href={calendarUrl}
-              >
-                Add to calendar
-              </Button>
-            </Column>
-          )}
-        </Row>
-      </Section>
-
-      {specialRequests && (
-        <Section className="mt-6">
-          <Heading as="h3" className="text-lg font-semibold text-[#111827]">
-            Special requests
-          </Heading>
-          <Text className="text-sm text-[#475467]">{specialRequests}</Text>
-        </Section>
-      )}
-
-      {addOns && addOns.length > 0 && (
-        <Section className="mt-6">
-          <Heading as="h3" className="text-lg font-semibold text-[#111827]">
-            Add-ons & services
-          </Heading>
-          <ul className="mt-2 list-disc pl-5 text-sm text-[#475467]">
-            {addOns.map((addOn) => (
-              <li key={addOn.name}>
-                <span className="font-semibold text-[#1D2939]">{addOn.name}</span>
-                {addOn.notes ? <span className="text-[#475467]"> — {addOn.notes}</span> : null}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {checklistItems && checklistItems.length > 0 && (
-        <Section className="mt-6">
-          <Heading as="h3" className="text-lg font-semibold text-[#111827]">
-            Prep checklist
-          </Heading>
-          <ul className="mt-2 list-disc pl-5 text-sm text-[#475467]">
-            {checklistItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      <Hr className="my-6 border-[#EAECF0]" />
-      <Text className="text-xs uppercase tracking-wide text-[#98A2B3]">
-        Powered by Bunks host services
-      </Text>
+      <EmailTitle>New booking: {props.propertyName}</EmailTitle>
+      <Paragraph>
+        {props.guestName} booked {props.nights} night{props.nights === 1 ? '' : 's'} and paid {props.totalPaid}.
+      </Paragraph>
+      <DetailRows
+        rows={[
+          { label: 'Dates', value: props.stayDates },
+          { label: 'Nights', value: String(props.nights) },
+          ...(props.guests ? [{ label: 'Guests', value: String(props.guests) }] : []),
+          { label: 'Guest', value: `${props.guestName} · ${props.guestEmail}` },
+          { label: 'Reference', value: props.bookingReference },
+          { label: 'Booked via', value: props.source },
+          { label: 'Paid (incl. fees & tax)', value: props.totalPaid, strong: true },
+        ]}
+      />
+      <PrimaryButton href={props.adminUrl}>Open in Admin</PrimaryButton>
     </EmailLayout>
   );
 }

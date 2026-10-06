@@ -1,5 +1,4 @@
 import { claimEmail, completeClaim, releaseClaim } from '@/lib/email/claims';
-import { resolveDoorCode } from '@/lib/email/doorCodeDelivery';
 import { resolvePropertyTimeZone } from '@/lib/stayRules';
 import { NextResponse } from 'next/server';
 import type { Booking, EmailType, Property } from '@prisma/client';
@@ -16,9 +15,7 @@ import {
   sendReviewRequest,
   sendMidStayCheckIn,
   sendDoorCodeEmail,
-  sendReceiptEmail,
   sendBookingConfirmation,
-  sendBookingWelcomeEmail,
   sendHostNotification,
 } from '@/lib/email';
 import { getOpsDetails } from '@/lib/opsDetails';
@@ -97,12 +94,8 @@ const DAILY_JOBS: DailyJob[] = [
     anchor: 'checkIn',
     firstDayOffset: -1,
     lastDay: { anchor: 'checkOut', offset: -1 },
-    eligible: (booking) => Boolean(resolveDoorCode(booking.property)),
-    send: async (booking) => {
-      const code = resolveDoorCode(booking.property);
-      if (!code) return null;
-      return sendDoorCodeEmail(booking.id, { doorCode: code });
-    },
+    // Arrival details go to every stay; the door code is included when the home has one.
+    send: (booking) => sendDoorCodeEmail(booking.id),
   },
   {
     // Host same-day prep on the morning of check-in.
@@ -286,9 +279,8 @@ async function fetchSentMap(type: EmailType, bookingIds: number[]) {
 // function timeout), Stripe's retry sees the booking already PAID and won't resend, so catch
 // them up here for recent bookings. Skip the last hour so we never race an in-flight webhook.
 const CONFIRMATION_EMAILS: Array<{ type: EmailType; send: (bookingId: number) => Promise<unknown> }> = [
-  { type: 'RECEIPT', send: (id) => sendReceiptEmail(id) },
+  // The confirmation carries the receipt; the separate receipt and welcome emails are retired.
   { type: 'BOOKING_CONFIRMATION', send: (id) => sendBookingConfirmation(id) },
-  { type: 'BOOKING_WELCOME', send: (id) => sendBookingWelcomeEmail(id) },
   { type: 'HOST_NOTIFICATION', send: (id) => sendHostNotification(id) },
 ];
 

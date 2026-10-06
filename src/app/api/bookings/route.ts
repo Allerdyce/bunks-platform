@@ -329,7 +329,7 @@ export async function POST(req: NextRequest) {
             // Cards only (Apple Pay / Google Pay are cards): bank debits and pay-later methods can
             // stay "processing" for days, far longer than the 30-minute date hold.
             payment_method_types: ['card'],
-            receipt_email: normalizedEmail,
+            // No receipt_email: in live mode Stripe would email its own receipt on top of Bunks' confirmation.
             metadata: paymentMetadata,
           },
           { idempotencyKey: `booking-${booking.id}` }

@@ -2,8 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripeClient } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
-import { sendReceiptEmail } from '@/lib/email/sendReceiptEmail';
-import { sendBookingWelcomeEmail } from '@/lib/email/sendBookingWelcomeEmail';
 import { sendBookingConfirmation } from '@/lib/email/sendBookingConfirmation';
 import { sendHostNotification } from '@/lib/email/sendHostNotification';
 import { sendGuestRefundIssued } from '@/lib/email/sendGuestRefundIssued';
@@ -19,44 +17,13 @@ import {
 } from '@/lib/bookingAvailability';
 import { OPS_ALERT_EMAIL } from '@/lib/contact';
 import { escapeHtml } from '@/lib/html';
-import { resolvePropertyTimeZone } from '@/lib/stayRules';
 import { sendDoorCodeIfDue } from '@/lib/email/doorCodeDelivery';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
-import { formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from '@/lib/email/helpers';
+import { formatCurrencyFromCents, formatStayDates } from '@/lib/email/helpers';
 
 export const runtime = 'nodejs';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-function capitalize(value: string) {
-  if (!value) return value;
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-type PaymentIntentWithCharges = Stripe.PaymentIntent & {
-  charges?: Stripe.ApiList<Stripe.Charge>;
-};
-
-function describePaymentMethod(paymentIntent: Stripe.PaymentIntent) {
-  const charge = (paymentIntent as PaymentIntentWithCharges).charges?.data?.[0];
-  if (!charge?.payment_method_details) {
-    return undefined;
-  }
-
-  const details = charge.payment_method_details;
-
-  if (details.card) {
-    const brand = details.card.brand ? capitalize(details.card.brand.replace(/_/g, ' ')) : 'Card';
-    const last4 = details.card.last4 ? `•• ${details.card.last4}` : '';
-    return `${brand} ${last4}`.trim();
-  }
-
-  if (details.type) {
-    return capitalize(details.type.replace(/_/g, ' '));
-  }
-
-  return undefined;
-}
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get('stripe-signature');
@@ -197,34 +164,21 @@ export async function POST(req: NextRequest) {
       // The booking is already PAID; a failed flag read must not stop the confirmation emails.
       const automatedEmailsEnabled = await isFeatureEnabled('automatedEmails').catch(() => true);
 
+      // The guest's confirmation is also their receipt, so it always goes out.
       try {
-        await sendReceiptEmail(booking.id, {
-          paymentSummary: describePaymentMethod(paymentIntent),
-        });
+        await sendBookingConfirmation(booking.id);
       } catch (err) {
-        console.error('Failed to send receipt email', err);
+        console.error('Failed to send booking confirmation email', err);
       }
 
       if (automatedEmailsEnabled) {
-        try {
-          await sendBookingConfirmation(booking.id);
-        } catch (err) {
-          console.error('Failed to send booking confirmation email', err);
-        }
-
         try {
           await sendHostNotification(booking.id);
         } catch (err) {
           console.error('Failed to send host notification email', err);
         }
       } else {
-        console.info('Automated emails disabled; skipping confirmation + host notification.');
-      }
-
-      try {
-        await sendBookingWelcomeEmail(booking.id);
-      } catch (err) {
-        console.error('Failed to send booking welcome email', err);
+        console.info('Automated emails disabled; skipping host notification.');
       }
 
       // Last-minute stays: send the door code now rather than at tomorrow's cron run.
@@ -276,53 +230,12 @@ export async function POST(req: NextRequest) {
           }
 
           try {
-            await sendGuestRefundIssued(booking.id, {
-              refundTotal: formattedTotal,
-              paymentMethod: describePaymentMethod(charge.payment_intent as Stripe.PaymentIntent) || 'Credit Card',
-              refundReason: 'Refund processed via Stripe',
-              lineItems: [
-                {
-                  label: 'Refund',
-                  amount: formattedTotal,
-                },
-              ],
-              expectedArrivalWindow: '5-10 business days',
-              initiatedAt: new Date().toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                timeZone: resolvePropertyTimeZone(booking.property),
-              }),
-            });
+            await sendGuestRefundIssued(booking.id, { refundCents: amount, bookingCancelled: charge.refunded });
             console.log(`✅ Sent refund email to guest for booking ${booking.id}`);
 
             // Notify Host/Ops about the adjustment
             try {
-              await sendHostRefundAdjustment({
-                to: resolveHostSupportEmail(booking),
-                bookingId: booking.id,
-                logBookingId: booking.id,
-                hostName: 'Host',
-                propertyName: booking.property.name,
-                guestName: booking.guestName,
-                processedAt: new Date().toLocaleString('en-US', {
-                  timeZone: resolvePropertyTimeZone(booking.property),
-                  timeZoneName: 'short',
-                }),
-                guestRefund: formattedTotal,
-                payoutBefore: 'See Dashboard',
-                payoutAfter: 'See Dashboard',
-                adjustmentReason: 'Refund processed via Stripe',
-                adjustments: [
-                  {
-                    label: 'Refund to Guest',
-                    amount: formattedTotal,
-                    direction: 'debit',
-                  }
-                ],
-                // We don't have detailed payout info here easily without checking balance transactions
-                // But for notification purposes, showing the refund amount is key.
-              });
+              await sendHostRefundAdjustment({ bookingId: booking.id, refundCents: amount, bookingCancelled: charge.refunded });
               console.log(`✅ Sent host refund adjustment email for booking ${booking.id}`);
             } catch (hostEmailError) {
               console.error('Failed to send host refund adjustment email', hostEmailError);
