@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Loader2,
   LogOut,
+  Plus,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -330,16 +331,21 @@ export default function AdminMessagesPage() {
       />
 
       <main className="flex min-h-0 flex-1 flex-col">
-        <div className="w-full px-6 py-6 lg:px-12 border-b border-gray-100 bg-white z-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-            Bunks Ops
-          </p>
-          <h1 className="page-title   text-gray-900 mt-1">
-            Bookings & guests
-          </h1>
-          <p className="text-sm text-gray-500">
-            Look up any booking, see its details, and email the guest.
-          </p>
+        <div className="z-10 flex w-full flex-wrap items-end justify-between gap-4 border-b border-gray-100 bg-white px-6 py-6 lg:px-12">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Bunks Ops
+            </p>
+            <h1 className="page-title   text-gray-900 mt-1">
+              Bookings & guests
+            </h1>
+            <p className="text-sm text-gray-500">
+              Look up any booking, see its details, and email the guest.
+            </p>
+          </div>
+          <Button type="button" onClick={() => setCreatingLink(true)} className="gap-2 whitespace-nowrap">
+            <Plus className="h-4 w-4" /> New private booking
+          </Button>
         </div>
 
         {threadsError && (
@@ -360,19 +366,14 @@ export default function AdminMessagesPage() {
                       All bookings
                     </h2>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      onClick={() => void fetchThreads()}
-                      className="gap-1 px-3 py-2 text-sm"
-                    >
-                      <RefreshCw className="h-4 w-4" /> Refresh
-                    </Button>
-                    <Button type="button" onClick={() => setCreatingLink(true)} className="px-3 py-2 text-sm">
-                      New private booking
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => void fetchThreads()}
+                    className="gap-1 px-3 py-2 text-sm"
+                  >
+                    <RefreshCw className="h-4 w-4" /> Refresh
+                  </Button>
                 </div>
                 <form className="mt-4" onSubmit={handleSearchThreads}>
                   <div className="relative">
