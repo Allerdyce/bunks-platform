@@ -5,6 +5,7 @@ import { getUnavailableNights, parseStayDate, toISODate } from "@/lib/bookingAva
 import { parseIcalUrls } from "@/lib/icalSync";
 import { minimumNightsFor, propertyToday, resolvePropertyTimeZone } from "@/lib/stayRules";
 import { isFeatureEnabled } from "@/lib/featureFlags";
+import { AUTO_NOTE } from "@/lib/airbnbRateNote";
 
 // Airbnb-driven nightly rates. Airbnb is the rule: the price runner quotes short stays on each
 // home's source Airbnb listing, Bunks backs the nightly rate out of each quote and saves it as a
@@ -26,7 +27,7 @@ import { isFeatureEnabled } from "@/lib/featureFlags";
 // - While on, a night with no current Airbnb (or manual) rate can't be booked online: there is no
 //   fallback to the base rates, because Airbnb is the rule.
 
-export const AUTO_NOTE = "auto:airbnb";
+export { AUTO_NOTE };
 export const AUTO_RATE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 // A night is re-quoted once its automatic rate is older than this.
 const REFRESH_AFTER_MS = 20 * 60 * 60 * 1000;

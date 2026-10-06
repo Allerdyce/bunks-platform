@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { AdminProperty, DateRange } from "@/types";
 import { formatStayDate } from "@/lib/availability";
+import { AUTO_NOTE } from "@/lib/airbnbRateNote";
 
 // The picker's end date is the checkout day, so the last night overridden is the day before it.
 const lastNightOf = (range: DateRange) => {
@@ -77,6 +78,9 @@ const formatLongDate = (isoDate: string) => {
 const dayNumber = (isoDate: string) =>
   Math.floor(new Date(`${isoDate}T00:00:00Z`).getTime() / 86400000);
 
+// A special price below this per night asks for confirmation: it's usually a block entered as a price.
+const LOW_PRICE_WARNING = 50;
+
 interface PropertyCardProps {
   property: AdminProperty;
   onSaveRates: (
@@ -125,6 +129,7 @@ export function PropertyCard({
   const [removingOverrideKey, setRemovingOverrideKey] = useState<string | null>(
     null,
   );
+  const [showAirbnbRates, setShowAirbnbRates] = useState(false);
   const [rateForm, setRateForm] = useState({
     weekday: inputValueFromCents(property.weekdayRate, 0),
     weekend: inputValueFromCents(property.weekendRate, 0),
@@ -181,6 +186,14 @@ export function PropertyCard({
       priceValue = parseFloat(specialForm.price);
       if (Number.isNaN(priceValue) || priceValue <= 0) {
         alert("Enter a valid special rate");
+        return;
+      }
+      if (
+        priceValue < LOW_PRICE_WARNING &&
+        !window.confirm(
+          `$${priceValue} a night is very low, and guests can book it. Did you mean to block these dates instead? Press OK to save this price anyway.`,
+        )
+      ) {
         return;
       }
     }
@@ -250,6 +263,14 @@ export function PropertyCard({
 
     return groups;
   }, [property.specialRates]);
+  // Prices copied from Airbnb are listed only on request: there are months of them, and they'd
+  // bury the prices and blocks set by hand.
+  const manualGroups = overrideGroups.filter((group) => group.isBlocked || group.note !== AUTO_NOTE);
+  const airbnbGroups = overrideGroups.filter((group) => !group.isBlocked && group.note === AUTO_NOTE);
+  const airbnbNights = airbnbGroups.reduce((total, group) => total + group.ids.length, 0);
+  const airbnbThrough = airbnbGroups.length
+    ? formatLongDate(airbnbGroups[airbnbGroups.length - 1].endDate ?? airbnbGroups[airbnbGroups.length - 1].startDate)
+    : null;
   const blockedDates = useMemo(
     () =>
       property.specialRates
@@ -377,9 +398,32 @@ export function PropertyCard({
             Blocks
           </h3>
           <p className="text-xs text-gray-600">
-            Use this panel to set per-night overrides or fully block a range of
-            dates for holds, shoots, or maintenance windows.
+            Set a different price for some nights, or block them so nobody can
+            book (owner stays, maintenance). Both win over Airbnb&apos;s prices.
           </p>
+          <div role="radiogroup" aria-label="Override type" className="grid grid-cols-2 gap-2">
+            {[
+              { blocked: false, label: "Set a price" },
+              { blocked: true, label: "Block dates" },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                role="radio"
+                aria-checked={specialForm.isBlocked === option.blocked}
+                onClick={() =>
+                  setSpecialForm((prev) => ({ ...prev, isBlocked: option.blocked }))
+                }
+                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                  specialForm.isBlocked === option.blocked
+                    ? "border-gray-900 bg-gray-900 text-white"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="grid gap-4">
             <div>
               <label className="text-xs font-medium text-gray-600">
@@ -432,10 +476,10 @@ export function PropertyCard({
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1">
+            {!specialForm.isBlocked && (
+              <div>
                 <LabeledField
-                  label="Special Rate ($)"
+                  label="Airbnb-equivalent price per night ($)"
                   value={specialForm.price}
                   onChange={(value) =>
                     setSpecialForm((prev) => ({ ...prev, price: value }))
@@ -443,27 +487,16 @@ export function PropertyCard({
                   prefix="$"
                   step="0.01"
                   min="0"
-                  disabled={specialForm.isBlocked}
-                  required={!specialForm.isBlocked}
+                  required
                   placeholder="per night"
                   type="text"
                   inputMode="decimal"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Guests pay 10% less, plus the 5% service fee, cleaning and tax.
+                </p>
               </div>
-              <label className="text-xs font-medium text-gray-600 inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={specialForm.isBlocked}
-                  onChange={(event) =>
-                    setSpecialForm((prev) => ({
-                      ...prev,
-                      isBlocked: event.target.checked,
-                    }))
-                  }
-                />
-                Block dates only
-              </label>
-            </div>
+            )}
             <div>
               <label className="text-xs font-medium text-gray-600">Note</label>
               <input
@@ -485,7 +518,7 @@ export function PropertyCard({
             className="w-full rounded-xl bg-amber-500 text-white py-3 text-sm font-medium hover:bg-amber-400"
             disabled={savingSpecial}
           >
-            {savingSpecial ? "Applying..." : "Add Special Rate / Block"}
+            {savingSpecial ? "Saving..." : specialForm.isBlocked ? "Block these dates" : "Save special price"}
           </button>
         </form>
       </div>
@@ -494,12 +527,27 @@ export function PropertyCard({
         <h4 className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
           Upcoming Overrides
         </h4>
-        {overrideGroups.length ? (
+        {airbnbNights > 0 && (
+          <p className="mb-3 text-sm text-gray-500">
+            Airbnb prices copied for {airbnbNights} night{airbnbNights === 1 ? "" : "s"}
+            {airbnbThrough ? `, through ${airbnbThrough}` : ""}.{" "}
+            <button
+              type="button"
+              onClick={() => setShowAirbnbRates((prev) => !prev)}
+              className="font-medium text-gray-900 underline"
+            >
+              {showAirbnbRates ? "Hide" : "Show"}
+            </button>
+          </p>
+        )}
+        {manualGroups.length || showAirbnbRates ? (
           <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
-            {overrideGroups.map((group) => {
+            {(showAirbnbRates ? overrideGroups : manualGroups).map((group) => {
               const description = group.isBlocked
                 ? "Blocked (no bookings)"
-                : `Special rate ${currencyLabel(group.price ?? 0)}`;
+                : group.note === AUTO_NOTE
+                  ? `Airbnb price ${currencyLabel(group.price ?? 0)}`
+                  : `Special rate ${currencyLabel(group.price ?? 0)}`;
               return (
                 <div
                   key={group.key}
@@ -511,7 +559,7 @@ export function PropertyCard({
                     </p>
                     <p className="text-xs text-gray-500">
                       {description}
-                      {group.note ? ` · ${group.note}` : ""}
+                      {group.note && group.note !== AUTO_NOTE ? ` · ${group.note}` : ""}
                     </p>
                   </div>
                   <button
@@ -529,7 +577,7 @@ export function PropertyCard({
             })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No overrides yet.</p>
+          <p className="text-sm text-gray-500">No prices or blocks set by hand.</p>
         )}
       </div>
     </section>
