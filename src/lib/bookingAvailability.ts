@@ -56,14 +56,18 @@ type UnavailableOptions = {
   excludeBookingIds?: number[];
   // Ignore this guest's own pending holds so they can restart checkout.
   ignorePendingForEmail?: string;
-  // Public calendar/quote views ignore holds; only checkout enforces them.
+  // Public calendar/quote views ignore checkout holds; only checkout enforces them.
   includePendingHolds?: boolean;
+  // Unpaid payment links hold their dates everywhere (calendar, Airbnb feed, checkout) until
+  // holdUntil. Only payment confirmation ignores them: a completed payment wins.
+  includeLinkHolds?: boolean;
 };
 
 /**
  * Returns every unavailable night (YYYY-MM-DD) for the property in [from, to).
  * Sources: Airbnb iCal + direct blocks,
- * admin-blocked special rates, PAID bookings, and PENDING bookings still inside their hold.
+ * admin-blocked special rates, PAID bookings, PENDING bookings still inside their checkout hold,
+ * and unpaid payment links before their holdUntil.
  */
 export async function getUnavailableNights(
   propertyId: number,
@@ -84,6 +88,9 @@ export async function getUnavailableNights(
         ? { NOT: { guestEmail: { equals: options.ignorePendingForEmail, mode: "insensitive" } } }
         : {}),
     });
+  }
+  if (options.includeLinkHolds !== false) {
+    bookingStatusFilter.push({ status: "PENDING", holdUntil: { gt: new Date() } });
   }
 
   const [blocked, specialBlocked, bookings] = await Promise.all([

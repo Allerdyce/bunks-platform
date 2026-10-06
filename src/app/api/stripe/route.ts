@@ -134,10 +134,10 @@ export async function POST(req: NextRequest) {
             current.propertyId,
             current.checkInDate,
             current.checkOutDate,
-            // Only confirmed bookings and blocks count here, not other guests' unpaid holds: money
-            // already taken beats a checkout that may never finish. If that other guest pays
-            // later, their payment is refunded with an explanation (the conflict path below).
-            { excludeBookingIds: [current.id], includePendingHolds: false },
+            // Only confirmed bookings and blocks count here, not other guests' unpaid holds or
+            // payment links: money already taken beats a checkout that may never finish. If that
+            // other guest pays later, their payment is refunded with an explanation (below).
+            { excludeBookingIds: [current.id], includePendingHolds: false, includeLinkHolds: false },
             tx
           ));
         if (!stillAvailable) {

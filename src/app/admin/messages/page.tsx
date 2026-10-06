@@ -20,6 +20,8 @@ import {
 import { getPropertyBySlug } from "@/data/properties";
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { CancelBookingControl, type AdminBookingStatus } from "@/components/admin/CancelBookingControl";
+import { PaymentLinkDetails, type AdminPaymentLink } from "@/components/admin/PaymentLinkDetails";
+import { PrivateBookingForm } from "@/components/admin/PrivateBookingForm";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
@@ -33,6 +35,8 @@ type AdminThreadSummary = {
   status: AdminBookingStatus;
   totalPriceCents: number;
   holdExpired: boolean;
+  guestCount: number | null;
+  paymentLink: AdminPaymentLink | null;
   property: {
     id: number;
     name: string;
@@ -78,14 +82,18 @@ const statusPillClass = (booking: { status: AdminBookingStatus; holdExpired: boo
         ? "bg-gray-100 text-gray-600"
         : "bg-amber-50 text-amber-700";
 
-const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
+const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean; paymentLink: AdminPaymentLink | null }) =>
   booking.status === "PAID"
     ? "Paid"
     : booking.status === "CANCELLED"
       ? "Cancelled"
-      : booking.holdExpired
-        ? "Abandoned checkout"
-        : "Awaiting payment";
+      : booking.paymentLink
+        ? booking.holdExpired
+          ? "Payment link expired"
+          : "Awaiting payment (link)"
+        : booking.holdExpired
+          ? "Abandoned checkout"
+          : "Awaiting payment";
 
 
 export default function AdminMessagesPage() {
@@ -99,6 +107,7 @@ export default function AdminMessagesPage() {
   const [threadsError, setThreadsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
+  const [creatingLink, setCreatingLink] = useState(false);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -351,14 +360,19 @@ export default function AdminMessagesPage() {
                       All bookings
                     </h2>
                   </div>
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={() => void fetchThreads()}
-                    className="gap-1 px-3 py-2 text-sm"
-                  >
-                    <RefreshCw className="h-4 w-4" /> Refresh
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => void fetchThreads()}
+                      className="gap-1 px-3 py-2 text-sm"
+                    >
+                      <RefreshCw className="h-4 w-4" /> Refresh
+                    </Button>
+                    <Button type="button" onClick={() => setCreatingLink(true)} className="px-3 py-2 text-sm">
+                      New private booking
+                    </Button>
+                  </div>
                 </div>
                 <form className="mt-4" onSubmit={handleSearchThreads}>
                   <div className="relative">
@@ -382,7 +396,10 @@ export default function AdminMessagesPage() {
                 <MessageThreadList
                   threads={hostThreadSummaries}
                   activeThreadId={activeThread?.id ?? null}
-                  onSelect={(thread) => setActiveThreadId(Number(thread.id))}
+                  onSelect={(thread) => {
+                    setCreatingLink(false);
+                    setActiveThreadId(Number(thread.id));
+                  }}
                   emptyState={
                     <div className="p-8 text-center text-sm text-gray-500">
                       No bookings match your search yet.
@@ -393,7 +410,15 @@ export default function AdminMessagesPage() {
             </div>
           </aside>
           <section className="min-w-0 flex-1 lg:overflow-y-auto">
-            {activeThread ? (
+            {creatingLink ? (
+              <PrivateBookingForm
+                onClose={() => setCreatingLink(false)}
+                onCreated={(bookingId) => {
+                  setActiveThreadId(bookingId);
+                  void fetchThreads(searchQuery || undefined);
+                }}
+              />
+            ) : activeThread ? (
             <div className="mx-auto max-w-3xl space-y-8 p-6 sm:p-10">
               <header className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
@@ -426,6 +451,7 @@ export default function AdminMessagesPage() {
                   ["Check-in", stayDateFormatter.format(new Date(activeThread.checkInDate))],
                   ["Check-out", stayDateFormatter.format(new Date(activeThread.checkOutDate))],
                   ["Nights", String(nightsBetweenIso(activeThread.checkInDate, activeThread.checkOutDate))],
+                  ...(activeThread.guestCount ? [["Guests", String(activeThread.guestCount)]] : []),
                   ["Total", formatMoney(activeThread.totalPriceCents)],
                 ].map(([label, value]) => (
                   <div key={label}>
@@ -467,6 +493,10 @@ export default function AdminMessagesPage() {
                 </p>
               </section>
 
+              {activeThread.paymentLink && (
+                <PaymentLinkDetails key={activeThread.id} bookingId={activeThread.id} link={activeThread.paymentLink} />
+              )}
+
               <section className="space-y-3 border-t border-gray-100 pt-6">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Cancellation</h3>
                 <CancelBookingControl
@@ -475,6 +505,7 @@ export default function AdminMessagesPage() {
                   status={activeThread.status}
                   totalPriceCents={activeThread.totalPriceCents}
                   checkInDate={activeThread.checkInDate}
+                  paymentLink={Boolean(activeThread.paymentLink)}
                   onCancelled={() => void fetchThreads(searchQuery || undefined)}
                 />
               </section>

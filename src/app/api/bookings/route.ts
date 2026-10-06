@@ -1,8 +1,7 @@
 // src/app/api/bookings/route.ts
 import { PriceUnavailableError } from '@/lib/airbnbRates';
-import { Prisma } from '@prisma/client';
 import { rateLimitResponse } from '@/lib/rateLimit';
-import { randomInt, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripeClient } from '@/lib/stripe';
@@ -15,12 +14,13 @@ import {
 import { checkStayRules } from '@/lib/stayRules';
 import { z } from 'zod';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
+import {
+  BOOKING_REFERENCE_INSERT_ATTEMPTS,
+  generateUniqueBookingReference,
+  isBookingReferenceCollision,
+} from '@/lib/bookingReference';
 
 export const runtime = 'nodejs';
-
-const BOOKING_REFERENCE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const BOOKING_REFERENCE_LENGTH = 5;
-const BOOKING_REFERENCE_INSERT_ATTEMPTS = 5;
 
 let bookingReferenceColumnEnsured = false;
 let bookingReferenceColumnPromise: Promise<void> | null = null;
@@ -64,52 +64,6 @@ async function ensureBookingReferenceColumn() {
 
   return bookingReferenceColumnPromise;
 }
-
-function generateBookingReference() {
-  let value = '';
-  while (value.length < BOOKING_REFERENCE_LENGTH) {
-    const index = randomInt(BOOKING_REFERENCE_CHARSET.length);
-    value += BOOKING_REFERENCE_CHARSET[index];
-  }
-  return value;
-}
-
-async function generateUniqueBookingReference() {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const candidate = generateBookingReference();
-    const existing = await prisma.booking.findUnique({
-      where: { publicReference: candidate },
-      select: { id: true },
-    });
-    if (!existing) {
-      return candidate;
-    }
-  }
-  throw new Error('Unable to generate unique booking reference');
-}
-
-function isBookingReferenceCollision(error: unknown) {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
-    return false;
-  }
-
-  if (error.code !== 'P2002') {
-    return false;
-  }
-
-  const target = error.meta?.target;
-
-  if (typeof target === 'string') {
-    return target.includes('publicReference');
-  }
-
-  if (Array.isArray(target)) {
-    return target.some((value) => typeof value === 'string' && value.includes('publicReference'));
-  }
-
-  return false;
-}
-
 
 const UNAVAILABLE_MESSAGE =
   'Sorry, those dates were just booked. Please pick different dates.';
@@ -250,6 +204,8 @@ export async function POST(req: NextRequest) {
               status: 'PENDING',
               createdAt: { gte: pendingHoldCutoff() },
               guestEmail: { equals: normalizedEmail, mode: 'insensitive' },
+              // A payment link the admin sent this guest is never reused or released by checkout.
+              paymentLinkToken: null,
             },
           });
           const sameStay = ownHolds.find(
@@ -290,6 +246,7 @@ export async function POST(req: NextRequest) {
               guestName: guestName.trim(),
               guestEmail: normalizedEmail,
               totalPriceCents,
+              guestCount: partySize,
               status: 'PENDING',
               // Unique placeholder until the PaymentIntent exists.
               stripePaymentIntentId: `pending_${randomUUID()}`,
