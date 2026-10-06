@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { BunksApp } from "@/components/BunksApp";
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
+import { getCanonicalSlugFromPath } from "@/lib/propertySlugs";
 
 // Update static cache every 5 minutes
 export const revalidate = 300;
@@ -20,7 +21,7 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+  const slug = getCanonicalSlugFromPath((await params).slug);
   const properties = await fetchMarketingProperties();
   const property = properties.find((p) => p.slug === slug);
 
@@ -33,6 +34,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: property.name,
     description: property.description || `Stay at ${property.name} in ${property.location}.`,
+    // The short path (/property/summerland) renders the same page; point search engines at one URL.
+    alternates: { canonical: `/property/${property.slug}` },
     openGraph: {
       title: property.name,
       description: property.description || `Stay at ${property.name} in ${property.location}.`,
@@ -57,7 +60,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PropertyPage({ params }: PageProps) {
   // Pre-fetch properties to ensure cache is primed or available
   const properties = await fetchMarketingProperties();
-  const { slug } = await params;
+  const slug = getCanonicalSlugFromPath((await params).slug);
   if (!properties.some((property) => property.slug === slug)) {
     notFound();
   }

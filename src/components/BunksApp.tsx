@@ -22,6 +22,7 @@ import { AboutView } from "@/components/views/AboutView";
 import { BookingDetailsView } from "@/components/views/BookingDetailsView";
 import { LoaderScreen } from "@/components/shared/LoaderScreen";
 import { PROPERTIES } from "@/data/properties";
+import { getCanonicalSlugFromPath, getPathSlugFromCanonical } from "@/lib/propertySlugs";
 
 interface BunksAppProps {
   properties?: Property[];
@@ -30,29 +31,6 @@ interface BunksAppProps {
 const initialRange: DateRange = {
   start: null,
   end: null,
-};
-
-const PATH_TO_CANONICAL_SLUG: Record<string, string> = {
-  steamboat: "steamboat-downtown-townhome",
-  summerland: "summerland-ocean-view-beach-bungalow",
-};
-
-const CANONICAL_TO_PATH_SLUG: Record<string, string> = Object.entries(PATH_TO_CANONICAL_SLUG).reduce(
-  (acc, [pathSlug, canonicalSlug]) => {
-    acc[canonicalSlug] = pathSlug;
-    return acc;
-  },
-  {} as Record<string, string>,
-);
-
-const getCanonicalSlugFromPath = (slug: string | null) => {
-  if (!slug) return null;
-  return PATH_TO_CANONICAL_SLUG[slug] ?? slug;
-};
-
-const getPathSlugFromCanonical = (slug: string | null) => {
-  if (!slug) return null;
-  return CANONICAL_TO_PATH_SLUG[slug] ?? slug;
 };
 
 const BOOKING_LOOKUP_STORAGE_KEY = "bunks:lastBookingLookup";

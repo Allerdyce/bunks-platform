@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { fetchMarketingProperties } from '@/lib/marketingProperties';
+import { getCanonicalSlugFromPath } from '@/lib/propertySlugs';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +13,7 @@ export const size = {
 export const contentType = 'image/png';
 
 export default async function Image({ params }: { params: { slug: string } }) {
-    const { slug } = await params;
+    const slug = getCanonicalSlugFromPath((await params).slug);
     const properties = await fetchMarketingProperties();
     const property = properties.find((p) => p.slug === slug);
 
