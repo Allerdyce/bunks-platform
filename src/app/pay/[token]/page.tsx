@@ -40,6 +40,7 @@ export default async function PaymentLinkPage({ params }: { params: Promise<{ to
         propertyName={booking.property.name}
         image={PROPERTIES.find((property) => property.slug === booking.property.slug)?.image ?? null}
         guestName={booking.guestName}
+        guestEmail={booking.guestEmail}
         stayDates={formatStayDates(booking.checkInDate, booking.checkOutDate)}
         lines={lines}
         totalCents={booking.totalPriceCents}

@@ -16,12 +16,16 @@ type PaymentLinkViewProps = {
   propertyName: string;
   image: string | null;
   guestName: string;
+  guestEmail: string;
   stayDates: string;
   lines: ChargeLine[];
   totalCents: number;
   holdUntil: string;
   reference: string | null;
 };
+
+// Same key BunksApp uses for the last booking looked up on this device.
+const TRIP_LOOKUP_STORAGE_KEY = "bunks:lastBookingLookup";
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -37,6 +41,20 @@ export function PaymentLinkView(props: PaymentLinkViewProps) {
     const timer = setInterval(() => router.refresh(), 4000);
     return () => clearInterval(timer);
   }, [state, router]);
+
+  // Remember this booking for My trips (as checkout does), so the trip opens without a lookup.
+  useEffect(() => {
+    if (state !== "paid" || !props.reference) return;
+    try {
+      localStorage.setItem(
+        TRIP_LOOKUP_STORAGE_KEY,
+        JSON.stringify({ bookingReference: props.reference, guestEmail: props.guestEmail }),
+      );
+    } catch {
+      // Storage can be unavailable (private mode); the trip page then asks for the reference.
+    }
+  }, [state, props.reference, props.guestEmail]);
+  const tripUrl = props.reference ? `/my-trips/${props.reference}/essential` : "/my-trips";
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
@@ -92,8 +110,8 @@ export function PaymentLinkView(props: PaymentLinkViewProps) {
           )}
           {state === "paid" && (
             <StateMessage icon title="You're booked">
-              This stay is paid and confirmed. Your confirmation email has the details, and you can find your trip under{" "}
-              <a href="/my-trips" className="underline">My trips</a>.
+              This stay is paid and confirmed. Your confirmation email has the details, and{" "}
+              <a href={tripUrl} className="underline">your trip page</a> has everything for your stay.
             </StateMessage>
           )}
           {state === "expired" && (
