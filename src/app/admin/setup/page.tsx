@@ -9,6 +9,7 @@ import { Button } from "@/components/shared/Button";
 import {
   AlertCircle,
   CheckCircle2,
+  Copy,
   Loader2,
   Lock,
   LogOut,
@@ -31,6 +32,7 @@ type PropertySettings = {
   airbnbIcalUrl: string;
   airbnbImportConfigured: boolean;
   upcomingAirbnbNights: number;
+  exportUrl: string;
   maxGuests: number;
   timezone: string;
   checkInTime: string | null;
@@ -91,6 +93,7 @@ function PropertySetupCard({
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const set = <K extends keyof PropertySettings>(
     key: K,
@@ -178,6 +181,12 @@ function PropertySetupCard({
     }
   };
 
+  const copyExportUrl = async () => {
+    await navigator.clipboard.writeText(form.exportUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
       <div>
@@ -206,11 +215,36 @@ function PropertySetupCard({
       <section className="space-y-3">
         <h3 className="text-base font-semibold text-gray-900">Calendar sync</h3>
         <div>
+          <label className="text-sm font-medium text-gray-700">
+            1. Bunks calendar link (paste into Airbnb → Calendar → Availability
+            → Connect calendars → Import)
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              readOnly
+              value={form.exportUrl}
+              className={`${inputClass} font-mono text-xs`}
+            />
+            <button
+              type="button"
+              onClick={copyExportUrl}
+              className="shrink-0 inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              {copied ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}{" "}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+        <div>
           <label
             className="text-sm font-medium text-gray-700"
             htmlFor={`ical-${form.id}`}
           >
-            Calendars to import: every Airbnb listing for this home, plus Vrbo
+            2. Calendars to import: every Airbnb listing for this home, plus Vrbo
             or others. One link per line (Airbnb → Calendar → Availability →
             Connect calendars → Export).
           </label>
