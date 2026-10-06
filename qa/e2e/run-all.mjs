@@ -677,6 +677,94 @@ def("Airbnb pricing: nightly rates copied from Airbnb", async () => {
   }
 });
 
+def("Private payment links", async () => {
+  const cookie = await adminCookie();
+  const auth = { cookie };
+  const property = await db.property.findUnique({ where: { slug: SB } });
+  const day = (offset) => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + offset)).toISOString().slice(0, 10);
+  const [in1, out1] = [day(40), day(43)];
+  const tax = await db.propertyTax.create({ data: { propertyId: property.id, name: "Lodging tax", rate: 0.1, appliesTo: ["nightly", "cleaning"] } });
+  const create = (overrides = {}) => api("/api/admin/payment-links", {
+    method: "POST", headers: auth,
+    body: { propertyId: property.id, checkIn: in1, checkOut: out1, guestName: "Link Guest", guestEmail: "link@example.com", guests: 2, holdHours: 48,
+      charges: { nightlySubtotalCents: 120000, cleaningFeeCents: 25000, serviceFeeCents: 0, taxCents: 14500 }, ...overrides },
+  });
+  const feedUrl = async () => JSON.stringify((await api("/api/admin/calendar-feeds", { headers: auth })).json).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
+  try {
+    const anon = await api("/api/admin/payment-links", { method: "POST", body: {} });
+    check("PL1", "creating a payment link needs an admin session", anon.status === 401, anon.status);
+
+    const q = await api(`/api/admin/payment-links/quote?propertyId=${property.id}&checkIn=${in1}&checkOut=${out1}`, { headers: auth });
+    const std = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: in1, checkOut: out1, guests: 2 } });
+    check("PL2", "form pre-fills the standard price (same as a guest quote) plus the home's taxes", q.json?.charges?.nightlySubtotalCents === std.json?.quote?.nightlySubtotalCents && q.json?.charges?.taxCents === std.json?.quote?.taxCents && q.json?.taxes?.[0]?.rate === 0.1, JSON.stringify({ q: q.json, std: std.json?.quote }));
+
+    const r = await create();
+    const link = r.json?.bookingId ? await db.booking.findUnique({ where: { id: r.json.bookingId } }) : null;
+    const pi = (await stripe("/__test/state")).pis.find((x) => x.id === link?.stripePaymentIntentId);
+    const holdHours = link?.holdUntil ? (link.holdUntil.getTime() - Date.now()) / 3600_000 : 0;
+    check("PL3", "admin-priced link: dates held 48h, every fee stored as entered, Stripe payment for the exact total", r.status === 200 && /\/pay\/[A-Za-z0-9_-]{30,}$/.test(r.json?.url ?? "") && link?.status === "PENDING" && holdHours > 47.9 && holdHours <= 48 && link.totalPriceCents === 159500 && link.cleaningFeeCents === 25000 && link.serviceFeeCents === 0 && link.taxCents === 14500 && link.guestCount === 2 && link.createdByAdmin === "ali@bunks.com" && pi?.amount === 159500 && pi?.metadata?.source === "payment_link", `${r.status} ${r.text} ${JSON.stringify(link)}`);
+    const token = r.json.url.split("/pay/")[1];
+
+    const blocked = (await api(`/api/properties/${SB}/blocked-dates`)).json?.blockedDates?.map((d) => d.date) ?? [];
+    const quoteHeld = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: in1, checkOut: out1, guests: 2 } });
+    const other = await book({ checkIn: day(41), checkOut: day(44), guestEmail: "other@example.com" });
+    check("PL4", "held nights show as taken to guests and can't be booked at checkout", [in1, day(41), day(42)].every((d) => blocked.includes(d)) && quoteHeld.json?.available === false && other.status === 409, `${blocked.slice(0, 5)} ${quoteHeld.text.slice(0, 120)} ${other.status}`);
+
+    const feed = (await api(await feedUrl())).text;
+    check("PL5", "the hold goes to Airbnb in the Bunks calendar until paid", feed.includes(`UID:hold-${link.id}@bunks.com`) && feed.includes(`DTSTART;VALUE=DATE:${in1.replaceAll("-", "")}`), feed.slice(0, 400));
+
+    const own = await book({ checkIn: day(60), checkOut: day(63), guestEmail: "link@example.com" });
+    const stillHeld = await db.booking.findUnique({ where: { id: link.id } });
+    check("PL6", "the same guest starting a normal checkout never releases their payment link", own.status === 200 && stillHeld.status === "PENDING", `${own.status} ${stillHeld.status}`);
+
+    const page = await api(`/pay/${token}`);
+    check("PL7", "guest page shows the home, every fee, the total and the hold", page.status === 200 && page.text.includes("Downtown Steamboat") && page.text.includes("$1,595.00") && page.text.includes("Cleaning fee") && page.text.includes("$145.00") && page.text.includes("holding these dates") && /noindex/.test(page.text), `${page.status} ${page.text.slice(0, 200)}`);
+    const unknown = await api(`/pay/${"x".repeat(32)}`);
+    check("PL8", "an unknown link is not found", unknown.status === 404, unknown.status);
+
+    clearEmails();
+    const sent = await api(`/api/admin/payment-links/${link.id}/email`, { method: "POST", headers: auth });
+    const mail = emails().find((m) => m.to === "link@example.com");
+    check("PL9", "admin can email the link: right guest, link, total, hold deadline", sent.status === 200 && mail && mail.html.includes(`/pay/${token}`) && mail.html.includes("$1,595.00") && /holding these dates for you until/.test(mail.html), `${sent.status} ${JSON.stringify(mail ?? {}).slice(0, 300)}`);
+
+    clearEmails();
+    await stripe(`/__test/succeed/${link.stripePaymentIntentId}`);
+    const paid = await db.booking.findUnique({ where: { id: link.id } });
+    const receipt = emails().find((m) => /receipt/i.test(m.subject));
+    check("PL10", "paying makes it a normal paid booking; the receipt itemises the admin's fees", paid.status === "PAID" && receipt && receipt.html.includes("$250.00") && receipt.html.includes("$145.00") && receipt.html.includes("$1,595.00") && !receipt.html.includes("10% direct-booking discount"), `${paid.status} ${receipt?.subject}`);
+    const paidFeed = (await api(await feedUrl())).text;
+    const paidPage = await api(`/pay/${token}`);
+    check("PL11", "once paid: Airbnb sees a reservation, and the link page says it's booked", paidFeed.includes(`UID:booking-${link.id}@bunks.com`) && !paidFeed.includes(`UID:hold-${link.id}@`) && paidPage.text.includes("booked"), paidFeed.slice(0, 300));
+
+    const clash = await create({ guestEmail: "clash@example.com" });
+    const past = await create({ checkIn: day(-2), checkOut: day(1) });
+    const negative = await create({ checkIn: day(80), checkOut: day(83), charges: { nightlySubtotalCents: -1, cleaningFeeCents: 0, serviceFeeCents: 0, taxCents: 0 } });
+    const badEmail = await create({ checkIn: day(80), checkOut: day(83), guestEmail: "nope" });
+    const crowd = await create({ checkIn: day(80), checkOut: day(83), guests: 7 });
+    check("PL12", "rejects booked dates (409), past check-in, negative fees, bad email and too many guests (400)", clash.status === 409 && past.status === 400 && negative.status === 400 && badEmail.status === 400 && crowd.status === 400, [clash, past, negative, badEmail, crowd].map((x) => `${x.status} ${x.json?.error}`).join(" | "));
+
+    // Expiry: the dates open up and the page says so.
+    const exp = await create({ checkIn: day(90), checkOut: day(93), guestEmail: "late@example.com" });
+    await db.booking.update({ where: { id: exp.json.bookingId }, data: { holdUntil: new Date(Date.now() - 60_000) } });
+    const expBlocked = (await api(`/api/properties/${SB}/blocked-dates`)).json?.blockedDates?.map((d) => d.date) ?? [];
+    const expPage = await api(`/pay/${exp.json.url.split("/pay/")[1]}`);
+    const list = (await api("/api/admin/bookings/messages", { headers: auth })).json?.threads ?? [];
+    const row = list.find((t) => t.id === exp.json.bookingId);
+    check("PL13", "an unpaid link past its hold frees the dates, says expired, and shows as expired in admin", !expBlocked.includes(day(90)) && expPage.text.includes("expired") && row?.holdExpired === true && row?.paymentLink?.state === "expired", `${expBlocked.includes(day(90))} ${row?.paymentLink?.state}`);
+
+    // Cancel early, with no tax at all.
+    const zero = await create({ checkIn: day(100), checkOut: day(102), guestEmail: "zero@example.com", charges: { nightlySubtotalCents: 50000, cleaningFeeCents: 25000, serviceFeeCents: 0, taxCents: 0 } });
+    const zeroRow = await db.booking.findUnique({ where: { id: zero.json.bookingId } });
+    const cancel = await api(`/api/bookings/${zeroRow.id}/cancel`, { method: "POST", headers: auth, body: { refund: "none" } });
+    const zeroPi = (await stripe("/__test/state")).pis.find((x) => x.id === zeroRow.stripePaymentIntentId);
+    const cancelledPage = await api(`/pay/${zero.json.url.split("/pay/")[1]}`);
+    const freed = !((await api(`/api/properties/${SB}/blocked-dates`)).json?.blockedDates ?? []).some((d) => d.date === day(100));
+    check("PL14", "zero tax is allowed; cancelling a link cancels its Stripe payment and frees the dates", zeroRow.totalPriceCents === 75000 && zeroRow.taxCents === 0 && cancel.status === 200 && zeroPi?.status === "canceled" && cancelledPage.text.includes("no longer active") && freed, `${cancel.status} ${cancel.text} ${zeroPi?.status}`);
+  } finally {
+    await db.propertyTax.delete({ where: { id: tax.id } });
+  }
+});
+
 def("Admin endpoints require a session", async () => {
   const routes = [
     ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],
@@ -684,6 +772,7 @@ def("Admin endpoints require a session", async () => {
     ["POST", "/api/admin/marketing/send"], ["GET", "/api/admin/ops-details"], ["GET", "/api/admin/properties"],
     ["POST", "/api/admin/properties/1/rates"], ["PUT", "/api/admin/properties/1/settings"], ["POST", "/api/admin/properties/1/special-pricing"],
     ["DELETE", "/api/admin/properties/1/special-pricing/1"], ["GET", "/api/admin/properties/settings"],
+    ["POST", "/api/admin/payment-links"], ["GET", "/api/admin/payment-links/quote"], ["POST", "/api/admin/payment-links/1/email"],
   ];
   const bad = [];
   for (const [method, p] of routes) {

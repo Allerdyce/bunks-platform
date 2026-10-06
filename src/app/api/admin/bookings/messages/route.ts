@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAdminAuth } from "@/lib/adminAuth";
 import { pendingHoldCutoff } from "@/lib/bookingAvailability";
+import { holdUntilLabel, paymentLinkState, paymentLinkUrl } from "@/lib/paymentLinks";
 
 export const runtime = "nodejs";
 
@@ -57,8 +58,27 @@ export async function GET(request: NextRequest) {
       checkOutDate: booking.checkOutDate.toISOString(),
       status: booking.status,
       totalPriceCents: booking.totalPriceCents,
-      // A PENDING row past its hold is an abandoned checkout, not a booking.
-      holdExpired: booking.status === "PENDING" && booking.createdAt < pendingHoldCutoff(),
+      // A PENDING row past its hold is an abandoned checkout (or an expired payment link), not a booking.
+      holdExpired:
+        booking.status === "PENDING" &&
+        (booking.paymentLinkToken
+          ? paymentLinkState(booking) === "expired"
+          : booking.createdAt < pendingHoldCutoff()),
+      guestCount: booking.guestCount,
+      paymentLink: booking.paymentLinkToken
+        ? {
+          url: paymentLinkUrl(booking.paymentLinkToken, request.nextUrl.origin),
+          state: paymentLinkState(booking),
+          holdUntil: holdUntilLabel(booking, booking.property),
+          createdBy: booking.createdByAdmin,
+          charges: {
+            nightlySubtotalCents: booking.nightlySubtotalCents ?? 0,
+            cleaningFeeCents: booking.cleaningFeeCents ?? 0,
+            serviceFeeCents: booking.serviceFeeCents ?? 0,
+            taxCents: booking.taxCents ?? 0,
+          },
+        }
+        : null,
       property: {
         id: booking.property.id,
         name: booking.property.name,

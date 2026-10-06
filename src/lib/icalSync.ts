@@ -389,14 +389,21 @@ export function isValidCalendarFeedToken(slug: string, token: string | null) {
 
 const icsDate = (isoDate: string) => isoDate.replace(/-/g, "");
 
-/** Direct bookings and manual blocks as all-day events. Airbnb-sourced blocks are excluded to avoid echoing. */
+/**
+ * Direct bookings, unpaid payment links still inside their hold, and manual blocks as all-day
+ * events. Airbnb-sourced blocks are excluded to avoid echoing.
+ */
 export async function buildCalendarFeed(property: { id: number; slug: string; name: string }) {
   const today = new Date();
   const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 30));
 
-  const [bookings, directBlocks, specialBlocks] = await Promise.all([
+  const [bookings, linkHolds, directBlocks, specialBlocks] = await Promise.all([
     prisma.booking.findMany({
       where: { propertyId: property.id, status: "PAID", checkOutDate: { gt: from } },
+      select: { id: true, checkInDate: true, checkOutDate: true },
+    }),
+    prisma.booking.findMany({
+      where: { propertyId: property.id, status: "PENDING", holdUntil: { gt: today }, checkOutDate: { gt: from } },
       select: { id: true, checkInDate: true, checkOutDate: true },
     }),
     prisma.blockedDate.findMany({ where: { propertyId: property.id, source: "DIRECT", date: { gte: from } }, select: { date: true } }),
@@ -413,6 +420,16 @@ export async function buildCalendarFeed(property: { id: number; slug: string; na
       start: toISODate(booking.checkInDate),
       end: toISODate(booking.checkOutDate),
       summary: "Reserved (Bunks direct)",
+    });
+  }
+  // Airbnb can't sell these while the guest pays; they reopen when the link expires or is cancelled.
+  for (const hold of linkHolds) {
+    for (const night of eachNight(hold.checkInDate, hold.checkOutDate)) bookedNights.add(toISODate(night));
+    events.push({
+      uid: `hold-${hold.id}@bunks.com`,
+      start: toISODate(hold.checkInDate),
+      end: toISODate(hold.checkOutDate),
+      summary: "Not available",
     });
   }
 

@@ -86,6 +86,17 @@ model Booking {
   preStayReminderSentAt       DateTime?
   reviewRequestSentAt         DateTime?
   publicReference             String?        @unique @db.VarChar(32)
+  // Private payment links (Admin → Bookings): an admin-priced booking that holds its dates
+  // until holdUntil while the guest pays at /pay/<paymentLinkToken>.
+  holdUntil                   DateTime?
+  paymentLinkToken            String?        @unique @db.VarChar(64)
+  createdByAdmin              String?
+  guestCount                  Int?
+  // The charge as itemised for this booking when it isn't the standard pricing (payment links).
+  nightlySubtotalCents        Int?
+  cleaningFeeCents            Int?
+  serviceFeeCents             Int?
+  taxCents                    Int?
   property                    Property       @relation(fields: [propertyId], references: [id])
   emailLogs                   EmailLog[]
   conversation                Conversation?

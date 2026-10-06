@@ -3,14 +3,36 @@ import { calculatePricing } from '@/lib/pricing/calculator';
 
 export type ChargeLine = { label: string; amountCents: number };
 
+type StoredCharges = Pick<Booking, 'nightlySubtotalCents' | 'cleaningFeeCents' | 'serviceFeeCents' | 'taxCents'>;
+
+const nightsLabel = (nights: number) => `${nights} night${nights === 1 ? '' : 's'}`;
+
+/** The charge stored with the booking (payment links, priced by an admin), if it adds up. */
+function storedChargeLines(
+  booking: Partial<StoredCharges> & Pick<Booking, 'checkInDate' | 'checkOutDate' | 'totalPriceCents'>,
+): ChargeLine[] | null {
+  const { nightlySubtotalCents: nightly, cleaningFeeCents: cleaning, serviceFeeCents: service, taxCents: tax } = booking;
+  if (nightly == null || cleaning == null || service == null || tax == null) return null;
+  if (nightly + cleaning + service + tax !== booking.totalPriceCents) return null;
+  const nights = Math.round((booking.checkOutDate.getTime() - booking.checkInDate.getTime()) / 86_400_000);
+  const lines: ChargeLine[] = [{ label: nightsLabel(nights), amountCents: nightly }];
+  if (cleaning > 0) lines.push({ label: 'Cleaning fee', amountCents: cleaning });
+  if (service > 0) lines.push({ label: 'Service fee', amountCents: service });
+  if (tax > 0) lines.push({ label: 'Taxes', amountCents: tax });
+  return lines;
+}
+
 /**
- * Rebuilds the itemised charge for a booking from the pricing rules. Returns null when today's
- * rates no longer reproduce the stored total (rates changed after booking), so callers never show
- * line items that don't add up to what was charged.
+ * The itemised charge for a booking: as stored when an admin priced it (payment links), otherwise
+ * rebuilt from the pricing rules. Returns null when neither adds up to the amount charged (rates
+ * changed after booking), so callers never show line items that don't match what was charged.
  */
 export async function bookingChargeLines(
-  booking: Pick<Booking, 'checkInDate' | 'checkOutDate' | 'totalPriceCents'> & { property: Pick<Property, 'slug'> },
+  booking: Pick<Booking, 'checkInDate' | 'checkOutDate' | 'totalPriceCents'> &
+    Partial<StoredCharges> & { property: Pick<Property, 'slug'> },
 ): Promise<ChargeLine[] | null> {
+  const stored = storedChargeLines(booking);
+  if (stored) return stored;
   try {
     const quote = await calculatePricing(booking.property.slug, booking.checkInDate, booking.checkOutDate, 1);
     if (quote.totalPriceCents !== booking.totalPriceCents) return null;

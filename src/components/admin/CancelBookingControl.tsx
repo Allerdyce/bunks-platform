@@ -9,6 +9,8 @@ type Props = {
   status: AdminBookingStatus;
   totalPriceCents: number;
   checkInDate: string;
+  // An unpaid private payment link: cancelling stops the guest paying and frees the dates.
+  paymentLink?: boolean;
   onCancelled: () => void;
 };
 
@@ -26,7 +28,7 @@ function policySuggestion(checkInDate: string): RefundChoice {
   return "none";
 }
 
-export function CancelBookingControl({ bookingId, status, totalPriceCents, checkInDate, onCancelled }: Props) {
+export function CancelBookingControl({ bookingId, status, totalPriceCents, checkInDate, paymentLink, onCancelled }: Props) {
   const [open, setOpen] = useState(false);
   const suggested = policySuggestion(checkInDate);
   const [choice, setChoice] = useState<RefundChoice>(suggested);
@@ -58,7 +60,9 @@ export function CancelBookingControl({ bookingId, status, totalPriceCents, check
     if (customInvalid) return;
     const summary = isPaid
       ? `Cancel this booking and refund ${money(refundCents)} of ${money(totalPriceCents)}? The dates open up on Bunks and Airbnb. This can't be undone.`
-      : "Release this unpaid hold? The dates open up again.";
+      : paymentLink
+        ? "Cancel this payment link? The guest won't be able to pay and the dates open up on Bunks and Airbnb."
+        : "Release this unpaid hold? The dates open up again.";
     if (!window.confirm(summary)) return;
     setBusy(true);
     setMessage(null);
@@ -73,7 +77,11 @@ export function CancelBookingControl({ bookingId, status, totalPriceCents, check
       if (!res.ok) throw new Error(data.error || "Cancellation failed");
       setMessage({
         type: "success",
-        text: isPaid ? `Cancelled. Refunded ${money(data.refundCents ?? 0)}; the guest has been emailed.` : "Hold released.",
+        text: isPaid
+          ? `Cancelled. Refunded ${money(data.refundCents ?? 0)}; the guest has been emailed.`
+          : paymentLink
+            ? "Payment link cancelled. The dates are open again."
+            : "Hold released.",
       });
       setOpen(false);
       onCancelled();
@@ -99,7 +107,7 @@ export function CancelBookingControl({ bookingId, status, totalPriceCents, check
           onClick={() => setOpen(true)}
           className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
         >
-          {isPaid ? "Cancel booking…" : "Release unpaid hold…"}
+          {isPaid ? "Cancel booking…" : paymentLink ? "Cancel payment link…" : "Release unpaid hold…"}
         </button>
       ) : (
         <div className="space-y-3 rounded-2xl border border-red-100 bg-red-50/40 p-4">
@@ -143,7 +151,7 @@ export function CancelBookingControl({ bookingId, status, totalPriceCents, check
               disabled={busy || customInvalid}
               className="rounded-full bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
             >
-              {busy ? "Cancelling…" : isPaid ? "Cancel and refund" : "Release hold"}
+              {busy ? "Cancelling…" : isPaid ? "Cancel and refund" : paymentLink ? "Cancel link" : "Release hold"}
             </button>
             <button
               type="button"
