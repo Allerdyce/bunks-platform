@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { getUnavailableNights, parseStayDate, toISODate } from "@/lib/bookingAvailability";
+import { parseIcalUrls } from "@/lib/icalSync";
 import { minimumNightsFor, propertyToday, resolvePropertyTimeZone } from "@/lib/stayRules";
 import { isFeatureEnabled } from "@/lib/featureFlags";
 
@@ -11,6 +12,11 @@ import { isFeatureEnabled } from "@/lib/featureFlags";
 //
 //   nightly = (quote ÷ (1 + Airbnb guest fee) − Airbnb cleaning fee) ÷ nights
 //
+// That is the stay's average; when Airbnb's quote carries a per-night breakdown that adds up,
+// each night gets its own rate instead (nightlyCentsFromBreakdown).
+//
+// - Stays of 7+ nights get the source listing's weekly discount, as on Airbnb (calculator).
+// - A home whose source listing isn't linked in Admin → Setup stays on its base rates.
 // - A date override entered by hand (any other note, or a blocked date) always wins.
 // - Automatic rates older than AUTO_RATE_MAX_AGE_MS are ignored by checkout, which falls back
 //   to the base rates in Admin → Pricing.
@@ -29,12 +35,40 @@ const MIN_NIGHTLY_CENTS = 5_000;
 const MAX_NIGHTLY_CENTS = 500_000;
 const DAY_MS = 86_400_000;
 
-/** The Airbnb listing each home copies, and that listing's cleaning fee on Airbnb. */
-export const AIRBNB_RATE_SOURCES: Record<string, { listingId: string; cleaningCents: number }> = {
-  "steamboat-downtown-townhome": { listingId: "1552191060469626901", cleaningCents: 25_000 },
+/**
+ * The Airbnb listing each home copies, that listing's fixed per-stay fees on Airbnb (backed out of
+ * each quote), and its weekly discount (7+ nights), which Bunks mirrors while priced from Airbnb.
+ * Verified against Airbnb quotes on 6 Oct 2026: Steamboat 7 × $400 × 0.9 + $250 = $2,770;
+ * Summerland 3 × $828 + $275 = $2,759, with no weekly discount.
+ */
+export const AIRBNB_RATE_SOURCES: Record<string, { listingId: string; cleaningCents: number; weeklyDiscountPct: number }> = {
+  "steamboat-downtown-townhome": { listingId: "1552191060469626901", cleaningCents: 25_000, weeklyDiscountPct: 10 },
   // "Briggs Direct" is the rule for Summerland.
-  "summerland-ocean-view-beach-bungalow": { listingId: "1734161844121212601", cleaningCents: 27_500 },
+  "summerland-ocean-view-beach-bungalow": { listingId: "1734161844121212601", cleaningCents: 27_500, weeklyDiscountPct: 0 },
 };
+
+export const WEEKLY_DISCOUNT_MIN_NIGHTS = 7;
+
+/** Airbnb listing IDs from a property's calendar links (airbnb.* hosts; any host outside production, for QA). */
+export function airbnbListingIds(icalUrls: string | null | undefined): string[] {
+  const anyHost = process.env.NODE_ENV !== "production";
+  const ids = parseIcalUrls(icalUrls ?? "").map((url) => {
+    try {
+      const parsed = new URL(url);
+      if (!anyHost && !/(^|\.)airbnb\.[a-z.]+$/.test(parsed.hostname)) return null;
+      return parsed.pathname.match(/\/calendar\/ical\/(\d+)\.ics$/)?.[1] ?? null;
+    } catch {
+      return null;
+    }
+  });
+  return [...new Set(ids.filter((id): id is string => Boolean(id)))];
+}
+
+/** True when the home's source Airbnb listing is among its calendar links (Admin → Setup). */
+export function sourceListingLinked(slug: string, icalUrls: string | null | undefined) {
+  const source = AIRBNB_RATE_SOURCES[slug];
+  return Boolean(source) && airbnbListingIds(icalUrls).includes(source.listingId);
+}
 
 /** Airbnb's guest service fee as a fraction (0.141 for 14.1%), or null when not configured. */
 export function airbnbGuestFee(): number | null {
@@ -49,9 +83,19 @@ export async function autoRatesEnabled() {
   return airbnbGuestFee() !== null && (await isFeatureEnabled("airbnbPricing"));
 }
 
-/** Homes whose price comes only from Airbnb (no fallback to the base rates in Admin → Pricing). */
-export async function pricedFromAirbnb(slug: string) {
-  return Boolean(AIRBNB_RATE_SOURCES[slug]) && (await autoRatesEnabled());
+/**
+ * Homes whose price comes only from Airbnb (no fallback to the base rates in Admin → Pricing).
+ * A home whose source listing isn't linked in Admin → Setup can never receive Airbnb rates, so it
+ * stays on its base rates rather than becoming unbookable.
+ */
+export async function pricedFromAirbnb(slug: string, icalUrls: string | null | undefined) {
+  return sourceListingLinked(slug, icalUrls) && (await autoRatesEnabled());
+}
+
+/** Airbnb's weekly discount for this stay (as a fraction), mirrored while the home is priced from Airbnb. */
+export function weeklyDiscountFor(slug: string, nights: number): number {
+  const pct = AIRBNB_RATE_SOURCES[slug]?.weeklyDiscountPct ?? 0;
+  return nights >= WEEKLY_DISCOUNT_MIN_NIGHTS && pct > 0 ? pct / 100 : 0;
 }
 
 export const PRICE_UNAVAILABLE_MESSAGE =
@@ -80,6 +124,30 @@ export function deriveNightlyCents(quoteCents: number, nights: number, cleaningC
   if (nights < 1) return null;
   const nightly = Math.round((quoteCents / (1 + guestFee) - cleaningCents) / nights);
   return nightly >= MIN_NIGHTLY_CENTS && nightly <= MAX_NIGHTLY_CENTS ? nightly : null;
+}
+
+export type NightlyBreakdownLine = { label: string; cents: number };
+
+/**
+ * Each night's own Airbnb rate, from the per-night breakdown Airbnb sends with some quotes. Used
+ * only when it adds up: one line per night, and (lines + fixed fees) × (1 + guest fee) = the quote
+ * (to within a cent a night). Otherwise null, and every night gets the stay's average instead.
+ */
+export function nightlyCentsFromBreakdown(
+  lines: NightlyBreakdownLine[] | null | undefined,
+  nights: number,
+  quoteCents: number,
+  cleaningCents: number,
+  guestFee: number,
+): number[] | null {
+  if (!Array.isArray(lines) || nights < 1 || lines.length !== nights) return null;
+  const cents = lines.map((line) => line.cents);
+  if (cents.some((value) => !Number.isSafeInteger(value) || value < MIN_NIGHTLY_CENTS || value > MAX_NIGHTLY_CENTS)) {
+    return null;
+  }
+  const sum = cents.reduce((total, value) => total + value, 0);
+  // Same shape as deriveNightlyCents: Airbnb's guest fee is charged on nights and cleaning.
+  return Math.abs(Math.round((sum + cleaningCents) * (1 + guestFee)) - quoteCents) <= nights ? cents : null;
 }
 
 export type RateWindow = { slug: string; listingId: string; checkIn: string; checkOut: string; priority: number };
@@ -158,19 +226,25 @@ export type RateChange = {
   slug: string;
   checkIn: string;
   checkOut: string;
+  // The stay's average nightly rate (what every night gets unless the rates are exact).
   nightlyCents: number;
+  // True when each night got its own rate from Airbnb's per-night breakdown.
+  exact: boolean;
+  nights: { date: string; cents: number }[];
   previousCents: number | null;
   skippedManual: number;
 };
 
 /**
- * Saves the nightly rate backed out of an ok Airbnb quote for each of its nights, unless a night
- * has a manual override. Returns what changed, or a reason when the quote couldn't be used.
+ * Saves the nightly rates from an ok Airbnb quote for each of its nights, unless a night has a
+ * manual override: each night's own rate when Airbnb's per-night breakdown adds up, otherwise the
+ * stay's average. Returns what changed, or a reason when the quote couldn't be used.
  */
 export async function applyAutoRate(
   property: { id: number; slug: string },
   stay: { listingId: string; checkIn: string; checkOut: string },
   quoteCents: number,
+  breakdown?: NightlyBreakdownLine[] | null,
 ): Promise<RateChange | { slug: string; checkIn: string; checkOut: string; error: string } | null> {
   const source = AIRBNB_RATE_SOURCES[property.slug];
   const guestFee = airbnbGuestFee();
@@ -182,6 +256,7 @@ export async function applyAutoRate(
   if (nightlyCents === null) {
     return { slug: property.slug, checkIn: stay.checkIn, checkOut: stay.checkOut, error: "Derived nightly rate outside $50–$5,000; not saved." };
   }
+  const exactCents = nightlyCentsFromBreakdown(breakdown, nights, quoteCents, source.cleaningCents, guestFee);
 
   const existing = await prisma.specialRate.findMany({
     where: { propertyId: property.id, date: { gte: checkIn, lt: checkOut } },
@@ -190,20 +265,32 @@ export async function applyAutoRate(
   const byDate = new Map(existing.map((row) => [toISODate(row.date), row]));
   let skippedManual = 0;
   let previousCents: number | null = null;
-  for (let t = checkIn.getTime(); t < checkOut.getTime(); t += DAY_MS) {
-    const date = new Date(t);
+  const saved: RateChange["nights"] = [];
+  for (let index = 0; index < nights; index += 1) {
+    const date = new Date(checkIn.getTime() + index * DAY_MS);
     const row = byDate.get(toISODate(date));
     if (row && !isAutoRate(row)) {
       skippedManual += 1;
       continue;
     }
     previousCents ??= row?.price ?? null;
+    const price = exactCents ? exactCents[index] : nightlyCents;
     await prisma.specialRate.upsert({
       where: { propertyId_date: { propertyId: property.id, date } },
-      create: { propertyId: property.id, date, price: nightlyCents, note: AUTO_NOTE },
+      create: { propertyId: property.id, date, price, note: AUTO_NOTE },
       // Always written, so updatedAt records when Airbnb last confirmed the rate.
-      update: { price: nightlyCents, note: AUTO_NOTE, isBlocked: false },
+      update: { price, note: AUTO_NOTE, isBlocked: false },
     });
+    saved.push({ date: toISODate(date), cents: price });
   }
-  return { slug: property.slug, checkIn: stay.checkIn, checkOut: stay.checkOut, nightlyCents, previousCents, skippedManual };
+  return {
+    slug: property.slug,
+    checkIn: stay.checkIn,
+    checkOut: stay.checkOut,
+    nightlyCents,
+    exact: Boolean(exactCents),
+    nights: saved,
+    previousCents,
+    skippedManual,
+  };
 }

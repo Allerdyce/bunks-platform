@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { specialRateClient } from '@/lib/specialRateClient';
-import { isUsableSpecialRate, PriceUnavailableError, pricedFromAirbnb } from '@/lib/airbnbRates';
+import { isUsableSpecialRate, PriceUnavailableError, pricedFromAirbnb, weeklyDiscountFor } from '@/lib/airbnbRates';
 import type { Prisma } from '@prisma/client';
 import type { PricingQuote, NightlyLineItem } from '@/types';
 
@@ -48,7 +48,8 @@ export async function calculatePricing(
     );
 
     // Homes priced from Airbnb have no fallback: every night needs a current Airbnb (or manual) rate.
-    if (await pricedFromAirbnb(property.slug)) {
+    const airbnbPriced = await pricedFromAirbnb(property.slug, property.airbnbIcalUrl);
+    if (airbnbPriced) {
         const missing: string[] = [];
         for (const night = new Date(checkInDate); night < checkOutDate; night.setUTCDate(night.getUTCDate() + 1)) {
             const special = specialByDate.get(toISODate(night));
@@ -62,6 +63,11 @@ export async function calculatePricing(
 
     const weekdayRateCents = Number(property.weekdayRate ?? property.baseNightlyRate);
     const weekendRateCents = Number(property.weekendRate ?? property.baseNightlyRate);
+
+    // Airbnb's weekly discount applies to the Airbnb-equivalent price, as it does on Airbnb, so the
+    // 10% direct discount below stays 10% off what the same stay costs there.
+    const stayNights = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / 86_400_000);
+    const weeklyDiscount = airbnbPriced ? weeklyDiscountFor(property.slug, stayNights) : 0;
 
     const cursor = new Date(checkInDate);
 
@@ -81,6 +87,8 @@ export async function calculatePricing(
             source = 'WEEKEND';
             undiscountedCents = weekendRateCents;
         }
+
+        if (weeklyDiscount) undiscountedCents = Math.round(undiscountedCents * (1 - weeklyDiscount));
 
         // Direct bookings are 10% below the owner-set rate.
         const amountCents = Math.round(undiscountedCents * (1 - DIRECT_DISCOUNT));

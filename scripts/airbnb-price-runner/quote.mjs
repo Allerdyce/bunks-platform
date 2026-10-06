@@ -13,7 +13,31 @@ export function usdCents(value) {
 
 export function failedQuote(scenario, status, error, httpStatus = null) {
   return { scenarioId: scenario.scenarioId, status, currency: 'USD', feesIncluded: false,
-    priceLabel: null, nightsLine: null, cancellation: null, unavailableReason: null, error, httpStatus };
+    priceLabel: null, nightsLine: null, nightlyBreakdown: null, cancellation: null, unavailableReason: null, error, httpStatus };
+}
+
+const NIGHTS_LINE = /^\d+ nights?\s*[x×]\s*\$/;
+const DATE_LABEL = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/i;
+
+// When a stay's nights cost different amounts, Airbnb can itemise them under the "N nights x $X"
+// line. Report the dated lines so Bunks can price each night exactly; Bunks only uses them when
+// they add up to the quote, so an unexpected shape just falls back to the stay's average.
+export function nightlyBreakdown(nightsItem) {
+  const lines = [];
+  const walk = (node, depth) => {
+    if (!node || typeof node !== 'object' || depth > 8 || lines.length >= 60) return;
+    if (Array.isArray(node)) {
+      for (const child of node) walk(child, depth + 1);
+      return;
+    }
+    const cents = usdCents(node.priceString);
+    if (typeof node.description === 'string' && DATE_LABEL.test(node.description) && cents !== null) {
+      lines.push({ label: node.description.slice(0, 80), cents });
+    }
+    for (const value of Object.values(node)) if (value && typeof value === 'object') walk(value, depth + 1);
+  };
+  walk(nightsItem?.explanationData, 0);
+  return lines.length ? lines : null;
 }
 
 function text(value) {
@@ -31,11 +55,13 @@ export function parseQuote(payload, scenario, httpStatus = 200) {
   const groups = [bookIt.productItemDetail?.explanationData?.priceDetails, display?.explanationData?.priceDetails];
   const items = groups.flatMap((group) => Array.isArray(group)
     ? group.flatMap((line) => Array.isArray(line?.items) ? line.items : []) : []);
-  const nights = items.find((line) => /^\d+ nights?\s*[x×]\s*\$/.test(line?.description ?? ''));
+  const nights = items.find((line) => NIGHTS_LINE.test(line?.description ?? ''));
   const result = { ...failedQuote(scenario, 'error', null, httpStatus),
     feesIncluded: text(bookIt.announcement)?.trim() === 'Prices include all fees',
     priceLabel: text(display?.primaryLine?.accessibilityLabel),
-    nightsLine: text(nights?.description), cancellation: text(bookIt.availabilityDetailsKicker) };
+    nightsLine: text(nights?.description),
+    nightlyBreakdown: nightlyBreakdown(items.find((line) => NIGHTS_LINE.test(line?.description ?? '') && line.explanationData) ?? nights),
+    cancellation: text(bookIt.availabilityDetailsKicker) };
   if (bookIt.availability?.isAvailable === false) {
     return { ...result, status: 'unavailable', unavailableReason: text(bookIt.availability.unavailabilityMessage) };
   }

@@ -135,6 +135,8 @@ const propertySelect = {
   quietHours: true,
   houseRules: true,
   emergencyContacts: true,
+  // Only to tell whether the home is priced from Airbnb; never passed to public pages.
+  airbnbIcalUrl: true,
 };
 
 async function hydrateFromDatabase(): Promise<Property[]> {
@@ -148,7 +150,9 @@ async function hydrateFromDatabase(): Promise<Property[]> {
   const now = Date.now();
   const airbnbFrom = new Map<number, number>();
   const airbnbPriced = [];
-  for (const property of dbProperties) if (await pricedFromAirbnb(property.slug)) airbnbPriced.push(property);
+  for (const property of dbProperties) {
+    if (await pricedFromAirbnb(property.slug, property.airbnbIcalUrl)) airbnbPriced.push(property);
+  }
   if (airbnbPriced.length) {
     const lowest = await withTimeout(
       prisma.specialRate.groupBy({

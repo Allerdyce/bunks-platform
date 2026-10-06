@@ -378,12 +378,18 @@ export default function AdminPricingPage() {
                             </p>
                             <span
                               className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                feature.enabled
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-gray-100 text-gray-500"
+                                feature.enabled && feature.active === false
+                                  ? "bg-amber-50 text-amber-700"
+                                  : feature.enabled
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-gray-100 text-gray-500"
                               }`}
                             >
-                              {feature.enabled ? "Live" : "Off"}
+                              {feature.enabled && feature.active === false
+                                ? "Not active"
+                                : feature.enabled
+                                  ? "Live"
+                                  : "Off"}
                             </span>
                           </div>
                           <button
@@ -402,6 +408,14 @@ export default function AdminPricingPage() {
                                 : "Enable"}
                           </button>
                         </div>
+                        <p className="text-xs text-gray-500">{feature.description}</p>
+                        {feature.note && (
+                          <p
+                            className={`text-xs ${feature.active === false ? "text-amber-700" : "text-gray-600"}`}
+                          >
+                            {feature.note}
+                          </p>
+                        )}
                       </div>
                     );
                   })}

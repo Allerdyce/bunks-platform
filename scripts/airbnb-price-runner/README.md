@@ -81,6 +81,8 @@ Once valid scenarios are acquired, the runner posts one result per scenario even
 
 Each quote also includes `scenarioId`, `currency`, `feesIncluded`, `priceLabel`, `nightsLine`, `cancellation`, `unavailableReason`, `error`, and `httpStatus`. Unused text fields are null. `httpStatus` is null when the scenario was skipped or no HTTP response was received; bootstrap failure reasons are reported without inventing a quote HTTP status.
 
+`nightlyBreakdown` is `[{ label, cents }]` when Airbnb itemises the nights under the **N nights x $X** line (dated lines only), otherwise null. Bunks uses it to price each night exactly only when the lines add up to the quote; otherwise every night gets the stay's average.
+
 ## Price semantics and limits
 
 - The persisted operation is `StaysPdpBookItQuery`; the initial hash is the one verified in the September 27, 2026 research. It is an internal web query, not a stable partner API. Hash/schema failures report errors; update the optional hash only after verifying a new request.

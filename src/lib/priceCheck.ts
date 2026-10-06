@@ -2,18 +2,19 @@ import "server-only";
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { parseIcalUrls } from "@/lib/icalSync";
 import { getUnavailableNights, parseStayDate, toISODate } from "@/lib/bookingAvailability";
 import { checkStayRules, minimumNightsFor, propertyToday, resolvePropertyTimeZone } from "@/lib/stayRules";
 import { calculatePricing } from "@/lib/pricing/calculator";
 import { sendEmail } from "@/lib/email/sendEmail";
 import { escapeHtml } from "@/lib/html";
 import {
-  AIRBNB_RATE_SOURCES,
+  airbnbListingIds,
   applyAutoRate,
   autoRatesEnabled,
   planRateWindows,
   PriceUnavailableError,
+  sourceListingLinked,
+  type NightlyBreakdownLine,
   type RateChange,
   type RateWindow,
 } from "@/lib/airbnbRates";
@@ -50,21 +51,6 @@ export function isAuthorizedPriceCheckRequest(request: Request) {
   const given = Buffer.from(request.headers.get("authorization") ?? "");
   const expected = Buffer.from(`Bearer ${secret}`);
   return given.length === expected.length && crypto.timingSafeEqual(given, expected);
-}
-
-/** Airbnb listing IDs from a property's calendar links (airbnb.* hosts; any host outside production, for QA). */
-export function airbnbListingIds(icalUrls: string | null | undefined): string[] {
-  const anyHost = process.env.NODE_ENV !== "production";
-  const ids = parseIcalUrls(icalUrls ?? "").map((url) => {
-    try {
-      const parsed = new URL(url);
-      if (!anyHost && !/(^|\.)airbnb\.[a-z.]+$/.test(parsed.hostname)) return null;
-      return parsed.pathname.match(/\/calendar\/ical\/(\d+)\.ics$/)?.[1] ?? null;
-    } catch {
-      return null;
-    }
-  });
-  return [...new Set(ids.filter((id): id is string => Boolean(id)))];
 }
 
 export type Scenario = {
@@ -118,7 +104,7 @@ export async function buildScenarios(now = new Date()): Promise<Scenario[]> {
     const listingIds = airbnbListingIds(property.airbnbIcalUrl);
     if (!listingIds.length) continue;
     const adults = Math.min(ADULTS, property.maxGuests ?? ADULTS);
-    if ((await autoRatesEnabled()) && AIRBNB_RATE_SOURCES[property.slug] && listingIds.includes(AIRBNB_RATE_SOURCES[property.slug].listingId)) {
+    if ((await autoRatesEnabled()) && sourceListingLinked(property.slug, property.airbnbIcalUrl)) {
       windowsByHome.push({ adults, windows: await planRateWindows(property, listingIds, now) });
       continue;
     }
@@ -172,6 +158,8 @@ export type IncomingQuote = {
   cancellation?: string | null;
   unavailableReason?: string | null;
   error?: string | null;
+  // Airbnb's per-night breakdown, when its quote has one (see nightlyCentsFromBreakdown).
+  nightlyBreakdown?: NightlyBreakdownLine[] | null;
 };
 
 export type Comparison = {
@@ -198,7 +186,18 @@ export function validateQuote(raw: unknown): IncomingQuote | null {
     if (!Number.isSafeInteger(q.totalCents) || (q.totalCents as number) <= 0 || (q.totalCents as number) > 10_000_000) return null;
     if (q.currency !== "USD") return null;
   }
-  return q;
+  // An unusable breakdown is dropped rather than rejecting the quote: the stay's average still works.
+  return { ...q, nightlyBreakdown: validBreakdown(q.nightlyBreakdown) };
+}
+
+function validBreakdown(raw: unknown): NightlyBreakdownLine[] | null {
+  if (!Array.isArray(raw) || !raw.length || raw.length > 60) return null;
+  const lines = raw.map((line) =>
+    line && typeof line.label === "string" && Number.isSafeInteger(line.cents) && line.cents > 0
+      ? { label: line.label.slice(0, 80), cents: line.cents as number }
+      : null,
+  );
+  return lines.every(Boolean) ? (lines as NightlyBreakdownLine[]) : null;
 }
 
 const text = (value: unknown, max = 300) => (typeof value === "string" ? value.slice(0, max) : null);
@@ -216,7 +215,7 @@ export async function applyAutoRates(quotes: IncomingQuote[]): Promise<RateUpdat
     const key = decodeScenarioId(quote.scenarioId);
     const property = key ? bySlug.get(key.slug) : undefined;
     if (!key || !property || !airbnbListingIds(property.airbnbIcalUrl).includes(key.listingId)) continue;
-    const update = await applyAutoRate(property, key, quote.totalCents as number);
+    const update = await applyAutoRate(property, key, quote.totalCents as number, quote.nightlyBreakdown);
     if (update) updates.push(update);
   }
   return updates;
@@ -303,6 +302,12 @@ export async function lastResultsAt() {
 const usd = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
+// Each night's own rate when Airbnb's breakdown added up, otherwise the stay's average.
+const rateDetail = (u: RateChange) =>
+  u.exact
+    ? u.nights.map((night) => `${night.date.slice(5)} ${usd(night.cents)}`).join(" · ")
+    : `${usd(u.nightlyCents)}/night (3-night average)`;
+
 const STATUS_LABEL: Record<Comparison["status"], string> = {
   compared: "OK",
   "below-target": "Below target",
@@ -358,7 +363,7 @@ export async function alertOnComparisons(comparisons: Comparison[], rateUpdates:
     .map((u) =>
       "error" in u
         ? `<tr style="background:#fdecea"><td>${escapeHtml(u.slug)}</td><td>${u.checkIn} → ${u.checkOut}</td><td colspan="2">${escapeHtml(u.error)}</td></tr>`
-        : `<tr><td>${escapeHtml(u.slug)}</td><td>${u.checkIn} → ${u.checkOut}</td><td>${usd(u.nightlyCents)}/night</td>` +
+        : `<tr><td>${escapeHtml(u.slug)}</td><td>${u.checkIn} → ${u.checkOut}</td><td>${rateDetail(u)}</td>` +
           `<td>${u.previousCents === null ? "new" : u.previousCents === u.nightlyCents ? "unchanged" : `was ${usd(u.previousCents)}`}` +
           `${u.skippedManual ? ` · ${u.skippedManual} night(s) kept your manual rate` : ""}</td></tr>`,
     )
