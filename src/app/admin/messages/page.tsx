@@ -2,120 +2,41 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  Loader2,
-  LogOut,
-  Plus,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { AlertCircle, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
-import {
-  MessageThreadList,
-  type MessageThreadSummary,
-} from "@/components/messaging/MessagesWorkspace";
-import { getPropertyBySlug } from "@/data/properties";
-import { SUPPORT_EMAIL } from "@/lib/contact";
-import { CancelBookingControl, type AdminBookingStatus } from "@/components/admin/CancelBookingControl";
-import { PaymentLinkDetails, type AdminPaymentLink } from "@/components/admin/PaymentLinkDetails";
+import { PROPERTIES } from "@/data/properties";
 import { PrivateBookingForm } from "@/components/admin/PrivateBookingForm";
+import { BookingList } from "@/components/admin/bookings/BookingList";
+import { BookingDetail } from "@/components/admin/bookings/BookingDetail";
+import type { AdminBooking, BookingView } from "@/components/admin/bookings/bookingDisplay";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
 
-type AdminThreadSummary = {
-  id: number;
-  referenceCode: string | null;
-  guestName: string;
-  guestEmail: string;
-  checkInDate: string;
-  checkOutDate: string;
-  status: AdminBookingStatus;
-  totalPriceCents: number;
-  holdExpired: boolean;
-  guestCount: number | null;
-  paymentLink: AdminPaymentLink | null;
-  property: {
-    id: number;
-    name: string;
-    slug: string;
-    hostSupportEmail?: string | null;
-  };
-  lastMessage: {
-    body: string;
-    sentAt: string;
-    senderRole: string | null;
-  } | null;
-};
+const HOMES = PROPERTIES.map((property) => ({ slug: property.slug, name: property.name }));
 
-// Stay dates are calendar dates stored as UTC midnight.
-const stayDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
-
-const formatStayRange = (checkIn: string, checkOut: string) => {
-  try {
-    const start = stayDateFormatter.format(new Date(checkIn));
-    const end = stayDateFormatter.format(new Date(checkOut));
-    return `${start} → ${end}`;
-  } catch {
-    return `${checkIn} → ${checkOut}`;
-  }
-};
-
-const formatMoney = (cents: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
-
-const nightsBetweenIso = (checkIn: string, checkOut: string) =>
-  Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000);
-
-const statusPillClass = (booking: { status: AdminBookingStatus; holdExpired: boolean }) =>
-  booking.status === "PAID"
-    ? "bg-emerald-50 text-emerald-700"
-    : booking.status === "CANCELLED"
-      ? "bg-red-50 text-red-700"
-      : booking.holdExpired
-        ? "bg-gray-100 text-gray-600"
-        : "bg-amber-50 text-amber-700";
-
-const bookingStatusLabel = (booking: { status: AdminBookingStatus; holdExpired: boolean; paymentLink: AdminPaymentLink | null }) =>
-  booking.status === "PAID"
-    ? "Paid"
-    : booking.status === "CANCELLED"
-      ? "Cancelled"
-      : booking.paymentLink
-        ? booking.holdExpired
-          ? "Payment link expired"
-          : "Awaiting payment (link)"
-        : booking.holdExpired
-          ? "Abandoned checkout"
-          : "Awaiting payment";
-
-
-export default function AdminMessagesPage() {
+export default function AdminBookingsPage() {
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
-  const [threads, setThreads] = useState<AdminThreadSummary[]>([]);
-  const [threadsLoading, setThreadsLoading] = useState(false);
-  const [threadsError, setThreadsError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [counts, setCounts] = useState<Partial<Record<BookingView, number>>>({});
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [view, setView] = useState<BookingView>("upcoming");
+  const [home, setHome] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [creatingLink, setCreatingLink] = useState(false);
 
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const res = await fetch("/api/admin/session", {
-          credentials: "include",
-        });
+        const res = await fetch("/api/admin/session", { credentials: "include" });
         setAuthState(res.ok ? "authenticated" : "unauthenticated");
       } catch (err) {
         console.error("Failed to check admin session", err);
@@ -138,9 +59,7 @@ export default function AdminMessagesPage() {
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        throw new Error(
-          (payload as { error?: string }).error ?? "Invalid credentials",
-        );
+        throw new Error((payload as { error?: string }).error ?? "Invalid credentials");
       }
       setAuthState("authenticated");
     } catch (err) {
@@ -153,96 +72,45 @@ export default function AdminMessagesPage() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
     setAuthState("unauthenticated");
-    setThreads([]);
-    setActiveThreadId(null);
+    setBookings([]);
+    setActiveId(null);
   };
 
-  const fetchThreads = useCallback(
-    async (query?: string) => {
-      setThreadsLoading(true);
-      setThreadsError(null);
-      try {
-        const params = query ? `?search=${encodeURIComponent(query)}` : "";
-        const res = await fetch(`/api/admin/bookings/messages${params}`, {
-          credentials: "include",
-        });
-        const text = await res.text();
-        const data = text
-          ? (JSON.parse(text) as {
-              threads?: AdminThreadSummary[];
-              error?: string;
-            })
-          : null;
-        if (!res.ok) {
-          throw new Error((data?.error ?? text) || "Failed to load bookings");
-        }
-        const results = data?.threads ?? [];
-        setThreads(results);
-        if (!results.length) {
-          setActiveThreadId(null);
-          return;
-        }
-        if (!results.some((thread) => thread.id === activeThreadId)) {
-          setActiveThreadId(results[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to load booking threads", err);
-        setThreadsError((err as Error).message ?? "Failed to load bookings");
-        setThreads([]);
-        setActiveThreadId(null);
-      } finally {
-        setThreadsLoading(false);
-      }
-    },
-    [activeThreadId],
-  );
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const params = new URLSearchParams({ view });
+      if (home) params.set("home", home);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/admin/bookings/messages?${params}`, { credentials: "include" });
+      const data = (await res.json().catch(() => null)) as
+        | { threads?: AdminBooking[]; counts?: Partial<Record<BookingView, number>>; error?: string }
+        | null;
+      if (!res.ok) throw new Error(data?.error || "Failed to load bookings");
+      const results = data?.threads ?? [];
+      setBookings(results);
+      setCounts(data?.counts ?? {});
+      setActiveId((current) => (current !== null && results.some((b) => b.id === current) ? current : (results[0]?.id ?? null)));
+    } catch (err) {
+      console.error("Failed to load bookings", err);
+      setLoadError((err as Error).message ?? "Failed to load bookings");
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [view, home, search]);
 
   useEffect(() => {
-    if (authState === "authenticated") {
-      void fetchThreads();
-    }
-  }, [authState, fetchThreads]);
+    if (authState === "authenticated") void fetchBookings();
+  }, [authState, fetchBookings]);
 
-  const handleSearchThreads = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    await fetchThreads(searchQuery.trim() || undefined);
-  };
-
-  const activeThread = useMemo(() => {
-    if (!threads.length) return null;
-    if (activeThreadId === null) {
-      return threads[0];
-    }
-    return threads.find((thread) => thread.id === activeThreadId) ?? threads[0];
-  }, [activeThreadId, threads]);
-
-  const hostThreadSummaries: MessageThreadSummary[] = useMemo(() => {
-    return threads.map((thread) => {
-      const property = getPropertyBySlug(thread.property.slug);
-      return {
-        id: thread.id,
-        title: thread.guestName,
-        subtitle: thread.property.name,
-        meta: `${formatStayRange(thread.checkInDate, thread.checkOutDate)} · ${bookingStatusLabel(thread)}`,
-        badge: thread.referenceCode,
-        mediaUrl: property?.image ?? property?.images?.[0] ?? null,
-        // Messaging is email-only, so the list shows bookings without chat previews.
-        lastMessageSnippet: null,
-        lastMessageAtLabel: null,
-      } as MessageThreadSummary;
-    });
-  }, [threads]);
-
-  const activePropertyDetails = activeThread
-    ? (getPropertyBySlug(activeThread.property.slug) ?? null)
-    : null;
+  const activeBooking = useMemo(
+    () => bookings.find((booking) => booking.id === activeId) ?? null,
+    [bookings, activeId],
+  );
 
   if (authState === "checking") {
     return <AdminCheckingShell active="messages" />;
@@ -266,7 +134,7 @@ export default function AdminMessagesPage() {
               />
             </Link>
 
-            <h1 className="page-title   text-gray-900">Messaging console</h1>
+            <h1 className="page-title   text-gray-900">Bookings</h1>
             <p className="text-sm text-gray-500">
               Hosts only. Use your admin credentials to continue.
             </p>
@@ -321,10 +189,7 @@ export default function AdminMessagesPage() {
       <AdminTopNav
         active="messages"
         actions={
-          <Button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2"
-          >
+          <Button onClick={handleLogout} className="inline-flex items-center gap-2">
             <LogOut className="w-4 h-4" /> Logout
           </Button>
         }
@@ -333,187 +198,61 @@ export default function AdminMessagesPage() {
       <main className="flex min-h-0 flex-1 flex-col">
         <div className="z-10 flex w-full flex-wrap items-end justify-between gap-4 border-b border-gray-100 bg-white px-6 py-6 lg:px-12">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-              Bunks Ops
-            </p>
-            <h1 className="page-title   text-gray-900 mt-1">
-              Bookings & guests
-            </h1>
-            <p className="text-sm text-gray-500">
-              Look up any booking, see its details, and email the guest.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Bunks Ops</p>
+            <h1 className="page-title   text-gray-900 mt-1">Bookings & guests</h1>
+            <p className="text-sm text-gray-500">Stays, payment links and cancellations, with each guest&apos;s details and emails.</p>
           </div>
           <Button type="button" onClick={() => setCreatingLink(true)} className="gap-2 whitespace-nowrap">
             <Plus className="h-4 w-4" /> New private booking
           </Button>
         </div>
 
-        {threadsError && (
+        {loadError && (
           <div className="m-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <AlertCircle className="mr-2 inline h-4 w-4" /> {threadsError}
+            <AlertCircle className="mr-2 inline h-4 w-4" /> {loadError}
           </div>
         )}
-        <div className="flex flex-col bg-white lg:h-[calc(100vh-80px)] lg:flex-row lg:divide-x lg:divide-gray-200">
-          <aside className="flex flex-col lg:w-[400px] lg:flex-shrink-0 lg:overflow-y-auto">
-            <div className="flex h-full flex-col bg-white">
-              <div className="border-b border-gray-100 p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                      Bookings
-                    </p>
-                    <h2 className="mt-1 text-2xl font-sans font-semibold text-gray-900">
-                      All bookings
-                    </h2>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={() => void fetchThreads()}
-                    className="gap-1 px-3 py-2 text-sm"
-                  >
-                    <RefreshCw className="h-4 w-4" /> Refresh
-                  </Button>
-                </div>
-                <form className="mt-4" onSubmit={handleSearchThreads}>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-3 h-4 w-4 text-gray-500" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      placeholder="Search name, email, or ref"
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm focus:border-gray-900 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-                </form>
-                {threadsLoading && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Loading bookings…
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <MessageThreadList
-                  threads={hostThreadSummaries}
-                  activeThreadId={activeThread?.id ?? null}
-                  onSelect={(thread) => {
-                    setCreatingLink(false);
-                    setActiveThreadId(Number(thread.id));
-                  }}
-                  emptyState={
-                    <div className="p-8 text-center text-sm text-gray-500">
-                      No bookings match your search yet.
-                    </div>
-                  }
-                />
-              </div>
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col bg-white lg:flex-row lg:divide-x lg:divide-gray-200">
+          <aside className="flex min-h-[50vh] flex-col lg:min-h-0 lg:w-[420px] lg:flex-shrink-0">
+            <BookingList
+              view={view}
+              counts={counts}
+              homes={HOMES}
+              home={home}
+              searchActive={search}
+              loading={loading}
+              bookings={bookings}
+              activeId={activeBooking?.id ?? null}
+              onViewChange={(next) => {
+                setSearch("");
+                setCreatingLink(false);
+                setView(next);
+              }}
+              onHomeChange={setHome}
+              onSearch={setSearch}
+              onRefresh={() => void fetchBookings()}
+              onSelect={(id) => {
+                setCreatingLink(false);
+                setActiveId(id);
+              }}
+              onChanged={() => void fetchBookings()}
+            />
           </aside>
           <section className="min-w-0 flex-1 lg:overflow-y-auto">
             {creatingLink ? (
               <PrivateBookingForm
                 onClose={() => setCreatingLink(false)}
                 onCreated={(bookingId) => {
-                  setActiveThreadId(bookingId);
-                  void fetchThreads(searchQuery || undefined);
+                  setView("links");
+                  setSearch("");
+                  setActiveId(bookingId);
                 }}
               />
-            ) : activeThread ? (
-            <div className="mx-auto max-w-3xl space-y-8 p-6 sm:p-10">
-              <header className="flex items-start justify-between gap-6">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                    {activeThread.property.name}
-                  </p>
-                  <h2 className="mt-2 font-serif text-3xl text-gray-900">{activeThread.guestName}</h2>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(activeThread)}`}>
-                      {bookingStatusLabel(activeThread)}
-                    </span>
-                    <span className="text-gray-500">Ref {activeThread.referenceCode ?? "—"}</span>
-                  </div>
-                </div>
-                {activePropertyDetails?.image && (
-                  <div className="relative hidden h-24 w-36 shrink-0 overflow-hidden rounded-xl sm:block">
-                    <Image
-                      src={activePropertyDetails.image}
-                      alt={activeThread.property.name}
-                      fill
-                      className="object-cover"
-                      sizes="144px"
-                    />
-                  </div>
-                )}
-              </header>
-
-              <dl className="grid grid-cols-2 gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-4">
-                {[
-                  ["Check-in", stayDateFormatter.format(new Date(activeThread.checkInDate))],
-                  ["Check-out", stayDateFormatter.format(new Date(activeThread.checkOutDate))],
-                  ["Nights", String(nightsBetweenIso(activeThread.checkInDate, activeThread.checkOutDate))],
-                  ...(activeThread.guestCount ? [["Guests", String(activeThread.guestCount)]] : []),
-                  ["Total", formatMoney(activeThread.totalPriceCents)],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-xs uppercase tracking-[0.2em] text-gray-500">{label}</dt>
-                    <dd className="mt-1 font-semibold text-gray-900">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-
-              <section className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Guest</h3>
-                <p className="text-gray-900">
-                  {activeThread.guestName} ·{" "}
-                  <a href={`mailto:${activeThread.guestEmail}`} className="underline">
-                    {activeThread.guestEmail}
-                  </a>
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href={`mailto:${activeThread.guestEmail}?subject=${encodeURIComponent(`Your stay at ${activeThread.property.name} (${activeThread.referenceCode ?? activeThread.id})`)}`}
-                    className="inline-flex items-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-                  >
-                    Email guest
-                  </a>
-                  {activeThread.referenceCode && activeThread.status === "PAID" && (
-                    <a
-                      href={`/my-trips/${activeThread.referenceCode}/essential`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
-                    >
-                      Guest&apos;s trip page
-                    </a>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">
-                  Guest replies to booking emails go to{" "}
-                  {activeThread.property.hostSupportEmail ?? SUPPORT_EMAIL}.
-                </p>
-              </section>
-
-              {activeThread.paymentLink && (
-                <PaymentLinkDetails key={activeThread.id} bookingId={activeThread.id} link={activeThread.paymentLink} />
-              )}
-
-              <section className="space-y-3 border-t border-gray-100 pt-6">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Cancellation</h3>
-                <CancelBookingControl
-                  key={activeThread.id}
-                  bookingId={activeThread.id}
-                  status={activeThread.status}
-                  totalPriceCents={activeThread.totalPriceCents}
-                  checkInDate={activeThread.checkInDate}
-                  paymentLink={Boolean(activeThread.paymentLink)}
-                  onCancelled={() => void fetchThreads(searchQuery || undefined)}
-                />
-              </section>
-            </div>
+            ) : activeBooking ? (
+              <BookingDetail key={activeBooking.id} booking={activeBooking} onChanged={() => void fetchBookings()} />
             ) : (
               <div className="flex h-full items-center justify-center p-10 text-sm text-gray-500">
-                Choose a booking to see its details.
+                {loading ? "Loading…" : "Choose a booking to see its details."}
               </div>
             )}
           </section>

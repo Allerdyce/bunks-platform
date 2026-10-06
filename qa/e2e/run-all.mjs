@@ -748,7 +748,7 @@ def("Private payment links", async () => {
     await db.booking.update({ where: { id: exp.json.bookingId }, data: { holdUntil: new Date(Date.now() - 60_000) } });
     const expBlocked = (await api(`/api/properties/${SB}/blocked-dates`)).json?.blockedDates?.map((d) => d.date) ?? [];
     const expPage = await api(`/pay/${exp.json.url.split("/pay/")[1]}`);
-    const list = (await api("/api/admin/bookings/messages", { headers: auth })).json?.threads ?? [];
+    const list = (await api("/api/admin/bookings/messages?view=links", { headers: auth })).json?.threads ?? [];
     const row = list.find((t) => t.id === exp.json.bookingId);
     check("PL13", "an unpaid link past its hold frees the dates, says expired, and shows as expired in admin", !expBlocked.includes(day(90)) && expPage.text.includes("expired") && row?.holdExpired === true && row?.paymentLink?.state === "expired", `${expBlocked.includes(day(90))} ${row?.paymentLink?.state}`);
 
@@ -765,6 +765,37 @@ def("Private payment links", async () => {
   }
 });
 
+def("Admin bookings: tabs, filters and detail", async () => {
+  const cookie = await adminCookie();
+  const auth = { cookie };
+  const sb = await db.property.findUnique({ where: { slug: SB } });
+  const day = (offset) => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + offset)).toISOString().slice(0, 10);
+  const list = async (query) => (await api(`/api/admin/bookings/messages?${query}`, { headers: auth })).json;
+  // A paid stay (checkout), a past stay, an abandoned checkout and a payment link.
+  const paid = await book({ checkIn: day(20), checkOut: day(23), guestEmail: "tabs-paid@example.com" });
+  await pay(paid);
+  await db.booking.create({ data: { propertyId: sb.id, guestName: "Past Guest", guestEmail: "past@example.com", checkInDate: new Date(day(-10)), checkOutDate: new Date(day(-7)), totalPriceCents: 90000, status: "PAID", stripePaymentIntentId: "pi_tabs_past", publicReference: "PASTX" } });
+  const abandoned = await book({ checkIn: day(30), checkOut: day(33), guestEmail: "tabs-unpaid@example.com" });
+  await expireHold(abandoned.json.bookingId);
+  const link = await api("/api/admin/payment-links", { method: "POST", headers: auth, body: { propertyId: sb.id, checkIn: day(40), checkOut: day(42), guestName: "Tabs Link", guestEmail: "tabs-link@example.com", guests: 2, holdHours: 24, charges: { nightlySubtotalCents: 50000, cleaningFeeCents: 25000, serviceFeeCents: 0, taxCents: 0 } } });
+
+  const upcoming = await list("view=upcoming");
+  const ids = (r) => (r?.threads ?? []).map((t) => t.id);
+  check("BK1", "Upcoming lists paid future stays only (not the link, abandoned checkout or past stay)", ids(upcoming).includes(paid.json.bookingId) && !ids(upcoming).includes(link.json.bookingId) && !ids(upcoming).includes(abandoned.json.bookingId) && upcoming.threads.every((t) => t.status === "PAID"), JSON.stringify(upcoming?.threads?.map((t) => [t.id, t.displayStatus])));
+  const links = await list("view=links");
+  const linkRow = links?.threads?.find((t) => t.id === link.json.bookingId);
+  check("BK2", "Payment links tab lists links with state, expiry and source", linkRow?.displayStatus === "link-waiting" && linkRow?.source === "link" && !!linkRow?.paymentLink?.holdUntilIso, JSON.stringify(linkRow));
+  const past = await list("view=past");
+  const unpaid = await list("view=unpaid");
+  check("BK3", "Past and Unpaid tabs hold the past stay and the abandoned checkout", past?.threads?.some((t) => t.referenceCode === "PASTX" && t.displayStatus === "completed") && unpaid?.threads?.some((t) => t.id === abandoned.json.bookingId && t.displayStatus === "abandoned"), JSON.stringify({ past: past?.threads?.map((t) => t.displayStatus), unpaid: unpaid?.threads?.map((t) => t.displayStatus) }));
+  check("BK4", "tab counts match the lists", upcoming?.counts?.upcoming === upcoming?.threads?.length && upcoming?.counts?.links === links?.threads?.length && upcoming?.counts?.unpaid === unpaid?.threads?.length, JSON.stringify(upcoming?.counts));
+  const otherHome = await list(`view=upcoming&home=${SL}`);
+  const found = await list("view=past&search=tabs-paid@example.com");
+  check("BK5", "home filter narrows the list; search finds a booking from any tab", !ids(otherHome).includes(paid.json.bookingId) && ids(found).includes(paid.json.bookingId), JSON.stringify({ other: ids(otherHome), found: ids(found) }));
+  const detail = (await api(`/api/admin/bookings/${paid.json.bookingId}`, { headers: auth })).json;
+  check("BK6", "detail has the fee breakdown, the emails sent and a Stripe link", detail?.chargeLines?.length >= 2 && detail?.emails?.some((e) => e.label === "Booking confirmation") && /dashboard\.stripe\.com\/.*pi_/.test(detail?.stripeUrl ?? ""), JSON.stringify(detail).slice(0, 300));
+});
+
 def("Admin endpoints require a session", async () => {
   const routes = [
     ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],
@@ -773,6 +804,7 @@ def("Admin endpoints require a session", async () => {
     ["POST", "/api/admin/properties/1/rates"], ["PUT", "/api/admin/properties/1/settings"], ["POST", "/api/admin/properties/1/special-pricing"],
     ["DELETE", "/api/admin/properties/1/special-pricing/1"], ["GET", "/api/admin/properties/settings"],
     ["POST", "/api/admin/payment-links"], ["GET", "/api/admin/payment-links/quote"], ["POST", "/api/admin/payment-links/1/email"],
+    ["GET", "/api/admin/bookings/1"],
   ];
   const bad = [];
   for (const [method, p] of routes) {
