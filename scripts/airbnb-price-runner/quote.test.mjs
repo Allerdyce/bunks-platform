@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { BOOKIT_HASH, extractApiKey, parseQuote, quoteUrl, usdCents } from './quote.mjs';
+import { BOOKIT_HASH, extractApiKey, nightlyBreakdown, parseQuote, quoteUrl, usdCents } from './quote.mjs';
 
 const fixtures = JSON.parse(await readFile(new URL('./fixtures/verified-quotes.json', import.meta.url), 'utf8'));
 const scenario = { scenarioId: 'fixture-1', listingId: '1552191060469626901', checkIn: '2026-11-10', checkOut: '2026-11-13', adults: 2, pets: 0 };
@@ -99,4 +99,33 @@ test('quote request preserves scenario and exact persisted-query shape', () => {
   const petVars = JSON.parse(quoteUrl({ ...scenario, pets: 1 }).searchParams.get('variables'));
   assert.deepEqual(petVars.guestCounts, { numberOfAdults: 2, numberOfPets: 1 });
   assert.notEqual(petVars.p3ImpressionId, vars.p3ImpressionId);
+});
+
+const nightsItem = (data) => bookIt(data).structuredDisplayPrice.explanationData.priceDetails
+  .flatMap((group) => group.items).find((item) => /nights x/.test(item.description));
+
+test('per-night breakdown under the nights line is reported with exact cents', () => {
+  const data = response();
+  nightsItem(data).explanationData = {
+    title: 'Base price breakdown',
+    priceDetails: [{ items: [
+      { description: 'Tue, Nov 10', priceString: '$400.00' },
+      { description: 'Wed, Nov 11', priceString: '$400.00' },
+      { description: 'Thu, Nov 12', priceString: '$410.00' },
+      { description: 'Total base price', priceString: '$1,210.00' },
+    ] }],
+  };
+  const quote = parseQuote(data, scenario);
+  assert.equal(quote.status, 'ok');
+  assert.deepEqual(quote.nightlyBreakdown, [
+    { label: 'Tue, Nov 10', cents: 40000 },
+    { label: 'Wed, Nov 11', cents: 40000 },
+    { label: 'Thu, Nov 12', cents: 41000 },
+  ]);
+});
+
+test('no per-night breakdown reports null rather than guessing', () => {
+  assert.equal(parseQuote(fixtures[0].response, scenario).nightlyBreakdown, null);
+  assert.equal(nightlyBreakdown({ explanationData: { items: [{ description: '3 nights x $483.33', priceString: '$1,450.00' }] } }), null);
+  assert.equal(nightlyBreakdown(undefined), null);
 });

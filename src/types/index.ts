@@ -270,4 +270,7 @@ export interface AdminFeatureToggle {
   label: string;
   description: string;
   enabled: boolean;
+  // Switched on but not taking effect (e.g. Airbnb pricing waiting for its Vercel setting).
+  active?: boolean;
+  note?: string;
 }

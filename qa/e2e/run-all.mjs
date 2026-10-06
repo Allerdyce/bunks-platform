@@ -611,7 +611,7 @@ def("Airbnb pricing: nightly rates copied from Airbnb", async () => {
     const mine = sc.filter((s) => s.listingId === LISTING);
     const nights = (s) => (Date.parse(s.checkOut) - Date.parse(s.checkIn)) / 86400000;
     check("AR1", "scenarios: rotating 3-night windows on the source listing, at most 30, earliest first", mine.length > 4 && sc.length <= 30 && mine.every((s) => nights(s) === 3 && s.adults === 2) && mine[0].checkIn < mine[mine.length - 1].checkIn, JSON.stringify(sc.slice(0, 3)));
-    const [w1, w2, w3] = mine;
+    const [w1, w2, w3, w4, w5] = mine;
     const before = await quoteFor(w1);
     check("AR2", "no Airbnb rate yet → the stay can't be priced (no fallback to base rates)", before.json?.available === false && before.json?.reason === "PRICE_UNAVAILABLE" && /email us/.test(before.json?.message ?? ""), before.text);
     const blocked = await book({ checkIn: w3.checkIn, checkOut: w3.checkOut, guestEmail: "ar@example.com" });
@@ -633,6 +633,35 @@ def("Airbnb pricing: nightly rates copied from Airbnb", async () => {
     check("AR8", "an implausible derived rate (<$50/night) is reported, not saved", none === 0 && /outside/.test(silly.json?.rateUpdates?.[0]?.error ?? ""), JSON.stringify(silly.json?.rateUpdates));
     const next = (await api("/api/price-check/scenarios", { headers: auth })).json?.scenarios ?? [];
     check("AR9", "freshly priced nights aren't re-quoted in the next run", !next.some((s) => s.checkIn === w1.checkIn && s.listingId === LISTING), "w1 re-quoted");
+    // Airbnb's per-night breakdown: used when it adds up, otherwise the stay's average.
+    const lines = [40000, 41000, 42000];
+    const exactTotal = Math.round((lines.reduce((a, b) => a + b, 0) + 25000) * 1.141);
+    const breakdown = lines.map((cents, i) => ({ label: `Night ${i + 1}, Nov ${10 + i}`, cents }));
+    clearEmails();
+    const exact = await post([{ scenarioId: w4.scenarioId, status: "ok", totalCents: exactTotal, currency: "USD", nightlyBreakdown: breakdown }]);
+    const exactRows = await db.specialRate.findMany({ where: { propertyId: property.id, date: { gte: new Date(w4.checkIn), lt: new Date(w4.checkOut) } }, orderBy: { date: "asc" } });
+    check("AR12", "per-night breakdown that adds up → each night saved at its own Airbnb rate, email lists each night", exact.json?.rateUpdates?.[0]?.exact === true && exactRows.map((r) => r.price).join() === lines.join() && emails().some((m) => m.html.includes("$420.00") && !m.html.includes("3-night average")), JSON.stringify(exact.json?.rateUpdates));
+    const wrong = await post([{ scenarioId: w5.scenarioId, status: "ok", totalCents: ALL_IN, currency: "USD", nightlyBreakdown: lines.map((cents) => ({ label: "Nov 1", cents: cents + 5000 })) }]);
+    const avgRows = await db.specialRate.findMany({ where: { propertyId: property.id, date: { gte: new Date(w5.checkIn), lt: new Date(w5.checkOut) } } });
+    check("AR13", "a breakdown that doesn't add up falls back to the 3-night average", wrong.json?.rateUpdates?.[0]?.exact === false && avgRows.length === 3 && avgRows.every((r) => Math.abs(r.price - 40000) <= 1), JSON.stringify(wrong.json?.rateUpdates));
+    const garbage = await post([{ scenarioId: w5.scenarioId, status: "ok", totalCents: ALL_IN, currency: "USD", nightlyBreakdown: [{ label: 5, cents: "x" }] }]);
+    check("AR14", "a malformed breakdown doesn't reject the quote", garbage.status === 200 && garbage.json?.rateUpdates?.[0]?.exact === false, `${garbage.status} ${garbage.text.slice(0, 200)}`);
+    // Weekly discount: Steamboat mirrors Airbnb's 10% off 7+ nights, applied before Bunks' 10%.
+    const day = (offset) => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + offset));
+    const iso = (d) => d.toISOString().slice(0, 10);
+    for (let i = 0; i < 7; i += 1) {
+      await db.specialRate.upsert({ where: { propertyId_date: { propertyId: property.id, date: day(150 + i) } }, create: { propertyId: property.id, date: day(150 + i), price: 40000, note: "auto:airbnb" }, update: { price: 40000, note: "auto:airbnb", isBlocked: false } });
+    }
+    const week = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: iso(day(150)), checkOut: iso(day(157)), guests: 2 } });
+    const six = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: iso(day(150)), checkOut: iso(day(156)), guests: 2 } });
+    check("AR15", "7 nights: Airbnb's 10% weekly discount, then Bunks' 10% ($400 → $360 Airbnb-equivalent → $324)", week.json?.quote?.undiscountedNightlySubtotalCents === 7 * 36000 && week.json?.quote?.nightlySubtotalCents === 7 * 32400, week.text.slice(0, 300));
+    check("AR16", "6 nights: no weekly discount ($400 → $360)", six.json?.quote?.nightlySubtotalCents === 6 * 36000 && six.json?.quote?.undiscountedNightlySubtotalCents === 6 * 40000, six.text.slice(0, 300));
+    // A home whose source listing isn't linked stays bookable on its base rates.
+    const summer = await api(`/api/properties/${SL}/check-availability`, { method: "POST", body: { checkIn: w1.checkIn, checkOut: w1.checkOut, guests: 2 } });
+    check("AR17", "home not linked to its Airbnb listing stays on base rates instead of becoming unbookable", summer.json?.available === true && !!summer.json?.quote, summer.text.slice(0, 200));
+    const features = (await api("/api/admin/features", { headers: { cookie: await adminCookie() } })).json?.features ?? [];
+    const flag = features.find((f) => f.key === "airbnbPricing");
+    check("AR18", "Admin → Pricing says Airbnb pricing is active and names the unlinked home", flag?.active === true && /^Active for Downtown Steamboat/.test(flag?.note ?? "") && /Summerland.*needs Airbnb listing 1734161844121212601/.test(flag?.note ?? ""), JSON.stringify(flag));
     // Stale Airbnb rates are ignored.
     await db.specialRate.updateMany({ where: { propertyId: property.id, note: "auto:airbnb" }, data: { updatedAt: new Date(Date.now() - 8 * 86400000) } });
     const stale = await quoteFor(w1);
