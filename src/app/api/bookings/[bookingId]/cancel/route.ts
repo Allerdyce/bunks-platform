@@ -6,8 +6,6 @@ import { sendCancellationConfirmation } from "@/lib/email/sendCancellationConfir
 import { sendHostGuestCancelled } from "@/lib/email/sendHostGuestCancelled";
 import { getStripeClient } from "@/lib/stripe";
 import { releaseBookingNights } from "@/lib/bookingAvailability";
-import { formatStayDates, resolveHostSupportEmail } from "@/lib/email/helpers";
-import { resolvePropertyTimeZone } from "@/lib/stayRules";
 
 export const runtime = "nodejs";
 
@@ -87,8 +85,6 @@ export async function POST(
                 await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
             }
         }
-        const refundLabel = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(refundCents / 100);
-
         // Cancel only if the status hasn't changed since we read it (e.g. a payment landing mid-cancel).
         const cancelled = await prisma.$transaction(async (tx) => {
             const { count } = await tx.booking.updateMany({
@@ -114,37 +110,13 @@ export async function POST(
         // An abandoned checkout (never paid) is just released; there's nothing to tell the guest or host.
         if (booking.status === "PAID") {
             try {
-                await sendCancellationConfirmation(booking.id, {
-                    cancellationInitiator: "Host/Admin",
-                    refundTotal: refundLabel,
-                    refundMethod: "Original Payment Method",
-                    refundTimeline: refundCents > 0 ? "5-10 business days" : "No refund issued",
-                    refundLineItems: [{ label: "Refund", amount: refundLabel }],
-                });
+                await sendCancellationConfirmation(booking.id, { refundCents });
             } catch (e) {
                 console.error("Failed to send guest cancellation email", e);
             }
 
             try {
-                await sendHostGuestCancelled({
-                    to: resolveHostSupportEmail(booking),
-                    bookingId: booking.id,
-                    hostName: "Host",
-                    guestName: booking.guestName,
-                    propertyName: booking.property.name,
-                    stayDates: formatStayDates(booking.checkInDate, booking.checkOutDate),
-                    cancelledAt: new Date().toLocaleString("en-US", {
-                        timeZone: resolvePropertyTimeZone(booking.property),
-                        timeZoneName: "short",
-                    }),
-                    policyApplied: "Host Cancelled",
-                    refundSummary: {
-                        guestRefund: refundLabel,
-                        hostPayoutChange: "Pending",
-                        retention: "Pending"
-                    },
-                    lineItems: [{ label: "Cancellation", amount: "N/A", type: "charge" }],
-                });
+                await sendHostGuestCancelled({ bookingId: booking.id, refundCents, cancelledBy: session.email });
             } catch (e) {
                 console.error("Failed to send host cancellation email", e);
             }

@@ -1,104 +1,46 @@
 import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
+  adminBookingsUrl,
   calculateNights,
   formatCurrencyFromCents,
-  formatDateForEmail,
+  formatStayDates,
   renderEmail,
+  resolveBookingReference,
   resolveHostSupportEmail,
-  logEmailSend,
-  sendEmail,
 } from '@/lib/email';
+import { sendLoggedEmail } from './sendLoggedEmail';
 import { HostNotificationEmail } from '@/emails/HostNotificationEmail';
 
-const EMAIL_TYPE = 'HOST_NOTIFICATION' as const;
-
-function buildGoogleCalendarLink({
-  title,
-  details,
-  checkIn,
-  checkOut,
-}: {
-  title: string;
-  details: string;
-  checkIn: Date;
-  checkOut: Date;
-}) {
-  const base = new URL('https://calendar.google.com/calendar/render');
-  base.searchParams.set('action', 'TEMPLATE');
-  base.searchParams.set('text', title);
-  base.searchParams.set('details', details);
-  base.searchParams.set('dates', `${formatGoogleDate(checkIn)}/${formatGoogleDate(checkOut)}`);
-  return base.toString();
-}
-
-function formatGoogleDate(date: Date) {
-  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-}
-
+/** Tells the Bunks team (the home's support address) about a paid booking. */
 export async function sendHostNotification(bookingId: number) {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: {
-      property: true,
-    },
-  });
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { property: true } });
+  if (!booking) throw new Error(`Booking ${bookingId} not found`);
 
-  if (!booking) {
-    throw new Error(`Booking ${bookingId} not found`);
-  }
-
-  const checkIn = new Date(booking.checkInDate);
-  const checkOut = new Date(booking.checkOutDate);
-  const nights = calculateNights(checkIn, checkOut);
-  const hostEmail = resolveHostSupportEmail(booking);
-
+  const stayDates = formatStayDates(booking.checkInDate, booking.checkOutDate);
   const html = await renderEmail(
     <HostNotificationEmail
-      hostName={hostEmail?.split('@')[0]}
       propertyName={booking.property.name}
       guestName={booking.guestName}
-      checkInDate={formatDateForEmail(checkIn)}
-      checkOutDate={formatDateForEmail(checkOut)}
-      nights={nights}
-      totalPayout={formatCurrencyFromCents(booking.totalPriceCents)}
-      checklistItems={[
-        'Confirm cleaners + turnovers',
-        'Refresh guest amenities & local items',
-        'Double-check smart lock + access codes',
-      ]}
-      calendarUrl={buildGoogleCalendarLink({
-        title: `${booking.property.name} · ${booking.guestName}`,
-        details: 'Manage prep tasks in Bunks admin.',
-        checkIn,
-        checkOut,
-      })}
-    />
+      guestEmail={booking.guestEmail}
+      guests={booking.guestCount}
+      stayDates={stayDates}
+      nights={calculateNights(booking.checkInDate, booking.checkOutDate)}
+      totalPaid={formatCurrencyFromCents(booking.totalPriceCents)}
+      bookingReference={resolveBookingReference(booking)}
+      source={
+        booking.paymentLinkToken
+          ? `Private payment link${booking.createdByAdmin ? ` (${booking.createdByAdmin})` : ''}`
+          : 'Website checkout'
+      }
+      adminUrl={adminBookingsUrl()}
+    />,
   );
-
-  try {
-    const response = await sendEmail({
-      to: hostEmail,
-      subject: `New Bunks booking · ${booking.property.name}`,
-      html,
-    });
-
-    await logEmailSend({
-      bookingId: booking.id,
-      to: hostEmail,
-      type: EMAIL_TYPE,
-    });
-
-    return response;
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    await logEmailSend({
-      bookingId: booking.id,
-      to: hostEmail,
-      type: EMAIL_TYPE,
-      status: 'FAILED',
-      error: message,
-    });
-    throw error;
-  }
+  return sendLoggedEmail({
+    bookingId: booking.id,
+    type: 'HOST_NOTIFICATION',
+    to: resolveHostSupportEmail(booking),
+    subject: `New booking · ${booking.property.name} · ${stayDates}`,
+    html,
+  });
 }

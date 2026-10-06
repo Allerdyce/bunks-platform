@@ -2,19 +2,26 @@ import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
   calculateNights,
+  firstNameOf,
   formatCurrencyFromCents,
   formatDateForEmail,
+  formatStayDates,
   renderEmail,
+  resolveBookingReference,
   resolveCheckInGuideUrl,
-  resolveGuestBookUrl,
   resolveHostSupportEmail,
   sendEmail,
   logEmailSend,
+  stayTimeLabels,
+  tripUrlFor,
 } from '@/lib/email';
+import { bookingChargeLines } from '@/lib/pricing/breakdown';
+import { CANCELLATION_POLICY } from '@/data/policies';
 import { BookingConfirmationEmail } from '@/emails/BookingConfirmationEmail';
 
 const EMAIL_TYPE = 'BOOKING_CONFIRMATION' as const;
 
+/** The guest's confirmation and receipt in one email, sent when the booking is paid. */
 export async function sendBookingConfirmation(bookingId: number) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
@@ -29,26 +36,33 @@ export async function sendBookingConfirmation(bookingId: number) {
 
   const checkIn = new Date(booking.checkInDate);
   const checkOut = new Date(booking.checkOutDate);
-  const nights = calculateNights(checkIn, checkOut);
+  const times = stayTimeLabels(booking.property);
+  const chargeLines = (await bookingChargeLines(booking)) ?? [];
 
   const html = await renderEmail(
     <BookingConfirmationEmail
-      guestName={booking.guestName}
+      guestFirstName={firstNameOf(booking.guestName)}
       propertyName={booking.property.name}
-      checkInDate={formatDateForEmail(checkIn)}
-      checkOutDate={formatDateForEmail(checkOut)}
-      nights={nights}
+      bookingReference={resolveBookingReference(booking)}
+      stayDates={formatStayDates(checkIn, checkOut)}
+      checkIn={`${formatDateForEmail(checkIn)} · ${times.checkIn.replace(/^Check-in /, '')}`}
+      checkOut={`${formatDateForEmail(checkOut)} · ${times.checkOut.replace(/^Checkout /, '')}`}
+      nights={calculateNights(checkIn, checkOut)}
+      guests={booking.guestCount}
+      chargeLines={chargeLines.map((line) => ({ label: line.label, amount: formatCurrencyFromCents(line.amountCents) }))}
       totalPaid={formatCurrencyFromCents(booking.totalPriceCents)}
-      checkInGuideUrl={resolveCheckInGuideUrl(booking)}
-      guestBookUrl={resolveGuestBookUrl(booking)}
-      hostSupportEmail={resolveHostSupportEmail(booking)}
+      tripUrl={tripUrlFor(booking)}
+      guideUrl={resolveCheckInGuideUrl(booking)}
+      cancellationPolicy={CANCELLATION_POLICY.summary}
+      supportEmail={resolveHostSupportEmail(booking)}
     />
   );
 
   try {
     const response = await sendEmail({
       to: booking.guestEmail,
-      subject: `Booking confirmed · ${booking.property.name}`,
+      replyTo: resolveHostSupportEmail(booking),
+      subject: `You're booked · ${booking.property.name} · ${formatStayDates(checkIn, checkOut)}`,
       html,
     });
 

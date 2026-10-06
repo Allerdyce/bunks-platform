@@ -68,7 +68,7 @@ export function PreStayReminderEmail(props: PreStayReminderEmailProps) {
     guestBookUrl && !/(\.pdf($|[?#])|\/api\/guides\/)/i.test(guestBookUrl) ? appendAnchor(guestBookUrl, 'recommendations') : null;
 
   return (
-    <EmailLayout previewText={`You&apos;re almost at ${propertyName}`}> 
+    <EmailLayout previewText={`You're almost at ${propertyName}`}> 
       <Heading className="mb-2 text-2xl font-semibold">48 hours to go 🎒</Heading>
       <Text className="text-base text-[#475467]">
         Hey {guestName}, we&apos;re counting down to your stay at {propertyName}. Here&apos;s a quick refresher so arrival on {checkInDate} stays effortless.

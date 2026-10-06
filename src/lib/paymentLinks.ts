@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as React from "react";
 import { randomBytes, randomUUID } from "crypto";
 import type { Booking, Property } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -15,8 +16,10 @@ import {
   isBookingReferenceCollision,
 } from "@/lib/bookingReference";
 import { sendEmail } from "@/lib/email/sendEmail";
-import { formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from "@/lib/email/helpers";
-import { escapeHtml } from "@/lib/html";
+import { firstNameOf, formatCurrencyFromCents, formatStayDates, resolveHostSupportEmail } from "@/lib/email/helpers";
+import { renderEmail } from "@/lib/email/renderEmail";
+import { bookingChargeLines } from "@/lib/pricing/breakdown";
+import { PaymentLinkEmail } from "@/emails/PaymentLinkEmail";
 
 // Private payment links (Admin → Bookings → New private booking): an admin prices a stay for one
 // guest, with every fee editable (tax included), and Bunks holds the dates until holdUntil while
@@ -167,7 +170,7 @@ export async function createPaymentLink(input: CreatePaymentLinkInput, adminEmai
         currency: "usd",
         // Cards only (Apple Pay / Google Pay are cards), as at checkout.
         payment_method_types: ["card"],
-        receipt_email: booking.guestEmail,
+        // No receipt_email: the guest's Bunks confirmation is their receipt.
         description: `${property.name}, ${toISODate(checkIn)} to ${toISODate(checkOut)} (private booking ${booking.publicReference})`,
         metadata: {
           bookingId: booking.id.toString(),
@@ -216,33 +219,24 @@ export async function sendPaymentLinkEmail(booking: Booking & { property: Proper
     throw new PaymentLinkError("This link isn't awaiting payment any more.", 409);
   }
   const url = paymentLinkUrl(booking.paymentLinkToken, origin);
-  const nights = Math.round((booking.checkOutDate.getTime() - booking.checkInDate.getTime()) / DAY_MS);
-  const lines: [string, number | null][] = [
-    [`${nights} night${nights === 1 ? "" : "s"}`, booking.nightlySubtotalCents],
-    ["Cleaning fee", booking.cleaningFeeCents],
-    ["Service fee", booking.serviceFeeCents],
-    ["Taxes", booking.taxCents],
-  ];
-  const rows = lines
-    .filter(([, cents]) => cents)
-    .map(([label, cents]) => `<tr><td style="padding:4px 16px 4px 0">${label}</td><td align="right">${formatCurrencyFromCents(cents ?? 0)}</td></tr>`)
-    .join("");
-  const total = formatCurrencyFromCents(booking.totalPriceCents);
-  const firstName = booking.guestName.trim().split(/\s+/)[0] ?? "";
+  const lines = (await bookingChargeLines(booking)) ?? [];
+  const html = await renderEmail(
+    React.createElement(PaymentLinkEmail, {
+      guestFirstName: firstNameOf(booking.guestName),
+      propertyName: booking.property.name,
+      stayDates: formatStayDates(booking.checkInDate, booking.checkOutDate),
+      chargeLines: lines.map((line) => ({ label: line.label, amount: formatCurrencyFromCents(line.amountCents) })),
+      total: formatCurrencyFromCents(booking.totalPriceCents),
+      payUrl: url,
+      holdUntil: holdUntilLabel(booking, booking.property),
+      supportEmail: resolveHostSupportEmail(booking),
+    }),
+  );
   await sendEmail({
     to: booking.guestEmail,
     replyTo: resolveHostSupportEmail(booking),
     subject: `Your private booking for ${booking.property.name}`,
-    html:
-      `<p>Hi ${escapeHtml(firstName)},</p>` +
-      `<p>Here's your private booking for <strong>${escapeHtml(booking.property.name)}</strong>, ` +
-      `${escapeHtml(formatStayDates(booking.checkInDate, booking.checkOutDate))}.</p>` +
-      `<table cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}` +
-      `<tr><td style="padding:8px 16px 4px 0"><strong>Total</strong></td><td align="right"><strong>${total}</strong></td></tr></table>` +
-      `<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="background:#252723;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none">Review and pay ${total}</a></p>` +
-      `<p>We're holding these dates for you until ${escapeHtml(holdUntilLabel(booking, booking.property))}. ` +
-      `After that the link expires and the dates may go to someone else.</p>` +
-      `<p>Questions? Just reply to this email.</p>`,
+    html,
   });
   return url;
 }

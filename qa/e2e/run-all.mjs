@@ -55,9 +55,9 @@ def("Happy path: book, pay, confirm", async () => {
   const allHtml = mails.map((m) => m.html).join("\n");
   check("H11", "emails show stay dates as Oct 5 and Oct 9 (no timezone shift)", /Oct(ober)?\s+5/.test(allHtml) && /Oct(ober)?\s+9/.test(allHtml) && !/Oct(ober)?\s+4,/.test(allHtml), "dates not found or shifted");
   check("H12", "emails show the charged total $1,647.00", allHtml.includes("1,647.00"), "total not found in email html");
-  const receipt = mails.find((m) => /receipt/i.test(m.subject));
-  check("H13", "receipt shows 5% service fee $63.00 (not a flat fee)", receipt && receipt.html.includes("63.00"), receipt ? "receipt present, $63.00 missing" : "no receipt", "T-EM-09");
-  check("H14", "receipt shows lodging tax $144.00", receipt && receipt.html.includes("144.00"), "tax line missing", "T-EM-09");
+  const receipt = mails.find((m) => /You're booked/.test(m.subject));
+  check("H13", "booking confirmation itemises the 5% service fee $63.00 (not a flat fee)", receipt && receipt.html.includes("63.00"), receipt ? "receipt present, $63.00 missing" : "no receipt", "T-EM-09");
+  check("H14", "booking confirmation itemises lodging tax $144.00", receipt && receipt.html.includes("144.00"), "tax line missing", "T-EM-09");
   const lookup = await api(`/api/bookings/${r.json.bookingReference}?email=GUEST1@example.com`);
   check("H15", "My Trips lookup works with ref + email (case-insensitive)", lookup.status === 200 && lookup.json?.booking?.status === "PAID", lookup.text);
   const wrong = await api(`/api/bookings/${r.json.bookingReference}?email=someone@else.com`);
@@ -725,13 +725,13 @@ def("Private payment links", async () => {
     clearEmails();
     const sent = await api(`/api/admin/payment-links/${link.id}/email`, { method: "POST", headers: auth });
     const mail = emails().find((m) => m.to === "link@example.com");
-    check("PL9", "admin can email the link: right guest, link, total, hold deadline", sent.status === 200 && mail && mail.html.includes(`/pay/${token}`) && mail.html.includes("$1,595.00") && /holding these dates for you until/.test(mail.html), `${sent.status} ${JSON.stringify(mail ?? {}).slice(0, 300)}`);
+    check("PL9", "admin can email the link: right guest, link, total, hold deadline", sent.status === 200 && mail && mail.html.includes(`/pay/${token}`) && mail.html.includes("$1,595.00") && /holding these dates until/.test(mail.html), `${sent.status} ${JSON.stringify(mail ?? {}).slice(0, 300)}`);
 
     clearEmails();
     await stripe(`/__test/succeed/${link.stripePaymentIntentId}`);
     const paid = await db.booking.findUnique({ where: { id: link.id } });
-    const receipt = emails().find((m) => /receipt/i.test(m.subject));
-    check("PL10", "paying makes it a normal paid booking; the receipt itemises the admin's fees", paid.status === "PAID" && receipt && receipt.html.includes("$250.00") && receipt.html.includes("$145.00") && receipt.html.includes("$1,595.00") && !receipt.html.includes("10% direct-booking discount"), `${paid.status} ${receipt?.subject}`);
+    const receipt = emails().find((m) => /You're booked/.test(m.subject));
+    check("PL10", "paying makes it a normal paid booking; the confirmation itemises the admin's fees", paid.status === "PAID" && receipt && receipt.html.includes("$250.00") && receipt.html.includes("$145.00") && receipt.html.includes("$1,595.00") && !receipt.html.includes("10% direct-booking discount"), `${paid.status} ${receipt?.subject}`);
     const paidFeed = (await api(await feedUrl())).text;
     const paidPage = await api(`/pay/${token}`);
     check("PL11", "once paid: Airbnb sees a reservation, and the link page says it's booked", paidFeed.includes(`UID:booking-${link.id}@bunks.com`) && !paidFeed.includes(`UID:hold-${link.id}@`) && paidPage.text.includes("booked"), paidFeed.slice(0, 300));

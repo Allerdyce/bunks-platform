@@ -17,37 +17,40 @@ import { MidStayCheckInEmailProps } from '@/emails/MidStayCheckInEmail';
 import { CheckoutReminderEmailProps } from '@/emails/CheckoutReminderEmail';
 import { GuestRefundIssuedEmailProps } from '@/emails/GuestRefundIssuedEmail';
 import { CancellationConfirmationEmailProps } from '@/emails/CancellationConfirmationEmail';
+import { CANCELLATION_POLICY } from '@/data/policies';
+import { SUPPORT_EMAIL } from '@/lib/contact';
+import { CHECKOUT_CHECKLIST } from '@/emails/checkoutChecklist';
+import { PaymentLinkEmailProps } from '@/emails/PaymentLinkEmail';
 import { STEAMBOAT_GUIDE } from '@/data/steamboatGuide';
 import {
-  getSteamboatBookingConfirmationSlice,
   getSteamboatPreStaySlice,
-  getSteamboatCheckoutSlice,
 } from '@/lib/guides/steamboatEmailSlices';
 import { mapsUrlFor, privateDetailsFor } from '@/lib/privatePropertyDetails';
 
 const STEAMBOAT_PRIVATE = privateDetailsFor('steamboat-downtown-townhome');
 
-const CHECK_IN = new Date('2025-02-14T15:00:00Z');
-const CHECK_OUT = new Date('2025-02-18T10:00:00Z');
 
 export function sampleBookingConfirmationProps(): BookingConfirmationEmailProps {
-  const confirmationSlice = getSteamboatBookingConfirmationSlice();
   return {
-    guestName: 'Maya',
-    propertyName: STEAMBOAT_GUIDE.propertyBasics.name,
-    propertyLocation: 'Steamboat Springs, CO',
-    checkInDate: CHECK_IN.toDateString(),
-    checkOutDate: CHECK_OUT.toDateString(),
+    guestFirstName: 'Taylor',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    bookingReference: 'K7Q2M',
+    stayDates: 'Feb 14 – Feb 18, 2027',
+    checkIn: 'Sun, February 14 · from 3:00 PM',
+    checkOut: 'Thu, February 18 · by 10:00 AM',
     nights: 4,
-    totalPaid: '$2,480.00',
-    checkInGuideUrl: 'https://bunks.com/guide/steamboat-alpenglow-2',
-    guestBookUrl: 'https://bunks.com/guide/steamboat-alpenglow-2',
-    hostSupportEmail: 'stay@bunks.com',
-    hostPhoneNumber: STEAMBOAT_GUIDE.propertyBasics.hosts[0].phone,
-    mapUrl: STEAMBOAT_PRIVATE ? mapsUrlFor(STEAMBOAT_PRIVATE.address) : undefined,
-    arrivalNotes: confirmationSlice.arrivalNotes,
-    directions: confirmationSlice.directions,
-    essentials: confirmationSlice.essentials,
+    guests: 4,
+    chargeLines: [
+      { label: '4 nights (10% direct-booking discount applied)', amount: '$2,160.00' },
+      { label: 'Cleaning fee', amount: '$250.00' },
+      { label: 'Service fee', amount: '$108.00' },
+      { label: 'Taxes', amount: '$241.00' },
+    ],
+    totalPaid: '$2,759.00',
+    tripUrl: 'https://www.bunks.com/my-trips/K7Q2M/essential',
+    guideUrl: 'https://www.bunks.com/api/guides/steamboat-downtown-townhome/guide?ref=K7Q2M',
+    cancellationPolicy: CANCELLATION_POLICY.summary,
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 
@@ -129,24 +132,16 @@ export function samplePreStay24hProps(): PreStay24hEmailProps {
 
 export function sampleHostNotificationProps(): HostNotificationEmailProps {
   return {
-    hostName: 'Ali',
-    propertyName: 'Summit Ridge Cabin',
-    guestName: 'Maya Bennett',
-    checkInDate: 'Fri, Feb 14',
-    checkOutDate: 'Tue, Feb 18',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    guestName: 'Taylor Morgan',
+    guestEmail: 'taylor@example.com',
+    guests: 4,
+    stayDates: 'Feb 14 – Feb 18, 2027',
     nights: 4,
-    totalPayout: '$2,120.00',
-    addOns: [
-      { name: 'Private chef dinner', notes: 'Confirm chef arrival 5pm' },
-      { name: 'Ski rental delivery', notes: 'Drop-off Friday noon' },
-    ],
-    checklistItems: [
-      'Stage welcome note and amenity basket',
-      'Hot tub service scheduled Thursday',
-      'Sync cleaners for checkout Tuesday 10am',
-    ],
-    calendarUrl: 'https://calendar.google.com/calendar/render?action=TEMPLATE',
-    specialRequests: 'Guest arriving late due to evening flight — leave porch light on',
+    totalPaid: '$2,759.00',
+    bookingReference: 'K7Q2M',
+    source: 'Website checkout',
+    adminUrl: 'https://www.bunks.com/admin/messages',
   };
 }
 
@@ -283,58 +278,25 @@ export function sampleHostPrepSameDayProps(): HostPrepSameDayEmailProps {
 
 export function sampleHostGuestCancelledProps(): HostGuestCancelledEmailProps {
   return {
-    hostName: 'Ali',
-    propertyName: 'Summit Ridge Cabin',
-    guestName: 'Noah Patel',
-    cancelledAt: 'Nov 28 · 08:12 MT',
-    stayDates: 'Dec 12 – Dec 15',
-    policyApplied: 'Flexible (48h)',
-    refundSummary: {
-      guestRefund: '$1,140.00',
-      hostPayoutChange: '-$820.00',
-      retention: '$320.00 service fees',
-    },
-    lineItems: [
-      { label: 'Nightly rate refund', amount: '$840.00', type: 'credit' },
-      { label: 'Cleaning fee refund', amount: '$180.00', type: 'credit' },
-      { label: 'Bunks service fee', amount: '$120.00', type: 'charge', note: 'Retained per policy' },
-    ],
-    calendarActions: [
-      { label: 'Calendar reopened Dec 12–15', status: 'done' },
-      { label: 'Airbnb sync double-check', detail: 'Verify import at 08:30', status: 'in-progress' },
-    ],
-    rebookNote: 'Push SMS + email to waitlist for Dec 12–15 once calendar slot verified.',
-    nextArrival: 'Dec 20 · 16:00',
-    attachments: [
-      { label: 'Cancellation audit log', href: 'https://bunks.com/admin/bookings/12510/audit', description: 'Policy + refund detail' },
-    ],
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    guestName: 'Taylor Morgan',
+    stayDates: 'Feb 14 – Feb 18, 2027',
+    bookingReference: 'K7Q2M',
+    refundAmount: '$2,759.00',
+    cancelledBy: 'ali@bunks.com',
+    adminUrl: 'https://www.bunks.com/admin/messages',
   };
 }
 
 export function sampleHostRefundAdjustmentProps(): HostRefundAdjustmentEmailProps {
   return {
-    hostName: 'Ali',
-    propertyName: 'Summit Ridge Cabin',
-    guestName: 'Maya Bennett',
-    bookingId: 12432,
-    processedAt: 'Nov 29 · 14:10 MT',
-    adjustmentReason: 'Partial refund for heater issue',
-    payoutBefore: '$2,120.00',
-    payoutAfter: '$1,920.00',
-    guestRefund: '$200.00',
-    adjustments: [
-      { label: 'Guest goodwill credit', amount: '$200.00', direction: 'debit', note: 'Applied to payout' },
-      { label: 'Service fee rebate', amount: '$40.00', direction: 'credit', note: 'Bunks covering half the credit' },
-    ],
-    timeline: [
-      { time: '13:05', label: 'Guest reported heater issue', status: 'done' },
-      { time: '13:40', label: 'Ops approved refund', status: 'done' },
-      { time: '14:10', label: 'Payout adjusted + guest emailed', status: 'done' },
-    ],
-    documents: [
-      { label: 'Heater maintenance ticket', href: 'https://bunks.com/internal/incidents/8834', description: 'Photos + vendor invoice' },
-    ],
-    supportNote: 'Reply within 48h if you want us to contest or split differently.',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    guestName: 'Taylor Morgan',
+    stayDates: 'Feb 14 – Feb 18, 2027',
+    bookingReference: 'K7Q2M',
+    refundAmount: '$250.00',
+    bookingCancelled: false,
+    adminUrl: 'https://www.bunks.com/admin/messages',
   };
 }
 
@@ -351,50 +313,13 @@ export function sampleReviewRequestProps(): ReviewRequestEmailProps {
 
 export function sampleGuestRefundIssuedProps(): GuestRefundIssuedEmailProps {
   return {
-    guestName: 'Maya Bennett',
-    propertyName: 'Summit Ridge Cabin',
-    bookingId: 48291,
-    refundTotal: '$420.00',
-    currencyNote: 'Processed in USD · converts automatically if your bank bills in another currency',
-    paymentMethod: 'Visa •• 4242',
-    statementDescriptor: 'Bunks*SummitRidge',
-    refundReason: 'Partial refund after fireplace outage on Feb 17',
-    initiatedAt: 'Wed · Feb 19 · 10:12 MT',
-    expectedArrivalWindow: '3–5 business days',
-    lineItems: [
-      { label: 'Nightly credit (Feb 17)', amount: '$320.00', note: '50% goodwill credit for interrupted evening' },
-      { label: 'Firewood surcharge reversal', amount: '$60.00', note: 'Removed because crew restocked late' },
-      { label: 'Concierge fee refund', amount: '$40.00', note: 'Applies to snowcat logistics assistance' },
-    ],
-    timeline: [
-      {
-        label: 'Issue reported',
-        detail: 'You texted concierge at 21:05 MT when fireplace remote failed.',
-        status: 'complete',
-      },
-      {
-        label: 'Ops approved refund',
-        detail: 'Duty manager Alissa authorized the credit after vendor diagnosis.',
-        status: 'complete',
-      },
-      {
-        label: 'Funds in transit',
-        detail: 'Stripe released the refund to your bank. Watch for pending status in 24h.',
-        status: 'in-progress',
-      },
-    ],
-    support: {
-      email: 'hello@bunks.com',
-      phone: '+1 (970) 555-0119',
-      concierge: '+1 (970) 555-0458',
-      note: 'Concierge replies 07:00–22:00 MT · average response under 6 minutes.',
-    },
-    extraNotes: [
-      'You will receive a Stripe receipt once the card issuer posts the refund.',
-      'Need documentation for travel insurance? Reply and we will send a signed PDF.',
-      'If the bank still shows the original authorization after 7 days, text us a screenshot so we can escalate.',
-    ],
-    policyUrl: 'https://bunks.com/policies/flexible-refunds',
+    guestFirstName: 'Taylor',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    bookingReference: 'K7Q2M',
+    stayDates: 'Feb 14 – Feb 18, 2027',
+    refundAmount: '$250.00',
+    bookingCancelled: false,
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 
@@ -416,43 +341,26 @@ export function sampleReceiptProps(): ReceiptEmailProps {
 }
 
 export function sampleDoorCodeProps(): DoorCodeEmailProps {
+  const address = STEAMBOAT_PRIVATE?.address ?? null;
   return {
-    guestName: 'Maya',
-    propertyName: 'Summit Ridge Cabin',
-    arrivalDate: 'Fri, Feb 14',
-    arrivalWindow: '16:00 – 20:00',
-    doorCode: '4829·#',
-    codeValidWindow: 'Active Feb 14 14:00 – Feb 18 11:00',
-    parkingInfo: [
-      {
-        title: 'Driveway parking',
-        detail: 'Park nose-in. Plowed daily · two cars max to avoid blocking the lane.',
-      },
-      {
-        title: 'Overflow option',
-        detail: 'Lot across the lane · grab the hanging tag from the mudroom hook.',
-      },
-    ],
+    guestFirstName: 'Taylor',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    arrivalHeadline: 'See you tomorrow',
+    checkIn: 'Sun, February 14 · from 3:00 PM',
+    checkOut: 'Thu, February 18 · by 10:00 AM',
+    address,
+    mapsUrl: address ? mapsUrlFor(address) : null,
+    codeLabel: 'Lockbox code',
+    doorCode: '1234',
     entrySteps: [
-      { title: 'Keypad location', detail: 'Left of the mudroom door under the covered awning.' },
-      { title: 'Wake the lock', detail: 'Tap ✷ then enter the code followed by # within 5 seconds.' },
-      { title: 'Locking up', detail: 'Press ✷ and wait for the green flash before walking away.' },
+      { title: 'Garage code', detail: '5678' },
+      { title: 'Ski locker', detail: 'Locker 36 · code 2222' },
     ],
-    wifi: { network: 'SummitRidge-Guest', password: 'pinecones42' },
-    backupPlan: [
-      { title: 'Backup lockbox', detail: 'Code 7711 · mounted behind the propane tank cover.' },
-      { title: 'Manual key', detail: 'Inside lockbox · please return after use.' },
-    ],
-    securityNotes: [
-      'Disable the alarm panel inside the entry hall within 60 seconds.',
-      'Lock doors whenever you leave—elk love nudging handles.',
-    ],
-    support: {
-      email: 'ops@bunks.com',
-      phone: '+1 (970) 555-0124',
-      concierge: '+1 (970) 555-0901',
-
-    },
+    parkingInfo: STEAMBOAT_PRIVATE?.parkingNotes ? [{ title: 'Where to park', detail: STEAMBOAT_PRIVATE.parkingNotes }] : [],
+    wifi: { network: 'Townhouse2', password: 'Steamboat' },
+    tripUrl: 'https://www.bunks.com/my-trips/K7Q2M/essential',
+    bookingReference: 'K7Q2M',
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 
@@ -490,61 +398,14 @@ export function sampleMidStayCheckInProps(): MidStayCheckInEmailProps {
 
 export function sampleCancellationConfirmationProps(): CancellationConfirmationEmailProps {
   return {
-    guestName: 'Maya Bennett',
-    propertyName: 'Summit Ridge Cabin',
-    stayDates: 'Feb 15 – Feb 19, 2025',
-    bookingId: 48291,
-    cancelledAt: 'Wed · Jan 29 · 09:42 MT',
-    cancellationInitiator: 'Guest via self-serve portal',
-    cancellationReason: 'Flight cancellations ahead of the incoming storm system',
-    refundTotal: '$1,820.00',
-    refundMethod: 'Visa •• 4242',
-    refundTimeline: '3–5 business days',
-    statementDescriptor: 'Bunks*SummitRidge',
-    refundLineItems: [
-      { label: 'Nightly charges (3 nights)', amount: '$1,560.00', note: '$520/night refunded in full' },
-      { label: 'Cleaning fee', amount: '$180.00' },
-      {
-        label: 'Service fee retained',
-        amount: '$80.00',
-        note: 'Retained per flexible policy inside 14 days',
-        retained: true,
-      },
-      {
-        label: 'Private chef deposit',
-        amount: '$40.00',
-        note: 'Kitchen already sourced ingredients',
-        retained: true,
-      },
-    ],
-    policyHighlights: [
-      {
-        title: 'Flexible policy window',
-        detail: 'Full refund up to 14 days prior; afterwards service fees + vendor deposits may be retained.',
-      },
-      {
-        title: 'Weather credit',
-        detail: '50% credit toward a future stay when cancellations are due to confirmed travel disruptions.',
-      },
-    ],
-    rebookingOffer: {
-      headline: 'Ready to reschedule when you are',
-      description: 'Apply a $350 credit toward any Bunks stay when you rebook within 60 days.',
-      ctaLabel: 'Browse new dates',
-      ctaUrl: 'https://bunks.com/properties',
-      note: 'Credit auto-applies once you sign in with this booking email.',
-    },
-    extraNotes: [
-      'We triggered refunds at 09:42 MT; your bank controls final posting speed.',
-      'Reply if you would like us to hold the same home for alternative February dates.',
-      'Travel insurance providers often request this email as proof of cancellation—feel free to forward it.',
-    ],
-    support: {
-      email: 'hello@bunks.com',
-      phone: '+1 (970) 555-0119',
-      concierge: '+1 (970) 555-0458',
-      note: 'Concierge replies in under 10 minutes during 07:00–22:00 MT.',
-    },
+    guestFirstName: 'Taylor',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    bookingReference: 'K7Q2M',
+    stayDates: 'Feb 14 – Feb 18, 2027',
+    refundAmount: '$2,759.00',
+    cancellationPolicy: CANCELLATION_POLICY.summary,
+    rebookUrl: 'https://www.bunks.com',
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 
@@ -579,32 +440,32 @@ export function samplePaymentFailureProps(): PaymentFailureEmailProps {
 }
 
 export function sampleCheckoutReminderProps(): CheckoutReminderEmailProps {
-  const checkoutSlice = getSteamboatCheckoutSlice();
   return {
-    guestName: 'Maya',
-    propertyName: STEAMBOAT_GUIDE.propertyBasics.name,
-    checkoutDate: 'Tue, Feb 18',
-    checkoutTime: STEAMBOAT_GUIDE.propertyBasics.checkOutTime,
-    cleanerArrivalWindow: 'Cleaners arrive 10:30–11:00',
-    lateCheckoutNote: 'Need a late checkout? Reply here and we’ll confirm availability.',
-    weatherCallout: 'Snow showers expected tomorrow evening—allow extra time if you’re driving over Rabbit Ears Pass.',
-    propertyAddress: STEAMBOAT_PRIVATE?.address,
-    directionsUrl: STEAMBOAT_PRIVATE ? mapsUrlFor(STEAMBOAT_PRIVATE.address) : undefined,
-    parkingNote: STEAMBOAT_PRIVATE?.parkingNotes ?? STEAMBOAT_GUIDE.checkinCheckout.parking,
-    keySteps: checkoutSlice.checkoutSteps,
-    lockupSteps: checkoutSlice.lockupSteps,
-    trashNote: checkoutSlice.trashNote,
-    kitchenReminders: ['Clean coffee carafe + grinders', 'Wipe fridge shelves if spills'],
-    laundryReminders: ['Start one load of towels if you have time', 'Leave duvets folded on beds'],
-    addOnReturns: [
-      { title: 'Baby gear rental', detail: 'Leave crib + high-chair in the downstairs bedroom.', status: 'Pickup 12:30' },
-    ],
-    support: {
-      email: 'stay@bunks.com',
-      phone: STEAMBOAT_GUIDE.propertyBasics.hosts[0].phone,
-      concierge: STEAMBOAT_GUIDE.propertyBasics.hosts[1].phone,
-      note: 'Text for last-minute questions—we reply in under 5 minutes.',
-    },
+    guestFirstName: 'Taylor',
+    propertyName: 'Downtown Steamboat Luxury Townhome',
+    checkoutDay: 'tomorrow',
+    checkoutDate: 'Thu, Feb 18',
+    checkoutTime: '10:00 AM',
+    checklist: CHECKOUT_CHECKLIST,
+    bookingReference: 'K7Q2M',
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 
+
+export function samplePaymentLinkProps(): PaymentLinkEmailProps {
+  return {
+    guestFirstName: 'Robin',
+    propertyName: 'Summerland Ocean-View Beach Bungalow',
+    stayDates: 'Nov 20 – Nov 23, 2026',
+    chargeLines: [
+      { label: '3 nights', amount: '$2,100.00' },
+      { label: 'Cleaning fee', amount: '$250.00' },
+      { label: 'Taxes', amount: '$282.00' },
+    ],
+    total: '$2,632.00',
+    payUrl: 'https://www.bunks.com/pay/example',
+    holdUntil: 'Thu, Oct 8, 3:54 PM PDT',
+    supportEmail: SUPPORT_EMAIL,
+  };
+}
