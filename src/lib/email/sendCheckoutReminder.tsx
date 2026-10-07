@@ -1,6 +1,5 @@
 import { notAClaim } from '@/lib/email/claims';
 import { propertyToday, resolvePropertyTimeZone } from '@/lib/stayRules';
-import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { CheckoutReminderEmail } from '@/emails/CheckoutReminderEmail';
 import { CHECKOUT_CHECKLIST } from '@/emails/checkoutChecklist';

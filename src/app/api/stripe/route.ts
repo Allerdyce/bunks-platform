@@ -1,4 +1,4 @@
-// src/app/api/stripe/webhook/route.ts
+// Stripe webhook: POST /api/stripe
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripeClient } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // IMPORTANT: use raw text body for Stripe signature verification
     const rawBody = await req.text();
     event = stripeClient.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error verifying Stripe webhook:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
     // You can handle other event types here later
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error handling Stripe webhook:', err);
     return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });
   }

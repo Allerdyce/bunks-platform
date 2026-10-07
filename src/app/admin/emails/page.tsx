@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_SESSION_COOKIE, verifySessionToken } from "@/lib/adminAuth";
-import { EMAIL_TEMPLATES, type EmailTemplateSpec } from "@/lib/email/catalog";
+import { EMAIL_TEMPLATES } from "@/lib/email/catalog";
 import { TEMPLATE_RENDERERS } from "@/lib/email/templateRenderers";
 import {
   renderSubjectWithSample,
@@ -14,13 +14,6 @@ import type { TemplatePreview } from "./types";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { EmailPageActions } from "./EmailPageActions";
 import { templateDeliveryState } from "@/lib/email/deliverySettings";
-
-const STATUS_ORDER: EmailTemplateSpec["status"][] = [
-  "shipped",
-  "in-progress",
-  "planned",
-  "parked",
-];
 
 async function buildPreviews(): Promise<TemplatePreview[]> {
   return Promise.all(
@@ -57,14 +50,13 @@ export default async function EmailPreviewGallery() {
 
   const previews = await buildPreviews();
   const templateControls = EMAIL_TEMPLATES.map(
-    ({ slug, name, audience, status, trigger, category }) => ({
+    ({ slug, name, audience, trigger, category }) => ({
       slug,
       name,
       audience,
-      status,
       trigger,
       category,
-      delivery: templateDeliveryState(slug),
+      delivery: templateDeliveryState(),
     }),
   );
   const previewMap = previews.reduce<Record<string, TemplatePreview>>(
@@ -74,7 +66,6 @@ export default async function EmailPreviewGallery() {
     },
     {},
   );
-  const totalTemplates = previews.length;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">

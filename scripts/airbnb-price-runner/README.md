@@ -1,6 +1,6 @@
 # Airbnb guest quote runner
 
-Standalone Node 22 runner with no installed dependencies. It gets stay scenarios from Bunks, fetches public Airbnb guest-facing quotes serially, and posts one results batch back to Bunks. **It does not calculate nightly rates, compare Bunks prices, or send alerts.** All of that stays in Bunks. No files under `src/` are changed.
+Standalone Node 22 runner with no installed dependencies. It gets stay scenarios from Bunks, fetches public Airbnb guest-facing quotes serially, and posts one results batch back to Bunks. The runner itself doesn't calculate rates or send alerts: Bunks turns the quotes into its nightly rates (when Airbnb pricing is on), compares prices and emails the digest.
 
 ## Setup and activation
 
@@ -15,21 +15,13 @@ Set these GitHub Actions **repository secrets** (Settings → Secrets and variab
 
 Never commit secret values. The runner sends the bearer token only to the two Bunks endpoints and does not log request headers or raw response bodies.
 
-**The schedule in `.github/workflows/airbnb-price-check.yml` is commented out until both Bunks endpoints are live.** Manual runs remain available, defaulting to dry-run. No workflow is triggered on pushes or pull requests, and no live Airbnb requests are made by tests.
+The workflow `.github/workflows/airbnb-price-check.yml` runs twice a day on `main`: `0 15 * * *` and `0 3 * * *` UTC, which is 08:00 / 20:00 Los Angeles during PDT and **07:00 / 19:00 during PST**. GitHub may delay scheduled jobs. No workflow is triggered on pushes or pull requests, and no live Airbnb requests are made by tests.
 
-After the endpoints and secrets are ready:
-
-1. Merge this workflow onto the repository's **default branch**. GitHub scheduled runs use the default branch; merging only to `codex/kindred-ui-refresh` will not activate scheduling. The workflow must also exist on the default branch for its manual dispatch entry point to be available.
-2. In Actions → **Airbnb price check** → **Run workflow**, select the desired branch and leave `dry_run` checked to validate scenario retrieval and inspect planned requests.
-3. Run again with `dry_run` unchecked and verify Bunks receives the results.
-4. Uncomment `schedule` and its two cron entries. `0 15 * * *` and `0 3 * * *` are UTC: 08:00 / 20:00 Los Angeles during PDT, **07:00 / 19:00 during PST**. GitHub may delay scheduled jobs; these are not exact-time guarantees.
-
-With the GitHub CLI, once dispatch is available:
+To run it by hand: Actions → **Airbnb price check** → **Run workflow**. Leave `dry_run` checked to check scenario retrieval and the planned requests without calling Airbnb. With the GitHub CLI:
 
 ```sh
-gh workflow run airbnb-price-check.yml --ref codex/kindred-ui-refresh -f dry_run=true
-# Real collection, only once endpoints are live:
-gh workflow run airbnb-price-check.yml --ref codex/kindred-ui-refresh -f dry_run=false
+gh workflow run airbnb-price-check.yml --ref main -f dry_run=true
+gh workflow run airbnb-price-check.yml --ref main -f dry_run=false
 ```
 
 ## Local use

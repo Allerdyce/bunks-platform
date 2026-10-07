@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { specialRateClient } from '@/lib/specialRateClient';
 import { isUsableSpecialRate, PriceUnavailableError, pricedFromAirbnb, weeklyDiscountFor } from '@/lib/airbnbRates';
-import type { Prisma } from '@prisma/client';
 import type { PricingQuote, NightlyLineItem } from '@/types';
 
 const isWeekendNight = (date: Date) => {
@@ -20,7 +19,8 @@ export async function calculatePricing(
     propertySlug: string,
     checkInDate: Date,
     checkOutDate: Date,
-    guests: number
+    // Party size doesn't change the price today; callers pass it so it can later.
+    _guests: number
 ): Promise<PricingQuote> {
     const property = await prisma.property.findUnique({
         where: { slug: propertySlug },

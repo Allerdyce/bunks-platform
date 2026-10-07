@@ -26,18 +26,6 @@ export type OpsDetails = OpsDetailsInput & {
   updatedAt?: string | null;
 };
 
-export type OpsSupportContact = {
-  label: string;
-  value: string;
-  helper?: string | null;
-};
-
-export type OpsReferenceLink = {
-  label: string;
-  href: string;
-  description?: string;
-};
-
 export const DEFAULT_OPS_DETAILS: OpsDetailsInput = {
   supportEmail: SUPPORT_EMAIL,
   // No placeholder phone numbers or names: when a value isn't configured in Admin → Details,

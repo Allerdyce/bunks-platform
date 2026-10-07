@@ -3,7 +3,6 @@ import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 
-// retrigger build
 export const runtime = 'nodejs';
 
 type PdfRequest = {

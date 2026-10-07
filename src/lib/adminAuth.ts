@@ -78,7 +78,6 @@ const scryptAsync = (password: string, salt: Buffer) =>
 
 /**
  * Returns the admin session secret, or null when it is missing/too weak in production.
- * Also used by cleanerAuth to derive a distinct cleaner key.
  */
 export const getAdminSessionSecret = (): string | null => {
   const secret = process.env.ADMIN_SESSION_SECRET;

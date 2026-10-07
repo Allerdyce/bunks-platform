@@ -36,11 +36,6 @@ export function formatCurrencyFromCents(amountCents: number, currency = DEFAULT_
   }).format(amountCents / 100);
 }
 
-export function resolveGuestBookUrl(booking: Booking & { property: Property }) {
-  const url = guideUrlForBooking(booking, booking.guestBookUrlOverride, booking.property.guestBookUrl);
-  return toAbsoluteUrl(url ?? undefined);
-}
-
 export function resolveCheckInGuideUrl(booking: Booking & { property: Property }) {
   const url =
     guideUrlForBooking(booking, booking.checkInInstructionsOverride, booking.property.checkInGuideUrl);

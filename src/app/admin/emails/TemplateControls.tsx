@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import type { EmailTemplateSpec } from "@/lib/email/catalog";
-import { getEmailSubject } from "@/lib/email/subjects";
 import type { TemplatePreview } from "./types";
 import { EmailPreviewModal } from "./EmailPreviewModal";
 import type { EmailDeliveryState } from "@/lib/email/deliverySettings";
@@ -30,7 +29,7 @@ type ToggleTab = "all" | EmailTemplateSpec["audience"];
 
 export type TemplateControl = Pick<
   EmailTemplateSpec,
-  "slug" | "name" | "audience" | "status" | "trigger" | "category"
+  "slug" | "name" | "audience" | "trigger" | "category"
 > & { delivery: EmailDeliveryState };
 
 interface TemplateControlsProps {

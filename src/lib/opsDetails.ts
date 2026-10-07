@@ -5,11 +5,8 @@ import {
   OPTIONAL_OPS_FIELDS,
   OpsDetails,
   OpsDetailsInput,
-  OpsReferenceLink,
-  OpsSupportContact,
   REQUIRED_OPS_FIELDS,
 } from './opsDetails/config';
-import { toAbsoluteUrl } from '@/lib/url';
 
 const sanitizeString = (value: unknown) => {
   if (typeof value !== 'string') return '';
@@ -126,67 +123,4 @@ export async function upsertOpsDetails(input: OpsDetailsInput, propertyId?: numb
     console.error('[opsDetails] Failed to persist ops contact profile', error);
     throw new Error('Unable to save ops details. Make sure the latest database migrations have been applied.');
   }
-}
-
-const joinParts = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).join(' · ');
-
-export function buildSupportDirectory(details: OpsDetails): OpsSupportContact[] {
-  const directory: OpsSupportContact[] = [];
-
-  if (details.opsEmail || details.opsPhone) {
-    directory.push({
-      label: 'Ops desk',
-      value: joinParts(details.opsEmail, details.opsPhone),
-      helper: details.opsDeskHours ?? null,
-    });
-  }
-
-  if (details.opsDeskPhone && details.opsDeskPhone !== details.opsPhone) {
-    directory.push({
-      label: 'Dispatch line',
-      value: details.opsDeskPhone,
-      helper: details.opsDeskHours ?? null,
-    });
-  }
-
-  if (details.conciergeName || details.conciergeContact) {
-    directory.push({
-      label: details.conciergeName ?? 'Concierge',
-      value: joinParts(details.conciergeContact, details.supportSmsNumber),
-      helper: details.conciergeNotes ?? null,
-    });
-  }
-
-  if (details.emergencyContact) {
-    directory.push({
-      label: 'Emergency',
-      value: details.emergencyContact,
-      helper: details.emergencyDetails ?? null,
-    });
-  }
-
-  return directory.filter((item) => Boolean(item.value));
-}
-
-type ReferenceLinkOptions = {
-  checkInGuideUrl?: string;
-  guestBookUrl?: string;
-};
-
-export function buildReferenceLinks(details: OpsDetails, options: ReferenceLinkOptions = {}): OpsReferenceLink[] {
-  const links: OpsReferenceLink[] = [];
-  const addLink = (label: string, href?: string | null, description?: string) => {
-    const absoluteHref = toAbsoluteUrl(href);
-    if (!absoluteHref) return;
-    if (links.some((link) => link.href === absoluteHref)) return;
-    links.push({ label, href: absoluteHref, description });
-  };
-
-  addLink('Open live instructions', options.checkInGuideUrl ?? details.liveInstructionsUrl, 'Entry, parking and Wi-Fi details.');
-  addLink('Door codes & arrival notes', details.doorCodesDocUrl, 'Your entry codes and arrival notes.');
-  addLink('Arrival overview', details.arrivalNotesUrl, 'Directions and parking.');
-  addLink('Browse recommendations', details.recommendationsUrl, 'Food, adventure, and family-friendly picks.');
-  addLink('Open the guest book', options.guestBookUrl ?? details.guestBookUrl, 'FAQs, itineraries, and local intel.');
-
-  return links;
 }

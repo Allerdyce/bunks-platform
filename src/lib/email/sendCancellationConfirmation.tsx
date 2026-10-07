@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { CancellationConfirmationEmail } from '@/emails/CancellationConfirmationEmail';
 import { firstNameOf, formatCurrencyFromCents, formatStayDates, renderEmail, resolveBookingReference, resolveHostSupportEmail } from '@/lib/email';

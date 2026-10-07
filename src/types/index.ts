@@ -1,10 +1,3 @@
-export type BlockedDateSource = "AIRBNB" | "DIRECT" | "SPECIAL";
-
-export interface BlockedDate {
-  date: string;
-  source: BlockedDateSource;
-}
-
 export interface PropertySection {
   title: string;
   body: string[];
@@ -65,22 +58,6 @@ export interface Property {
   houseRules?: string[];
   emergencyContacts?: { name: string; phone: string; role?: string }[];
 }
-
-
-export interface AvailabilityRequest {
-  propertySlug: string;
-  checkIn: string;
-  checkOut: string;
-}
-
-export interface AvailabilityResponse {
-  available: boolean;
-  reason?: "DATES_BLOCKED" | "EXISTING_BOOKING";
-  message?: string;
-}
-
-
-
 
 
 export interface BookingRequest {
@@ -161,22 +138,6 @@ export type TripAccessResponse =
   | { available: true; codes: TripAccessCodes }
   | { available: false; releasesAt?: string };
 
-export interface ConversationMessage {
-  id: number;
-  body: string;
-  senderId: number;
-  senderName?: string | null;
-  senderRole: 'GUEST' | 'HOST' | 'ADMIN';
-  sentAt: string;
-  readAt?: string | null;
-  isMine: boolean;
-}
-
-export interface BookingConversationResponse {
-  conversationId: number | null;
-  messages: ConversationMessage[];
-}
-
 export interface BookingLookupPayload {
   bookingReference: string;
   guestEmail: string;
@@ -231,19 +192,12 @@ export type ViewState =
   | "booking-details"
   | "booking-essential"
   | "booking-guide"
-  | "booking-messages"
   | "about"
   | "listings";
 
-export type BookingPortalSection = "essential" | "guide" | "messages";
+export type BookingPortalSection = "essential" | "guide";
 
 export type NavigateHandler = (view: ViewState, payload?: unknown) => void;
-
-export interface BlockedDate {
-  id: number;
-  date: string; // ISO string
-  propertyId: number;
-}
 
 export interface AdminSpecialRate {
   id: number;
