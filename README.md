@@ -3,7 +3,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Admin Pricing Console
 
 - Visit `/admin` (or click **Admin Login** in the footer) to reach the internal dashboard.
-- Sign in with an allowed admin email and the password from `ADMIN_PASSWORD`. Configure additional allowed addresses via the comma-separated `ADMIN_EMAILS` (or legacy `ADMIN_EMAIL`) in `.env.local`. In production, `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` (32+ characters) are required; admin login is disabled until both are set.
+- Sign in with an allowed admin email (the comma-separated `ADMIN_EMAILS`) and that person's own password. Run `node scripts/admin-password.mjs <email> [<email> …]` to make a strong password for each person plus the `ADMIN_PASSWORD_HASHES` value to paste into Vercel; only the hashes are stored. Anyone on `ADMIN_EMAILS` without their own entry falls back to the shared `ADMIN_PASSWORD`, if set. To remove someone, take them off `ADMIN_EMAILS`. In production, `ADMIN_SESSION_SECRET` (32+ characters) plus either `ADMIN_PASSWORD_HASHES` or `ADMIN_PASSWORD` are required; admin login is disabled until they are set.
 - From the console you can:
 	- Set weekday/weekend nightly rates, plus cleaning ($85) and service ($20) fees for every property in the database.
 	- Add date-level overrides for special pricing or block dates entirely when needed.
