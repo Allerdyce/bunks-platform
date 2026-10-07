@@ -5,6 +5,7 @@ Everything here runs against a **local** Postgres database and mock services. Ne
 - `stripe-mock.mjs`: stateful Stripe API mock plus test endpoints that deliver signed webhooks.
 - `start.sh`: starts the Stripe mock, a static iCal server (fake Airbnb feeds) and `next dev` on :3000 against `bunks_qa`.
 - `../e2e/*.mjs`: scenario scripts. Run `node qa/e2e/run-all.mjs`.
+- Scenario dates are relative to today (`../e2e/dates.mjs`), so the suite doesn't go stale. The fake Airbnb calendars in `../fixtures/ical/` are templates: `{{mon+N}}` becomes N days after the scenario Monday (at least six weeks ahead).
 
 The app reads these QA-only env vars:
 - `STRIPE_API_HOST` / `STRIPE_API_PORT` / `STRIPE_API_PROTOCOL` point the Stripe client at the mock.
