@@ -7,6 +7,7 @@ import {
   logEmailSend,
   renderEmail,
   resolveBookingReference,
+  resolveCheckInGuideUrl,
   resolveHostSupportEmail,
   sendEmail,
   stayTimeLabels,
@@ -110,6 +111,7 @@ export async function sendDoorCodeEmail(bookingId: number, options: { force?: bo
       entrySteps={access.entrySteps}
       parkingInfo={access.parkingInfo}
       wifi={wifi ? { network: wifi.ssid, password: wifi.password } : null}
+      guideUrl={resolveCheckInGuideUrl(booking)}
       tripUrl={tripUrlFor(booking)}
       bookingReference={resolveBookingReference(booking)}
       supportEmail={resolveHostSupportEmail(booking)}

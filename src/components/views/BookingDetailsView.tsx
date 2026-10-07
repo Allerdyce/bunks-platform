@@ -29,6 +29,14 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
+// Stay dates are UTC-midnight calendar dates, so the guide's opening day is formatted in UTC.
+const guideOpensFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+});
+
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
   month: "short",
@@ -346,6 +354,11 @@ export function BookingDetailsView({
   }, [booking, propertyDetails, hostContacts, isPaidBooking, accessCodes]);
 
   const guideUrl = booking?.secure?.guideUrl ?? null;
+  const guideOpensAt = booking?.secure?.guideOpensAt ?? null;
+  // The guide has the door codes in it, so it opens with them, 24 hours before check-in.
+  const guideOpensNote = guideOpensAt
+    ? `Your guidebook opens on ${guideOpensFormatter.format(new Date(guideOpensAt))}, 24 hours before check-in.`
+    : null;
 
   const sectionCopy: Record<
     BookingPortalSection,
@@ -632,7 +645,7 @@ export function BookingDetailsView({
                 A little local knowledge goes a long way. Your guide brings the
                 details together for an easier stay.
               </p>
-              {guideUrl && (
+              {guideUrl ? (
                 <a
                   href={guideUrl}
                   target="_blank"
@@ -641,7 +654,9 @@ export function BookingDetailsView({
                 >
                   Open your guidebook
                 </a>
-              )}
+              ) : guideOpensNote ? (
+                <p className="mt-6 text-sm text-gray-600">{guideOpensNote}</p>
+              ) : null}
               <a
                 href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`}
                 className="mt-5 block break-words text-sm font-semibold underline underline-offset-4"
@@ -669,7 +684,7 @@ export function BookingDetailsView({
               Settle in, find your favorites, and make the most of your time
               here.
             </p>
-            {guideUrl && (
+            {guideUrl ? (
               <a
                 href={guideUrl}
                 target="_blank"
@@ -678,7 +693,9 @@ export function BookingDetailsView({
               >
                 Open your guidebook
               </a>
-            )}
+            ) : guideOpensNote ? (
+              <p className="mt-8 max-w-md text-base text-gray-600">{guideOpensNote}</p>
+            ) : null}
           </div>
           {heroImage && (
             <div className="relative min-h-[260px] md:min-h-[440px]">
@@ -701,7 +718,8 @@ export function BookingDetailsView({
               <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-600">
                 {guideUrl
                   ? "Your guidebook is ready to open above. We’re still putting the finishing touches on the digital guide here."
-                  : "We’re putting the finishing touches on your digital guide. Your host can help with recommendations and questions in the meantime."}
+                  : guideOpensNote ??
+                    "We’re putting the finishing touches on your digital guide. Your host can help with recommendations and questions in the meantime."}
               </p>
             </div>
             <div>

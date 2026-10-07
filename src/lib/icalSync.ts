@@ -136,7 +136,7 @@ async function fetchCalendar(url: string, slug: string) {
       signal: AbortSignal.timeout(8000),
       // Some calendar hosts refuse requests that don't look like a calendar client.
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarSync/1.0; +https://bunks.com)",
+        "User-Agent": "Mozilla/5.0 (compatible; BunksCalendarSync/1.0; +https://www.bunks.com)",
         Accept: "text/calendar, text/plain;q=0.9, */*;q=0.8",
       },
     });
@@ -369,7 +369,7 @@ export async function syncAirbnbCalendarIfStale(
 // --- Export feed (Bunks → Airbnb) ---
 
 function feedSecret() {
-  const secret = process.env.ICAL_FEED_SECRET ?? process.env.ADMIN_SESSION_SECRET;
+  const secret = process.env.ICAL_FEED_SECRET || process.env.ADMIN_SESSION_SECRET;
   if (!secret && process.env.NODE_ENV === "production") {
     throw new Error("ICAL_FEED_SECRET (or ADMIN_SESSION_SECRET) must be set");
   }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getUnavailableNights, parseStayDate } from '@/lib/bookingAvailability';
 import { checkStayRules } from '@/lib/stayRules';
 import { PriceUnavailableError } from '@/lib/airbnbRates';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,10 @@ type CheckAvailabilityBody = {
 };
 
 export async function POST(req: NextRequest) {
+  // The property page asks for a quote as guests pick dates, so this allows plenty of clicking.
+  const limited = rateLimitResponse(req, 'check-availability', 120, 10 * 60_000);
+  if (limited) return limited;
+
   try {
     // Derive slug from URL: /api/properties/[slug]/check-availability
     const url = new URL(req.url);
@@ -21,13 +26,13 @@ export async function POST(req: NextRequest) {
     // ["api", "properties", "<slug>", "check-availability"]
     const slug = parts[2]; // e.g. "api"->0, "properties"->1, slug->2
 
-    const body = (await req.json()) as CheckAvailabilityBody;
+    const body = (await req.json().catch(() => null)) as Partial<CheckAvailabilityBody> | null;
 
     if (!slug) {
       return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
     }
 
-    if (!body.checkIn || !body.checkOut) {
+    if (!body || typeof body.checkIn !== 'string' || typeof body.checkOut !== 'string') {
       return NextResponse.json(
         { error: 'checkIn and checkOut are required' },
         { status: 400 }

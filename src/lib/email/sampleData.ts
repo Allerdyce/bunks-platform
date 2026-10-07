@@ -34,7 +34,6 @@ export function sampleBookingConfirmationProps(): BookingConfirmationEmailProps 
     ],
     totalPaid: '$2,759.00',
     tripUrl: 'https://www.bunks.com/my-trips/K7Q2M/essential',
-    guideUrl: 'https://www.bunks.com/api/guides/steamboat-downtown-townhome/guide?ref=K7Q2M',
     cancellationPolicy: CANCELLATION_POLICY.summary,
     supportEmail: SUPPORT_EMAIL,
   };
@@ -108,6 +107,7 @@ export function sampleDoorCodeProps(): DoorCodeEmailProps {
     ],
     parkingInfo: [{ title: 'Where to park', detail: 'Two spaces in the garage under the unit.' }],
     wifi: { network: 'Bunks-Guest', password: 'sample-password' },
+    guideUrl: 'https://www.bunks.com/api/guides/steamboat-downtown-townhome/guide?ref=K7Q2M',
     tripUrl: 'https://www.bunks.com/my-trips/K7Q2M/essential',
     bookingReference: 'K7Q2M',
     supportEmail: SUPPORT_EMAIL,

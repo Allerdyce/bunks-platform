@@ -50,9 +50,12 @@ export const api = {
     };
   },
   async fetchBookingDetails(bookingReference: string, guestEmail: string): Promise<BookingDetailsResponse> {
-    const params = new URLSearchParams({ email: guestEmail });
     const encodedRef = encodeURIComponent(bookingReference.trim());
-    const res = await fetch(`/api/bookings/${encodedRef}?${params.toString()}`);
+    const res = await fetch(`/api/bookings/${encodedRef}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: guestEmail }),
+    });
     if (!res.ok) {
       throw new Error(
         res.status === 404
@@ -63,9 +66,13 @@ export const api = {
     return res.json();
   },
   async fetchTripAccessCodes(bookingReference: string, guestEmail: string): Promise<TripAccessResponse> {
-    const params = new URLSearchParams({ email: guestEmail });
     const encodedRef = encodeURIComponent(bookingReference.trim());
-    const res = await fetch(`/api/trip-access/${encodedRef}?${params.toString()}`, { cache: "no-store" });
+    const res = await fetch(`/api/trip-access/${encodedRef}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: guestEmail }),
+      cache: "no-store",
+    });
     if (!res.ok) {
       throw new Error("Failed to load access codes");
     }

@@ -33,6 +33,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   ) {
     return NextResponse.json({ error: "All pricing fields are required" }, { status: 400 });
   }
+  if (![weekdayRate, weekendRate, cleaningFee, serviceFee].every((value) => Number.isFinite(value) && value >= 0 && value <= 100_000)) {
+    return NextResponse.json({ error: "Prices must be between $0 and $100,000" }, { status: 400 });
+  }
 
   const updated = await prisma.property.update({
     where: { id: propertyId },

@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-
-type CalculationRequest = {
-    grossRent: number;
-    deductions31Plus: number;
-    deductionsFederal: number;
-    roomRevenueOnlyForTBID: number;
-    totRate?: number;
-};
+const amount = z.coerce.number().min(0).max(1_000_000_000);
+const calculationSchema = z.object({
+    grossRent: amount,
+    deductions31Plus: amount.optional(),
+    deductionsFederal: amount.optional(),
+    roomRevenueOnlyForTBID: amount.optional(),
+    totRate: z.coerce.number().min(0).max(1).optional(),
+});
 
 const DEFAULT_TOT_RATE = 0.14; // Default 14%
 const TBID_RATE = 0.02; // 2%
 
 export async function POST(req: NextRequest) {
+    const limited = rateLimitResponse(req, 'sb-tot-calculate', 60, 10 * 60_000);
+    if (limited) return limited;
+
     try {
-        const body: CalculationRequest = await req.json();
-        const { grossRent, deductions31Plus, deductionsFederal, roomRevenueOnlyForTBID, totRate } = body;
+        const parsed = calculationSchema.safeParse(await req.json().catch(() => null));
+        if (!parsed.success) {
+            return NextResponse.json({ error: 'Please check the amounts and try again.' }, { status: 400 });
+        }
+        const { grossRent, deductions31Plus, deductionsFederal, totRate } = parsed.data;
+        const roomRevenueOnlyForTBID = parsed.data.roomRevenueOnlyForTBID ?? 0;
 
         const effectiveTotRate = totRate !== undefined ? totRate : DEFAULT_TOT_RATE;
 

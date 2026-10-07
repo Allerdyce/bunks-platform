@@ -7,6 +7,7 @@ import {
     Text,
 } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
+import { getAppBaseUrl } from '@/lib/url';
 
 interface BookDirectCampaignEmailProps {
     guestName?: string;
@@ -15,7 +16,7 @@ interface BookDirectCampaignEmailProps {
 
 export const BookDirectCampaignEmail = ({
     guestName = 'Guest',
-    ctaUrl = 'https://bunks.com',
+    ctaUrl = getAppBaseUrl(),
 }: BookDirectCampaignEmailProps) => {
     const previewText = 'Save 10% on your next stay when you book direct.';
 

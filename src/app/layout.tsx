@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Lora } from "next/font/google";
+import { getAppBaseUrl } from "@/lib/url";
 import "./globals.css";
 
 const bodyFont = DM_Sans({
@@ -16,7 +17,7 @@ const editorialFont = Lora({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"),
+  metadataBase: new URL(getAppBaseUrl()),
   title: {
     default: "Bunks | Repeat Stays & Savings",
     template: "%s | Bunks",

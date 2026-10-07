@@ -1,7 +1,8 @@
 import { fetchMarketingProperties } from "@/lib/marketingProperties";
 import { MetadataRoute } from "next";
+import { getAppBaseUrl } from "@/lib/url";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com";
+const BASE_URL = getAppBaseUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const properties = await fetchMarketingProperties();

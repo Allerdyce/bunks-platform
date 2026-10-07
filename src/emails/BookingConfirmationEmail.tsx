@@ -1,4 +1,4 @@
-import { Link, Text } from '@react-email/components';
+import { Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
 import {
   DetailRows,
@@ -24,7 +24,6 @@ export interface BookingConfirmationEmailProps {
   chargeLines: { label: string; amount: string }[];
   totalPaid: string;
   tripUrl: string;
-  guideUrl?: string | null;
   cancellationPolicy: string;
   supportEmail: string;
 }
@@ -55,18 +54,8 @@ export function BookingConfirmationEmail(props: BookingConfirmationEmailProps) {
 
       <PrimaryButton href={props.tripUrl}>View your trip</PrimaryButton>
       <Paragraph>
-        Your trip page has the address, Wi-Fi and house details. We&apos;ll email your arrival details and door
-        code the day before you arrive.
-        {props.guideUrl ? (
-          <>
-            {' '}
-            You can also read the{' '}
-            <Link href={props.guideUrl} className="text-[#101828] underline">
-              house guide
-            </Link>
-            .
-          </>
-        ) : null}
+        Your trip page has the address, Wi-Fi and house details. We&apos;ll email your arrival details, door code
+        and house guide the day before you arrive.
       </Paragraph>
 
       <SectionTitle>Receipt</SectionTitle>

@@ -6,7 +6,13 @@ import { prisma } from '@/lib/prisma';
 import { ensureFeatureEnabled } from '@/lib/featureFlags';
 import { isAuthorizedCronRequest } from '@/lib/cronAuth';
 import { ensureGuestLeadTable } from '@/lib/guestLeads';
-import { sendCheckoutReminder, sendDoorCodeEmail, sendBookingConfirmation, sendHostNotification } from '@/lib/email';
+import {
+  isMarketingEmailPaused,
+  sendCheckoutReminder,
+  sendDoorCodeEmail,
+  sendBookingConfirmation,
+  sendHostNotification,
+} from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -248,6 +254,11 @@ const WIFI_CAMPAIGN_MAX_AGE_DAYS = 60;
 const LEGACY_WIFI_USER_NAME = 'WiFi Guest';
 
 async function handleWiFiBookDirect(now: Date): Promise<BatchSummary> {
+  // While marketing email is paused every send would fail; skip instead of failing daily.
+  if (isMarketingEmailPaused()) {
+    return { total: 0, sent: 0, skipped: 0, errors: 0 };
+  }
+
   // Target: Wi-Fi captured guests created 14–60 days ago who haven't received the campaign yet
   // and haven't booked direct since. Running daily with a range means missed days catch up.
   const newest = new Date(now.getTime() - WIFI_CAMPAIGN_DELAY_DAYS * DAY_IN_MS);
@@ -341,7 +352,7 @@ async function handleWiFiBookDirect(now: Date): Promise<BatchSummary> {
     } catch (error) {
       await releaseClaim(claimId);
       summary.errors += 1;
-      console.error('[cron][wifi-campaign] Failed to send', { email: user.email, error });
+      console.error('[cron][wifi-campaign] Failed to send', { userId: user.id, error });
     }
   }
 

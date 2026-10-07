@@ -12,7 +12,6 @@ export async function sendBookDirectCampaign(
     const html = await renderEmail(
         <BookDirectCampaignEmail
             guestName={guestName}
-            ctaUrl={process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"}
         />
     );
 
@@ -25,10 +24,10 @@ export async function sendBookDirectCampaign(
             messageStream: MessageStream.broadcast,
         });
 
-        console.log(`[${EMAIL_TYPE}] Sent to ${toEmail}`);
+        console.log(`[${EMAIL_TYPE}] Sent`);
         return response;
     } catch (error) {
-        console.error(`[${EMAIL_TYPE}] Failed to send to ${toEmail}`, error);
+        console.error(`[${EMAIL_TYPE}] Failed to send`, error);
         throw error;
     }
 }

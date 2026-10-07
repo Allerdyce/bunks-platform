@@ -20,6 +20,7 @@ import { firstNameOf, formatCurrencyFromCents, formatStayDates, resolveHostSuppo
 import { renderEmail } from "@/lib/email/renderEmail";
 import { bookingChargeLines } from "@/lib/pricing/breakdown";
 import { PaymentLinkEmail } from "@/emails/PaymentLinkEmail";
+import { getAppBaseUrl } from "@/lib/url";
 
 // Private payment links (Admin → Bookings → New private booking): an admin prices a stay for one
 // guest, with every fee editable (tax included), and Bunks holds the dates until holdUntil while
@@ -44,7 +45,7 @@ export const chargesTotal = (charges: PaymentLinkCharges) =>
   charges.nightlySubtotalCents + charges.cleaningFeeCents + charges.serviceFeeCents + charges.taxCents;
 
 export function paymentLinkUrl(token: string, origin?: string) {
-  const base = (process.env.NEXT_PUBLIC_APP_URL ?? origin ?? "https://www.bunks.com").replace(/\/+$/, "");
+  const base = (process.env.NEXT_PUBLIC_APP_URL || origin || getAppBaseUrl()).replace(/\/+$/, "");
   return `${base}/pay/${token}`;
 }
 
@@ -187,7 +188,10 @@ export async function createPaymentLink(input: CreatePaymentLinkInput, adminEmai
     booking = await prisma.booking.update({ where: { id: booking.id }, data: { stripePaymentIntentId: intent.id } });
   } catch (error) {
     // Release the hold so the dates aren't blocked by a link that can't be paid.
-    await prisma.booking.update({ where: { id: booking.id }, data: { status: "CANCELLED" } }).catch(() => undefined);
+    const heldId = booking.id;
+    await prisma.booking.update({ where: { id: heldId }, data: { status: "CANCELLED" } }).catch((releaseError) => {
+      console.error(`Couldn't release payment link ${heldId} after a Stripe error`, releaseError);
+    });
     throw error;
   }
   return { booking, property, warning };

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
+  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
   const [properties, airbnbCounts] = await Promise.all([
     prisma.property.findMany({ orderBy: { id: "asc" }, include: { taxes: true } }),
     prisma.blockedDate.groupBy({

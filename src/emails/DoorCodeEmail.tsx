@@ -29,6 +29,8 @@ export interface DoorCodeEmailProps {
   entrySteps?: DoorCodeInstruction[];
   parkingInfo?: DoorCodeInstruction[];
   wifi?: { network: string; password: string } | null;
+  /** The house guide PDF; its link opens 24 hours before check-in, like the door code. */
+  guideUrl?: string | null;
   tripUrl: string;
   bookingReference: string;
   supportEmail: string;
@@ -104,6 +106,16 @@ export function DoorCodeEmail(props: DoorCodeEmailProps) {
             ]}
           />
         </>
+      ) : null}
+
+      {props.guideUrl ? (
+        <Paragraph>
+          Everything else about the home is in the{' '}
+          <Link href={props.guideUrl} className="text-[#101828] underline">
+            house guide
+          </Link>
+          .
+        </Paragraph>
       ) : null}
 
       <PrimaryButton href={props.tripUrl}>View your trip</PrimaryButton>

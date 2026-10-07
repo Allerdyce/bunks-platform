@@ -118,6 +118,8 @@ export interface BookingPrivateDetails {
   directions: { label: string; detail: string }[];
   skiLockerNotes: string | null;
   guideUrl: string | null;
+  /** Set while the house guide isn't open yet (it opens 24 hours before check-in). */
+  guideOpensAt: string | null;
   brochureUrl: string | null;
 }
 

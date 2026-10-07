@@ -47,6 +47,19 @@ export async function resetData() {
   await db.booking.deleteMany({});
   // Airbnb pricing off by default; its own scenario switches it on.
   await db.featureToggle.upsert({ where: { key: "airbnbPricing" }, update: { enabled: false }, create: { key: "airbnbPricing", enabled: false } });
+  // Fixtures the scenarios assume (the seed leaves them empty): each home reads its Airbnb calendar
+  // from the local fixture server, Steamboat charges a 10% lodging tax and Summerland none.
+  await db.property.update({
+    where: { slug: SB },
+    data: {
+      airbnbIcalUrl: "http://localhost:8765/steamboat.ics",
+      taxes: { deleteMany: {}, create: { name: "Lodging tax", rate: 0.1, appliesTo: ["nightly", "cleaning"] } },
+    },
+  });
+  await db.property.update({
+    where: { slug: SL },
+    data: { airbnbIcalUrl: "http://localhost:8765/summerland.ics", taxes: { deleteMany: {} } },
+  });
   clearEmails();
   restoreIcal();
 }

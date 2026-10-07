@@ -61,10 +61,12 @@ def("Happy path: book, pay, confirm", async () => {
   const receipt = mails.find((m) => /You're booked/.test(m.subject));
   check("H13", "booking confirmation itemises the 5% service fee $63.00 (not a flat fee)", receipt && receipt.html.includes("63.00"), receipt ? "receipt present, $63.00 missing" : "no receipt", "T-EM-09");
   check("H14", "booking confirmation itemises lodging tax $144.00", receipt && receipt.html.includes("144.00"), "tax line missing", "T-EM-09");
-  const lookup = await api(`/api/bookings/${r.json.bookingReference}?email=GUEST1@example.com`);
+  const lookup = await api(`/api/bookings/${r.json.bookingReference}`, { method: "POST", body: { email: "GUEST1@example.com" } });
   check("H15", "My Trips lookup works with ref + email (case-insensitive)", lookup.status === 200 && lookup.json?.booking?.status === "PAID", lookup.text);
-  const wrong = await api(`/api/bookings/${r.json.bookingReference}?email=someone@else.com`);
+  const wrong = await api(`/api/bookings/${r.json.bookingReference}`, { method: "POST", body: { email: "someone@else.com" } });
   check("H16", "lookup with wrong email is 404", wrong.status === 404, wrong.status);
+  const viaUrl = await api(`/api/bookings/${r.json.bookingReference}?email=guest1@example.com`);
+  check("H16b", "lookup no longer accepts the email in the URL", viaUrl.status === 405, viaUrl.status);
   const feedToken = (await api(`/api/admin/properties/settings`, { headers: { cookie: await adminCookie() } })).json;
   const url = JSON.stringify(feedToken).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   const feed = url ? await api(url) : { text: "" };
@@ -346,12 +348,12 @@ def("Input validation", async () => {
 def("Trip access (door codes)", async () => {
   await db.property.update({ where: { slug: SB }, data: { lockboxCode: "1234" } });
   const a = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "soon@example.com" });
-  const pending = await api(`/api/trip-access/${a.json.bookingReference}?email=soon@example.com`);
+  const pending = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "soon@example.com" } });
   check("TA1", "codes hidden while unpaid", pending.json?.available === false, pending.text);
   await pay(a);
-  const ok = await api(`/api/trip-access/${a.json.bookingReference}?email=soon@example.com`);
+  const ok = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "soon@example.com" } });
   check("TA2", "codes released for a paid stay starting tomorrow", ok.json?.available === true && ok.json?.codes?.lockboxCode === "1234", ok.text);
-  const bad = await api(`/api/trip-access/${a.json.bookingReference}?email=x@example.com`);
+  const bad = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "x@example.com" } });
   check("TA3", "wrong email → 404", bad.status === 404, bad.status);
   check("TA4", "response is no-store", /no-store/.test(ok.headers.get("cache-control") ?? ""), ok.headers.get("cache-control"));
 });
@@ -509,22 +511,58 @@ def("Address, Wi-Fi and guides only for paid guests", async () => {
   }
   const r = await book();
   const ref = r.json.bookingReference;
-  const unpaid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
+  const unpaid = await api(`/api/bookings/${ref}`, { method: "POST", body: { email: "guest1@example.com" } });
   check("PV3", "unpaid booking lookup has no address, Wi-Fi or guide", unpaid.status === 200 && !unpaid.json.booking.secure && !PRIVATE.test(unpaid.text), unpaid.text.slice(0, 300));
   await pay(r);
-  const paid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
-  const secure = paid.json?.booking?.secure;
-  check("PV4", "paid booking lookup returns address, Wi-Fi and directions", /6th Street/.test(secure?.address ?? "") && !!secure?.wifiSsid && secure?.directions?.length === 2, JSON.stringify(secure).slice(0, 300));
+  const lookup = async () => (await api(`/api/bookings/${ref}`, { method: "POST", body: { email: "guest1@example.com" } })).json?.booking?.secure;
+  const early = await lookup();
+  check("PV4", "paid booking lookup returns address, Wi-Fi and directions", /6th Street/.test(early?.address ?? "") && !!early?.wifiSsid && early?.directions?.length === 2, JSON.stringify(early).slice(0, 300));
+  const opensAt = new Date(Date.parse(`${STAY.checkIn}T00:00:00Z`) - 86_400_000).toISOString();
+  check("PV10", "weeks ahead, the lookup has no guide link (it holds the door codes) and says when it opens", early?.guideUrl === null && early?.guideOpensAt === opensAt, JSON.stringify({ guideUrl: early?.guideUrl, guideOpensAt: early?.guideOpensAt }));
+  // Move the stay to tomorrow: the guide opens, and the daily run sends arrival details with its link.
+  const at = (date) => new Date(`${date}T00:00:00Z`);
+  await db.booking.update({ where: { publicReference: ref }, data: { checkInDate: at(d(1)), checkOutDate: at(d(4)) } });
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  const secure = await lookup();
   const guide = secure?.guideUrl ? await fetch(`http://localhost:3000${secure.guideUrl}`) : null;
-  check("PV5", "signed guide link serves the PDF", guide?.status === 200 && guide.headers.get("content-type") === "application/pdf" && /no-store/.test(guide.headers.get("cache-control") ?? ""), guide?.status);
+  check("PV5", "from 24h before check-in the signed guide link serves the PDF", guide?.status === 200 && guide.headers.get("content-type") === "application/pdf" && /no-store/.test(guide.headers.get("cache-control") ?? ""), guide?.status);
   const tampered = secure?.guideUrl?.replace(/sig=[0-9a-f]/, (m) => (m.endsWith("0") ? "sig=1" : "sig=0"));
   check("PV6", "tampered guide link is refused", (await api(tampered ?? "/api/guides/x/guide")).status === 403, tampered);
   const otherSlug = secure?.guideUrl?.replace(SB, SL);
   check("PV6b", "a link can't be reused for another home", (await api(otherSlug ?? "/api/guides/x/guide")).status === 403, otherSlug);
-  const mailHtml = emails().map((m) => m.html).join("\n");
-  check("PV7", "guest emails link the signed guide, not a public PDF", mailHtml.includes("/api/guides/") && !/Steamboat%20|Lillie%20Guidebook/.test(mailHtml), "no signed guide link in emails");
+  const arrival = emails().find((m) => m.to === "guest1@example.com" && /^Arrival details/.test(m.subject));
+  check("PV7", "arrival details link the signed guide, not a public PDF", arrival?.html.includes("/api/guides/") && !/Steamboat%20(Welcome|Brochure)|Lillie%20Guidebook/.test(arrival.html), arrival ? "no signed guide link" : "no arrival email");
   await db.booking.update({ where: { publicReference: ref }, data: { status: "CANCELLED" } });
   check("PV8", "guide link stops working once the booking is cancelled", (await api(secure?.guideUrl ?? "/api/guides/x/guide")).status === 403, "still served");
+  // Paid again but weeks ahead: the same link explains when it opens.
+  await db.booking.update({ where: { publicReference: ref }, data: { status: "PAID", checkInDate: at(STAY.checkIn), checkOutDate: at(STAY.checkOut) } });
+  const tooEarly = await api(secure?.guideUrl ?? "/api/guides/x/guide");
+  check("PV11", "a guide link opened before the window says when it opens", tooEarly.status === 403 && /opens on/.test(tooEarly.text), `${tooEarly.status} ${tooEarly.text.slice(0, 160)}`);
+});
+
+def("Public endpoints reject bad input", async () => {
+  const badJson = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: "{not json" });
+  check("IN1", "availability check with broken JSON is a 400, not a 500", badJson.status === 400, `${badJson.status} ${badJson.text.slice(0, 120)}`);
+  const missing = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: 20261005 } });
+  check("IN2", "availability check without string dates is a 400", missing.status === 400, missing.status);
+  const calc = await api("/api/tools/sb-tot/calculate", { method: "POST", body: { grossRent: 1000, deductions31Plus: 0, deductionsFederal: 0, roomRevenueOnlyForTBID: 1000, totRate: 0.14 } });
+  check("IN3", "tax calculator still works", calc.status === 200 && calc.json?.line8_totalDue === 160, calc.text.slice(0, 200));
+  const calcBad = await api("/api/tools/sb-tot/calculate", { method: "POST", body: { grossRent: "lots", totRate: 7 } });
+  check("IN4", "tax calculator rejects non-numbers and a rate above 100%", calcBad.status === 400, `${calcBad.status} ${calcBad.text.slice(0, 120)}`);
+  const pdfBad = await api("/api/tools/sb-tot/pdf", { method: "POST", body: { reportingMonth: 5 } });
+  check("IN5", "tax PDF rejects an incomplete form", pdfBad.status === 400, `${pdfBad.status} ${pdfBad.text.slice(0, 120)}`);
+});
+
+def("Stripe amount mismatch alerts ops", async () => {
+  const r = await book({ guestEmail: "mismatch@example.com" });
+  // The booking total changes after the payment was created, so Stripe's amount no longer matches.
+  await db.booking.update({ where: { id: r.json.bookingId }, data: { totalPriceCents: { increment: 100 } } });
+  clearEmails();
+  await pay(r);
+  const booking = await db.booking.findUnique({ where: { id: r.json.bookingId } });
+  const alert = emails().find((m) => /Stripe amount doesn't match/.test(m.subject));
+  check("SM1", "the booking is still confirmed and ops get an alert", booking?.status === "PAID" && !!alert && alert.to !== "mismatch@example.com", `${booking?.status} ${emails().map((m) => m.subject).join(" | ")}`);
 });
 
 def("Airbnb price check (comparison only)", async () => {
