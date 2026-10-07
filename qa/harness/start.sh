@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="${1:-/tmp/bunks-qa}"
 mkdir -p "$WORK/ical" "$WORK/emails"
-cp "$ROOT"/qa/fixtures/ical/*.ics "$WORK/ical/"
+# The iCal fixtures are templates with dates relative to today (qa/e2e/dates.mjs).
+node "$ROOT/qa/e2e/dates.mjs" "$WORK/ical"
 export DATABASE_URL="${QA_DATABASE_URL:-postgresql://bunks:bunks@localhost:5432/bunks_qa}"
 case "$DATABASE_URL" in *localhost*|*127.0.0.1*) ;; *) echo "Refusing: QA DATABASE_URL must be local" >&2; exit 1;; esac
 export STRIPE_SECRET_KEY=sk_test_mock STRIPE_WEBHOOK_SECRET=whsec_localqa

@@ -9,7 +9,7 @@ fs.mkdirSync(SHOTS, { recursive: true });
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 // External hosts (Stripe.js, fonts, map tiles, images) are unreachable in the sandbox; ignore their failures.
-const IGNORED = /Failed to load Stripe\.js|js\.stripe\.com|m\.stripe|fonts\.(googleapis|gstatic)|unsplash|googletagmanager|vercel-insights|_vercel|open-meteo|images\.|api\.mapbox/;
+const IGNORED = /Failed to load Stripe\.js|js\.stripe\.com|m\.stripe|fonts\.(googleapis|gstatic)|unsplash|googletagmanager|vercel-insights|_vercel|open-meteo|images\./;
 
 async function newPage(viewport, timezoneId = "America/Denver") {
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1, timezoneId });

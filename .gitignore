@@ -40,9 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
-
 # local debug artifacts (may contain secrets / PII)
 *.log
 .claude/
-qa/results/*scratch*.json
+# QA run output; put results in the PR description instead
+qa/results/
+
+# Local-only: QR codes and the Wi-Fi sign contain the Wi-Fi password
+qr-codes/
+tmp/

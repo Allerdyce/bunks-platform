@@ -32,15 +32,52 @@ const MIN_PRODUCTION_SECRET_LENGTH = 32;
 const DEV_ADMIN_PASSWORD = "bunks-dev-password";
 const DEV_SESSION_SECRET = "bunks-dev-secret";
 
+// Shared password for anyone on ADMIN_EMAILS without their own entry in ADMIN_PASSWORD_HASHES.
 const getAdminPassword = (): string | null => {
   const password = process.env.ADMIN_PASSWORD;
   if (password) return password;
   return IS_PRODUCTION ? null : DEV_ADMIN_PASSWORD;
 };
 
+// Per-person passwords: ADMIN_PASSWORD_HASHES="email:scrypt.<salt>.<hash>,…", made by
+// scripts/admin-password.mjs (keep the scrypt settings in step with it). Someone listed here
+// can only sign in with their own password, never the shared one.
+const SCRYPT_KEY_LENGTH = 64;
+type PasswordHash = { salt: Buffer; hash: Buffer };
+
+const getAdminPasswordHashes = () => {
+  const hashes = new Map<string, PasswordHash | null>();
+  for (const entry of (process.env.ADMIN_PASSWORD_HASHES ?? "").split(",")) {
+    if (!entry.trim()) continue;
+    const separator = entry.indexOf(":");
+    const email = normalizeEmail(entry.slice(0, Math.max(separator, 0)));
+    const [scheme, salt, hash] = entry.slice(separator + 1).trim().split(".");
+    if (!email) {
+      console.error("[adminAuth] Skipping an ADMIN_PASSWORD_HASHES entry with no email.");
+      continue;
+    }
+    const parsed =
+      scheme === "scrypt" && salt && hash
+        ? { salt: Buffer.from(salt, "base64url"), hash: Buffer.from(hash, "base64url") }
+        : null;
+    if (!parsed || parsed.hash.length !== SCRYPT_KEY_LENGTH) {
+      // Fail closed: a damaged entry locks that person out rather than falling back to the shared password.
+      console.error(`[adminAuth] ADMIN_PASSWORD_HASHES entry for ${email} is malformed; that login is disabled.`);
+      hashes.set(email, null);
+      continue;
+    }
+    hashes.set(email, parsed);
+  }
+  return hashes;
+};
+
+const scryptAsync = (password: string, salt: Buffer) =>
+  new Promise<Buffer>((resolve, reject) =>
+    crypto.scrypt(password, salt, SCRYPT_KEY_LENGTH, (error, key) => (error ? reject(error) : resolve(key)))
+  );
+
 /**
  * Returns the admin session secret, or null when it is missing/too weak in production.
- * Also used by cleanerAuth to derive a distinct cleaner key.
  */
 export const getAdminSessionSecret = (): string | null => {
   const secret = process.env.ADMIN_SESSION_SECRET;
@@ -52,11 +89,12 @@ export const getAdminSessionSecret = (): string | null => {
 };
 
 /** True when admin auth has everything it needs to issue and verify sessions. */
-export const isAdminAuthConfigured = () => Boolean(getAdminPassword() && getAdminSessionSecret());
+export const isAdminAuthConfigured = () =>
+  Boolean((getAdminPassword() || getAdminPasswordHashes().size) && getAdminSessionSecret());
 
 export const logAdminAuthConfigError = () => {
-  if (!getAdminPassword()) {
-    console.error("[adminAuth] ADMIN_PASSWORD is not set; admin login is disabled.");
+  if (!getAdminPassword() && !getAdminPasswordHashes().size) {
+    console.error("[adminAuth] Neither ADMIN_PASSWORD_HASHES nor ADMIN_PASSWORD is set; admin login is disabled.");
   }
   if (!getAdminSessionSecret()) {
     console.error(
@@ -134,11 +172,19 @@ const sha256 = (value: string) => crypto.createHash("sha256").update(value, "utf
 
 const safeEqualStrings = (a: string, b: string) => crypto.timingSafeEqual(sha256(a), sha256(b));
 
-export const isValidAdminCredentials = (email: string, password: string) => {
-  const expectedPassword = getAdminPassword();
-  if (!expectedPassword || !getAdminSessionSecret()) return false;
-  const passwordOk = safeEqualStrings(password, expectedPassword);
-  return ADMIN_EMAILS.includes(normalizeEmail(email)) && passwordOk;
+export const isValidAdminCredentials = async (email: string, password: string) => {
+  if (!getAdminSessionSecret()) return false;
+  const normalizedEmail = normalizeEmail(email);
+  const hashes = getAdminPasswordHashes();
+  let passwordOk = false;
+  if (hashes.has(normalizedEmail)) {
+    const stored = hashes.get(normalizedEmail);
+    if (stored) passwordOk = crypto.timingSafeEqual(await scryptAsync(password, stored.salt), stored.hash);
+  } else {
+    const sharedPassword = getAdminPassword();
+    passwordOk = Boolean(sharedPassword) && safeEqualStrings(password, sharedPassword!);
+  }
+  return ADMIN_EMAILS.includes(normalizedEmail) && passwordOk;
 };
 
 export const readSessionFromRequest = (request: NextRequest) =>

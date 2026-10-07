@@ -3,6 +3,7 @@ import { rateLimitResponse } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 import { guideUrlForBooking, signedGuidePath } from "@/lib/guideLinks";
 import { mapsUrlFor, privateDetailsFor, wifiFor } from "@/lib/privatePropertyDetails";
+import { isTripAccessOpen, tripAccessWindow } from "@/lib/tripAccessWindow";
 import type { BookingPrivateDetails } from "@/types";
 
 export const runtime = "nodejs";
@@ -21,7 +22,8 @@ function normalizeBookingReference(rawValue: string | undefined) {
   return alphanumeric;
 }
 
-export async function GET(
+/** Trip lookup: POST { email } to /api/bookings/<reference>. The email stays out of URLs and logs. */
+export async function POST(
   req: NextRequest,
   context: { params: Promise<{ bookingId: string }> },
 ) {
@@ -32,7 +34,8 @@ export async function GET(
     const resolvedParams = await context.params;
 
     const bookingReference = normalizeBookingReference(resolvedParams?.bookingId);
-    const email = req.nextUrl.searchParams.get("email");
+    const body = (await req.json().catch(() => ({}))) as { email?: unknown };
+    const email = typeof body.email === "string" ? body.email.trim() : "";
 
     if (!bookingReference || !email) {
       return NextResponse.json({ error: "bookingReference and email are required" }, { status: 400 });
@@ -63,7 +66,11 @@ export async function GET(
         parkingNotes: booking.property.parkingNotes?.trim() || details?.parkingNotes || null,
         directions: details?.directions ?? [],
         skiLockerNotes: details?.skiLockerNotes ?? null,
-        guideUrl: guideUrlForBooking(booking, booking.property.checkInGuideUrl, booking.property.guestBookUrl),
+        // The house guide has the door codes in it: shown from 24 hours before check-in.
+        guideUrl: isTripAccessOpen(booking)
+          ? guideUrlForBooking(booking, booking.property.checkInGuideUrl, booking.property.guestBookUrl)
+          : null,
+        guideOpensAt: isTripAccessOpen(booking) ? null : tripAccessWindow(booking).opensAt.toISOString(),
         brochureUrl: signedGuidePath(booking, "brochure"),
       };
     }

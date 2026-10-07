@@ -1,7 +1,8 @@
 import { MetadataRoute } from "next";
+import { getAppBaseUrl } from "@/lib/url";
 
 export default function robots(): MetadataRoute.Robots {
-    const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com";
+    const BASE_URL = getAppBaseUrl();
     return {
         rules: {
             userAgent: "*",

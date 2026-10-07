@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import { z } from 'zod';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
-// retrigger build
 export const runtime = 'nodejs';
 
 type PdfRequest = {
@@ -29,32 +30,50 @@ type PdfRequest = {
 // Helper: Format currency without dollar sign for form fields (or with, depending on field type. Usually numeric string is safest)
 const fmt = (num: number) => (Number.isFinite(Number(num)) ? Number(num).toFixed(2) : '0.00');
 
-// Helper to get value from body (JSON or FormData)
-async function getBodyData(req: NextRequest): Promise<PdfRequest> {
+// The form's standard font only covers Latin-1, so other characters would make pdf-lib throw.
+const text = (max: number) =>
+    z.string().max(max).transform((value) => value.replace(/[^\x20-\x7E\xA0-\xFF]/g, '').trim());
+const amount = z.coerce.number().min(0).max(1_000_000_000);
+const pdfSchema = z.object({
+    reportingMonth: text(40),
+    operatorName: text(120),
+    situsAddress: text(200),
+    city: text(80),
+    state: text(40),
+    zip: text(20),
+    certificateNumber: text(60).optional(),
+    line1_grossRent: amount,
+    line2_deductions31Plus: amount,
+    line3_deductionsFederal: amount,
+    line4_totalDeductions: amount,
+    line5_taxableRents: amount,
+    line6_tot: amount,
+    line7_tbidBase: amount,
+    line7_tbidAmount: amount,
+    line8_totalDue: amount,
+}) satisfies z.ZodType<PdfRequest, unknown>;
+
+// The wizard posts a native form (FormData); JSON also works.
+async function getBodyData(req: NextRequest): Promise<unknown> {
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
         return await req.json();
-    } else {
-        const formData = await req.formData();
-        const data: any = {};
-        formData.forEach((value, key) => {
-            // Convert numbers
-            if (['grossRent', 'deductions31Plus', 'deductionsFederal', 'roomRevenueOnlyForTBID',
-                'line1_grossRent', 'line2_deductions31Plus', 'line3_deductionsFederal', 'line4_totalDeductions',
-                'line5_taxableRents', 'line6_tot', 'line7_tbidBase', 'line7_tbidAmount', 'line8_totalDue'].includes(key)) {
-                data[key] = Number(value);
-            } else {
-                data[key] = value.toString();
-            }
-        });
-        return data as PdfRequest;
     }
+    const formData = await req.formData();
+    return Object.fromEntries(Array.from(formData.entries(), ([key, value]) => [key, value.toString()]));
 }
 
 export async function POST(req: NextRequest) {
+    const limited = rateLimitResponse(req, 'sb-tot-pdf', 20, 10 * 60_000);
+    if (limited) return limited;
+
     let body: PdfRequest;
     try {
-        body = await getBodyData(req);
+        const parsed = pdfSchema.safeParse(await getBodyData(req));
+        if (!parsed.success) {
+            return NextResponse.json({ error: 'Please check the form and try again.' }, { status: 400 });
+        }
+        body = parsed.data;
     } catch {
         return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
     }

@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import {
   calculateNights,
@@ -8,7 +7,6 @@ import {
   formatStayDates,
   renderEmail,
   resolveBookingReference,
-  resolveCheckInGuideUrl,
   resolveHostSupportEmail,
   sendEmail,
   logEmailSend,
@@ -52,7 +50,6 @@ export async function sendBookingConfirmation(bookingId: number) {
       chargeLines={chargeLines.map((line) => ({ label: line.label, amount: formatCurrencyFromCents(line.amountCents) }))}
       totalPaid={formatCurrencyFromCents(booking.totalPriceCents)}
       tripUrl={tripUrlFor(booking)}
-      guideUrl={resolveCheckInGuideUrl(booking)}
       cancellationPolicy={CANCELLATION_POLICY.summary}
       supportEmail={resolveHostSupportEmail(booking)}
     />

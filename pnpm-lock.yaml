@@ -26,9 +26,6 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
-      file-saver:
-        specifier: ^2.0.5
-        version: 2.0.5
       ical:
         specifier: ^0.8.0
         version: 0.8.0
@@ -63,12 +60,6 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.17
-      '@types/date-fns':
-        specifier: ^2.6.3
-        version: 2.6.3
-      '@types/file-saver':
-        specifier: ^2.0.7
-        version: 2.0.7
       '@types/ical':
         specifier: ^0.8.3
         version: 0.8.3
@@ -970,15 +961,8 @@ packages:
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
-  '@types/date-fns@2.6.3':
-    resolution: {integrity: sha512-Ke1lw2Ni1t/wMUoLtKFmSNCLozcTBd6vmMqFP4hRzXn6qzkNt97bPAX0x5Y/c15DP43kKvwW1ycStD5+43jVQA==}
-    deprecated: This is a stub types definition. date-fns provides its own type definitions, so you do not need this installed.
-
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
-
-  '@types/file-saver@2.0.7':
-    resolution: {integrity: sha512-dNKVfHd/jk0SkR/exKGj2ggkB45MAkzvWCaqLUUgkyjITkGNzH8H+yUwr+BLJUBjZOe9w8X3wgmXhZDRg1ED6A==}
 
   '@types/ical@0.8.3':
     resolution: {integrity: sha512-qPejGORaXOstmqyKzp0Qw9nXDPiWiahiJJcx4zMB0zJVg0rLfJ6bDip/naqagEqYTjKl/LI91399hR8zFwRJ5A==}
@@ -1688,9 +1672,6 @@ packages:
   file-entry-cache@8.0.0:
     resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
     engines: {node: '>=16.0.0'}
-
-  file-saver@2.0.5:
-    resolution: {integrity: sha512-P9bmyZ3h/PRG+Nzga+rbdI4OEpNDzAVyy74uVO9ATgzLK6VtAsYybF/+TOCvrc0MO793d6+42lLyZTw7/ArVzA==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -3482,13 +3463,7 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@types/date-fns@2.6.3':
-    dependencies:
-      date-fns: 4.1.0
-
   '@types/estree@1.0.8': {}
-
-  '@types/file-saver@2.0.7': {}
 
   '@types/ical@0.8.3':
     dependencies:
@@ -4375,8 +4350,6 @@ snapshots:
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
-
-  file-saver@2.0.5: {}
 
   fill-range@7.1.1:
     dependencies:

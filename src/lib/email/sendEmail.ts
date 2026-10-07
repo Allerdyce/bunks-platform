@@ -25,16 +25,19 @@ const MARKETING_EMAIL_PAUSED = process.env.EMAIL_SENDING_PAUSED !== 'false';
 // Emergency stop for ALL outbound email (transactional included): set EMAIL_PAUSE_ALL=true.
 const ALL_EMAIL_PAUSED = process.env.EMAIL_PAUSE_ALL === 'true';
 
+/** True when a marketing email would be held back, so callers can skip the work entirely. */
+export const isMarketingEmailPaused = () => ALL_EMAIL_PAUSED || MARKETING_EMAIL_PAUSED;
+
 export async function sendEmail(options: SendEmailOptions) {
   const category = options.category ?? 'transactional';
 
   if (ALL_EMAIL_PAUSED) {
-    console.info(`[email] All sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
+    console.info(`[email] All sending paused; skipped "${options.subject}"`);
     throw new Error('Email sending is paused (EMAIL_PAUSE_ALL).');
   }
 
   if (category === 'marketing' && MARKETING_EMAIL_PAUSED) {
-    console.info(`[email] Marketing sending paused; skipped "${options.subject}" to ${normalizeRecipients(options.to)}`);
+    console.info(`[email] Marketing sending paused; skipped "${options.subject}"`);
     throw new Error('Marketing email sending is paused (EMAIL_SENDING_PAUSED).');
   }
 

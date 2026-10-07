@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Field 'enabled' must be a boolean" }, { status: 400 });
   }
 
-  if (!(key in FEATURE_FLAG_DEFINITIONS)) {
+  if (!Object.hasOwn(FEATURE_FLAG_DEFINITIONS, key)) {
     return NextResponse.json({ error: "Unknown feature key" }, { status: 400 });
   }
 

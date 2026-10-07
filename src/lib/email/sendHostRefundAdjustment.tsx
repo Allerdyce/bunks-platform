@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { HostRefundAdjustmentEmail } from '@/emails/HostRefundAdjustmentEmail';
 import { adminBookingsUrl, formatCurrencyFromCents, formatStayDates, renderEmail, resolveBookingReference, resolveHostSupportEmail } from '@/lib/email';

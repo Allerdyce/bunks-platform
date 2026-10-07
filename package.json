@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint",
-    "preview:emails": "tsx scripts/render-email-previews.tsx"
+    "lint": "eslint"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
@@ -16,7 +15,6 @@
     "@stripe/react-stripe-js": "^5.4.0",
     "@stripe/stripe-js": "^8.5.2",
     "date-fns": "^4.1.0",
-    "file-saver": "^2.0.5",
     "ical": "^0.8.0",
     "lucide-react": "^0.453.0",
     "next": "16.0.10",
@@ -30,8 +28,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/date-fns": "^2.6.3",
-    "@types/file-saver": "^2.0.7",
     "@types/ical": "^0.8.3",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -1,4 +1,4 @@
-// src/app/api/stripe/webhook/route.ts
+// Stripe webhook: POST /api/stripe
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripeClient } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
@@ -52,8 +52,9 @@ export async function POST(req: NextRequest) {
     // IMPORTANT: use raw text body for Stripe signature verification
     const rawBody = await req.text();
     event = stripeClient.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: any) {
-    console.error('Error verifying Stripe webhook:', err);
+  } catch (err) {
+    // Usually scanners or a wrong secret; no stack needed.
+    console.warn('Rejected Stripe webhook:', err instanceof Error ? err.message : err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -73,9 +74,23 @@ export async function POST(req: NextRequest) {
       }
 
       if (paymentIntent.amount_received !== booking.totalPriceCents) {
+        // The booking is still confirmed (the guest has paid), but someone should look at it.
         console.error(
           `Stripe amount mismatch for booking ${booking.id}: received ${paymentIntent.amount_received}, expected ${booking.totalPriceCents}`
         );
+        try {
+          await sendEmail({
+            to: OPS_ALERT_EMAIL,
+            subject: `Check booking ${booking.publicReference ?? booking.id}: Stripe amount doesn't match`,
+            html:
+              `<p>Stripe received ${formatCurrencyFromCents(paymentIntent.amount_received)} for booking ` +
+              `${escapeHtml(booking.publicReference ?? String(booking.id))}, but the booking total is ` +
+              `${formatCurrencyFromCents(booking.totalPriceCents)}. The booking was confirmed as normal. ` +
+              `Compare the payment in Stripe (${escapeHtml(paymentIntentId)}) with the booking in Admin → Bookings.</p>`,
+          });
+        } catch (alertError) {
+          console.error('Failed to send amount mismatch alert', alertError);
+        }
       }
 
       // Re-read Airbnb (if not synced in the last minute) so a reservation made there while the
@@ -123,24 +138,40 @@ export async function POST(req: NextRequest) {
 
       if (outcome === 'conflict') {
         console.error(`Booking ${booking.id} paid after its dates became unavailable; refunding.`);
-        await stripeClient.refunds.create(
-          { payment_intent: paymentIntentId, reason: 'duplicate' },
-          { idempotencyKey: `conflict-refund-${booking.id}` }
-        );
+        let refundError: unknown = null;
+        try {
+          await stripeClient.refunds.create(
+            { payment_intent: paymentIntentId, reason: 'duplicate' },
+            { idempotencyKey: `conflict-refund-${booking.id}` }
+          );
+        } catch (error) {
+          refundError = error;
+          console.error(`Automatic refund failed for booking ${booking.id}`, error);
+        }
         const property = await prisma.property.findUnique({ where: { id: booking.propertyId } });
         const alertTo = property?.hostSupportEmail || OPS_ALERT_EMAIL;
+        const reference = booking.publicReference ?? booking.id;
+        const stay =
+          `${escapeHtml(booking.guestName)} (${escapeHtml(booking.guestEmail)}) paid for ${escapeHtml(property?.name ?? 'a property')} ` +
+          `${booking.checkInDate.toISOString().slice(0, 10)} → ${booking.checkOutDate.toISOString().slice(0, 10)}, ` +
+          `but those dates were no longer available when the payment completed.`;
         try {
           await sendEmail({
             to: alertTo,
-            subject: `Action needed: booking ${booking.publicReference ?? booking.id} refunded (dates unavailable)`,
-            html: `<p>${escapeHtml(booking.guestName)} (${escapeHtml(booking.guestEmail)}) paid for ${escapeHtml(property?.name ?? 'a property')} ` +
-              `${booking.checkInDate.toISOString().slice(0, 10)} → ${booking.checkOutDate.toISOString().slice(0, 10)}, ` +
-              `but those dates were no longer available when the payment completed. The payment was refunded automatically. ` +
-              `Please contact the guest.</p>`,
+            subject: refundError
+              ? `Urgent: booking ${reference} paid for unavailable dates, and the automatic refund failed`
+              : `Action needed: booking ${reference} refunded (dates unavailable)`,
+            html: refundError
+              ? `<p>${stay} The automatic refund failed: ${escapeHtml(refundError instanceof Error ? refundError.message : String(refundError))}. ` +
+                `Stripe will retry, and you'll get another email each time it fails. If this keeps happening, refund ` +
+                `${escapeHtml(paymentIntentId)} in Stripe yourself and contact the guest.</p>`
+              : `<p>${stay} The payment was refunded automatically. Please contact the guest.</p>`,
           });
         } catch (alertError) {
           console.error('Failed to send booking conflict alert', alertError);
         }
+        // Stripe retries the webhook; the refund's idempotency key makes the retry safe.
+        if (refundError) throw refundError;
         try {
           await sendEmail({
             to: booking.guestEmail,
@@ -262,7 +293,7 @@ export async function POST(req: NextRequest) {
     // You can handle other event types here later
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error handling Stripe webhook:', err);
     return NextResponse.json({ error: 'Webhook handler error' }, { status: 500 });
   }

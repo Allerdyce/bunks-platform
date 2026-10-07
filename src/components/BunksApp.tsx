@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -46,15 +45,15 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isMessagesRoute = pathname?.startsWith("/my-trips") ?? false;
+  const isTripsRoute = pathname?.startsWith("/my-trips") ?? false;
   const bookingSection: BookingPortalSection | null = useMemo(() => {
-    if (!isMessagesRoute || !pathname) return null;
+    if (!isTripsRoute || !pathname) return null;
     // /my-trips, /my-trips/<section> and /my-trips/<ref>/<section>
     const section = pathname.split("/").filter(Boolean).pop();
     if (section === "guide") return "guide";
-    // Guest messaging is email-only; old /inbox links land on Essentials.
+    // Anything else (including old /inbox links, redirected in next.config.ts) lands on Essentials.
     return "essential";
-  }, [isMessagesRoute, pathname]);
+  }, [isTripsRoute, pathname]);
 
   const propertyIndex = useMemo(() => new Map(properties.map((p) => [p.slug, p])), [properties]);
 
@@ -136,7 +135,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     const match = pathname.match(/\/my-trips\/([A-Z0-9-]+)/i);
     if (!match) return null;
     const candidate = match[1].toLowerCase();
-    if (["essential", "guide", "inbox"].includes(candidate)) {
+    if (["essential", "guide"].includes(candidate)) {
       return null;
     }
     return match[1].toUpperCase();
@@ -173,8 +172,6 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       if (targetView?.startsWith("booking-")) {
         if (targetView === "booking-guide") {
           basePath = `${prefix}/guide`;
-        } else if (targetView === "booking-messages") {
-          basePath = `${prefix}/inbox`;
         } else {
           basePath = `${prefix}/essential`;
         }
@@ -277,11 +274,9 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
 
 
   useEffect(() => {
-    if (isMessagesRoute) {
+    if (isTripsRoute) {
       if (selectedProperty) {
         setSelectedProperty(null);
-        // Don't reset booking state here unnecessarily if we want to return? 
-        // Actually for messages route we probably don't care about the cart.
       }
       const targetView: ViewState = bookingSection ? (`booking-${bookingSection}` as ViewState) : "booking-details";
       if (view !== targetView) {
@@ -301,7 +296,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     if (activePropertySlug && !viewParam) {
       return;
     }
-    const allowedViews: ViewState[] = ["home", "about", "booking", "booking-details", "booking-essential", "booking-guide", "booking-messages"];
+    const allowedViews: ViewState[] = ["home", "about", "booking", "booking-details", "booking-essential", "booking-guide"];
 
     if (viewParam && allowedViews.includes(viewParam)) {
       if (viewParam !== view) {
@@ -333,7 +328,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
       }
       setView("home");
     }
-  }, [activePropertySlug, isMessagesRoute, searchParams, view, selectedProperty, resetBookingState, bookingSection, propertyIndex]);
+  }, [activePropertySlug, isTripsRoute, searchParams, view, selectedProperty, resetBookingState, bookingSection, propertyIndex]);
 
   useEffect(() => {
     if (view === "booking") return;
@@ -345,7 +340,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
   }, [view, selectedProperty]);
 
   const handleNavigate = (target: ViewState, payload?: unknown) => {
-    if (["home", "listings", "about", "booking-details", "booking-essential", "booking-guide", "booking-messages"].includes(target)) {
+    if (["home", "listings", "about", "booking-details", "booking-essential", "booking-guide"].includes(target)) {
       setSelectedProperty(null);
       resetBookingState();
     }
@@ -375,8 +370,7 @@ export function BunksApp({ properties: hydratedProperties }: BunksAppProps) {
     if (
       target === "booking-details" ||
       target === "booking-essential" ||
-      target === "booking-guide" ||
-      target === "booking-messages"
+      target === "booking-guide"
     ) {
       updateUrlState({ slug: null, view: target, post: null }, "replace", { scroll: false });
     }

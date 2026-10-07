@@ -273,7 +273,9 @@ export async function POST(req: NextRequest) {
         // Best effort: cancel PaymentIntents of the holds we released.
         for (const released of result.released) {
           if (released.stripePaymentIntentId.startsWith('pi_')) {
-            await stripe.paymentIntents.cancel(released.stripePaymentIntentId).catch(() => undefined);
+            await stripe.paymentIntents.cancel(released.stripePaymentIntentId).catch((error) => {
+              console.error(`Couldn't cancel the Stripe payment of released hold ${released.id}`, error);
+            });
           }
         }
       } catch (creationError) {
@@ -343,7 +345,9 @@ export async function POST(req: NextRequest) {
         clientSecret = paymentIntent.client_secret;
       } catch (stripeError) {
         // Release the hold so the dates aren't blocked by a checkout that can't be paid.
-        await prisma.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } }).catch(() => undefined);
+        await prisma.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } }).catch((error) => {
+          console.error(`Couldn't release hold ${booking.id} after a Stripe error`, error);
+        });
         throw stripeError;
       }
     }

@@ -48,20 +48,15 @@ export async function GET(request: NextRequest) {
 
     const payload = properties.map((property) => {
       const canonicalSlug = SLUG_ALIASES[property.slug] ?? property.slug;
-      const typedProperty = property as typeof property & {
-        weekdayRate?: number | null;
-        weekendRate?: number | null;
-        serviceFee?: number | null;
-      };
 
       return {
         id: property.id,
         name: propertyNameMap.get(canonicalSlug) ?? propertyNameMap.get(property.slug) ?? property.name,
         slug: property.slug,
-        weekdayRate: typedProperty.weekdayRate ?? property.baseNightlyRate,
-        weekendRate: typedProperty.weekendRate ?? property.baseNightlyRate,
+        weekdayRate: property.weekdayRate,
+        weekendRate: property.weekendRate,
         cleaningFee: property.cleaningFee,
-        serviceFee: typedProperty.serviceFee ?? 2000,
+        serviceFee: property.serviceFee,
         currency: "USD",
         specialRates: property.specialRates.map((rate) => ({
           id: rate.id,

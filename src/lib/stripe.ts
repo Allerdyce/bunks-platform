@@ -12,8 +12,8 @@ function createStripeClient() {
     throw new Error('STRIPE_SECRET_KEY is not set');
   }
 
-  // STRIPE_API_HOST/PORT/PROTOCOL let local QA point the client at stripe-mock.
-  const host = process.env.STRIPE_API_HOST;
+  // STRIPE_API_HOST/PORT/PROTOCOL let local QA point the client at stripe-mock; never in production.
+  const host = process.env.NODE_ENV === 'production' ? undefined : process.env.STRIPE_API_HOST;
   return new Stripe(secret, {
     apiVersion: STRIPE_API_VERSION,
     ...(host

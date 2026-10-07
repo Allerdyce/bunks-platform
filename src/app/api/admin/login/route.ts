@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
 
-  if (!isValidAdminCredentials(email, password)) {
+  if (!(await isValidAdminCredentials(email, password))) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

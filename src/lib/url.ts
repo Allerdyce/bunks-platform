@@ -1,4 +1,5 @@
-const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunks.com').replace(/\/+$/, '');
+// The site's address for links in emails, metadata and feeds. www is canonical: bunks.com redirects to it.
+const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.bunks.com').replace(/\/+$/, '');
 
 function hasProtocol(url: string) {
   return /^[a-z][a-z0-9+.-]*:/i.test(url);

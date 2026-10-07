@@ -1,5 +1,4 @@
 import { notAClaim } from '@/lib/email/claims';
-import * as React from 'react';
 import type { Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
@@ -8,6 +7,7 @@ import {
   logEmailSend,
   renderEmail,
   resolveBookingReference,
+  resolveCheckInGuideUrl,
   resolveHostSupportEmail,
   sendEmail,
   stayTimeLabels,
@@ -111,6 +111,7 @@ export async function sendDoorCodeEmail(bookingId: number, options: { force?: bo
       entrySteps={access.entrySteps}
       parkingInfo={access.parkingInfo}
       wifi={wifi ? { network: wifi.ssid, password: wifi.password } : null}
+      guideUrl={resolveCheckInGuideUrl(booking)}
       tripUrl={tripUrlFor(booking)}
       bookingReference={resolveBookingReference(booking)}
       supportEmail={resolveHostSupportEmail(booking)}

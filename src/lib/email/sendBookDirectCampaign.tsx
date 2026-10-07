@@ -1,5 +1,4 @@
 
-import * as React from 'react';
 import { renderEmail, sendEmail } from '@/lib/email';
 import { BookDirectCampaignEmail } from '@/emails/BookDirectCampaignEmail';
 import { MessageStream } from '@/lib/email/postmark';
@@ -13,8 +12,6 @@ export async function sendBookDirectCampaign(
     const html = await renderEmail(
         <BookDirectCampaignEmail
             guestName={guestName}
-            ctaUrl={process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"}
-            baseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://bunks.com"}
         />
     );
 
@@ -25,14 +22,12 @@ export async function sendBookDirectCampaign(
             html,
             category: 'marketing',
             messageStream: MessageStream.broadcast,
-            // Optional: Tag this for analytics if your provider supports it
-            // headers: { 'X-Campaign-Id': 'book-direct-v1' } 
         });
 
-        console.log(`[${EMAIL_TYPE}] Sent to ${toEmail}`);
+        console.log(`[${EMAIL_TYPE}] Sent`);
         return response;
     } catch (error) {
-        console.error(`[${EMAIL_TYPE}] Failed to send to ${toEmail}`, error);
+        console.error(`[${EMAIL_TYPE}] Failed to send`, error);
         throw error;
     }
 }

@@ -126,6 +126,11 @@ export async function POST(
 
     } catch (error) {
         console.error("Cancellation error:", error);
+        // Admin-only route: show Stripe's reason (e.g. already refunded) so the admin knows what to do.
+        const stripeType = (error as { type?: unknown })?.type;
+        if (typeof stripeType === "string" && stripeType.startsWith("Stripe") && error instanceof Error) {
+            return NextResponse.json({ error: `Stripe said: ${error.message}` }, { status: 502 });
+        }
         return NextResponse.json({ error: "Cancellation failed" }, { status: 500 });
     }
 }

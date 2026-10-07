@@ -1,10 +1,9 @@
-import * as React from 'react';
 import { prisma } from '@/lib/prisma';
 import { CancellationConfirmationEmail } from '@/emails/CancellationConfirmationEmail';
 import { firstNameOf, formatCurrencyFromCents, formatStayDates, renderEmail, resolveBookingReference, resolveHostSupportEmail } from '@/lib/email';
 import { sendLoggedEmail } from './sendLoggedEmail';
 import { CANCELLATION_POLICY } from '@/data/policies';
-import { toAbsoluteUrl } from '@/lib/url';
+import { getAppBaseUrl } from '@/lib/url';
 
 /** Tells the guest their paid booking was cancelled, and what was refunded. */
 export async function sendCancellationConfirmation(bookingId: number, { refundCents }: { refundCents: number }) {
@@ -20,7 +19,7 @@ export async function sendCancellationConfirmation(bookingId: number, { refundCe
       stayDates={formatStayDates(booking.checkInDate, booking.checkOutDate)}
       refundAmount={refundCents > 0 ? formatCurrencyFromCents(refundCents) : null}
       cancellationPolicy={CANCELLATION_POLICY.summary}
-      rebookUrl={toAbsoluteUrl('/') ?? 'https://www.bunks.com'}
+      rebookUrl={getAppBaseUrl()}
       supportEmail={supportEmail}
     />,
   );

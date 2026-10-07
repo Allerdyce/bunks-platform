@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Section, Text } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
 import { Divider, EmailTitle, Paragraph, SectionTitle, SupportLine } from './components/parts';

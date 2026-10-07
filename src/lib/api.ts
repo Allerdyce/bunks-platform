@@ -1,173 +1,13 @@
 import type {
-  AvailabilityResponse,
-  BookingConversationResponse,
   BookingDetailsResponse,
   BookingRequest,
   BookingResponse,
-  ConversationMessage,
   Property,
   TripAccessResponse,
 } from "@/types";
 
-const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-
-
-export type BookingConversationCredentials = {
-  guestEmail: string;
-  bookingReference: string;
-};
-
-export type SendBookingMessageInput = {
-  body: string;
-  guestEmail?: string;
-  bookingReference?: string;
-};
-
-const mockApi = {
-  async checkAvailability(
-    slug: Property["slug"],
-    checkIn: string,
-    checkOut: string,
-  ): Promise<AvailabilityResponse> {
-    await delay(500);
-    void slug;
-    void checkIn;
-    void checkOut;
-    return { available: true };
-  },
-  async createBooking(booking: BookingRequest): Promise<BookingResponse> {
-    await delay(1000);
-    void booking;
-    return {
-      ok: true,
-      bookingId: 999999,
-      bookingReference: "MOCK-1A2B-3C4D-5E6F",
-      clientSecret: "pi_mock_secret_12345",
-      totalPriceCents: 0,
-      currency: "usd",
-      nights: 0,
-      breakdown: {
-        nightlySubtotalCents: 0,
-        cleaningFeeCents: 0,
-        serviceFeeCents: 0,
-        taxCents: 0,
-        undiscountedNightlySubtotalCents: 0,
-        nightlyLineItems: [],
-      },
-    };
-  },
-  async fetchBookingDetails(bookingReference: string, guestEmail: string): Promise<BookingDetailsResponse> {
-    await delay(400);
-    return {
-      booking: {
-        id: 999999,
-        referenceCode: bookingReference,
-        status: "PENDING",
-        checkInDate: new Date().toISOString(),
-        checkOutDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        guestName: "Mock Guest",
-        guestEmail,
-        totalPriceCents: 0,
-        property: {
-          id: 1,
-          name: "Mock Property",
-          slug: "mock-property",
-          timezone: "America/Los_Angeles",
-          hostSupportEmail: null,
-        },
-
-      },
-    };
-  },
-  async fetchTripAccessCodes(_bookingReference: string, _guestEmail: string): Promise<TripAccessResponse> {
-    void _bookingReference;
-    void _guestEmail;
-    await delay(200);
-    return { available: false };
-  },
-  async fetchBlockedDates(slug: Property["slug"]): Promise<{ blockedDates: string[]; minStay: Record<string, number> }> {
-    await delay(300);
-    void slug;
-    const today = new Date();
-    const blocked: string[] = [];
-    [5, 6, 20, 21, 22].forEach((offset) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + offset);
-      blocked.push(d.toISOString());
-    });
-    return { blockedDates: blocked, minStay: {} };
-  },
-
-  async fetchBookingConversation(
-    bookingId: number,
-    credentials?: BookingConversationCredentials,
-  ): Promise<BookingConversationResponse> {
-    const params = new URLSearchParams();
-    if (credentials?.guestEmail) {
-      params.set("guestEmail", credentials.guestEmail);
-    }
-    if (credentials?.bookingReference) {
-      params.set("bookingReference", credentials.bookingReference);
-    }
-
-    const query = params.toString();
-    const url = query ? `/api/bookings/${bookingId}/conversation?${query}` : `/api/bookings/${bookingId}/conversation`;
-    const res = await fetch(url, { cache: "no-store" });
-
-    if (!res.ok) {
-      const message = await res.text();
-      throw new Error(message || "Failed to load conversation");
-    }
-
-    return res.json();
-  },
-  async sendBookingMessage(
-    bookingId: number,
-    payload: SendBookingMessageInput,
-  ): Promise<ConversationMessage> {
-    const res = await fetch(`/api/bookings/${bookingId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const text = await res.text();
-    const data = text ? (JSON.parse(text) as unknown) : null;
-
-    if (!res.ok) {
-      const errorMessage = ((data as { error?: string } | null)?.error ?? text) || "Failed to send message";
-      throw new Error(typeof errorMessage === "string" ? errorMessage : "Failed to send message");
-    }
-
-    if (!data) {
-      throw new Error("Empty response from messaging API");
-    }
-
-    return data as ConversationMessage;
-  },
-};
-
-const realApi = {
-  async checkAvailability(
-    slug: Property["slug"],
-    checkIn: string,
-    checkOut: string,
-  ): Promise<AvailabilityResponse> {
-    const res = await fetch(`/api/properties/${slug}/check-availability`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checkIn, checkOut }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to check availability");
-    }
-
-    return res.json();
-  },
+// Browser calls to the Bunks API.
+export const api = {
   async createBooking(booking: BookingRequest): Promise<BookingResponse> {
     const res = await fetch(`/api/bookings`, {
       method: "POST",
@@ -209,58 +49,13 @@ const realApi = {
       minStay: data.minStay ?? {}
     };
   },
-
-  async fetchBookingConversation(
-    bookingId: number,
-    credentials?: BookingConversationCredentials,
-  ): Promise<BookingConversationResponse> {
-    const params = new URLSearchParams();
-    if (credentials?.guestEmail) {
-      params.set("guestEmail", credentials.guestEmail);
-    }
-    if (credentials?.bookingReference) {
-      params.set("bookingReference", credentials.bookingReference);
-    }
-
-    const query = params.toString();
-    const url = query ? `/api/bookings/${bookingId}/conversation?${query}` : `/api/bookings/${bookingId}/conversation`;
-    const res = await fetch(url, { cache: "no-store" });
-
-    if (!res.ok) {
-      const message = await res.text();
-      throw new Error(message || "Failed to load conversation");
-    }
-
-    return res.json();
-  },
-  async sendBookingMessage(
-    bookingId: number,
-    payload: SendBookingMessageInput,
-  ): Promise<ConversationMessage> {
-    const res = await fetch(`/api/bookings/${bookingId}/messages`, {
+  async fetchBookingDetails(bookingReference: string, guestEmail: string): Promise<BookingDetailsResponse> {
+    const encodedRef = encodeURIComponent(bookingReference.trim());
+    const res = await fetch(`/api/bookings/${encodedRef}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ email: guestEmail }),
     });
-
-    const text = await res.text();
-    const data = text ? (JSON.parse(text) as unknown) : null;
-
-    if (!res.ok) {
-      const errorMessage = ((data as { error?: string } | null)?.error ?? text) || "Failed to send message";
-      throw new Error(typeof errorMessage === "string" ? errorMessage : "Failed to send message");
-    }
-
-    if (!data) {
-      throw new Error("Empty response from messaging API");
-    }
-
-    return data as ConversationMessage;
-  },
-  async fetchBookingDetails(bookingReference: string, guestEmail: string): Promise<BookingDetailsResponse> {
-    const params = new URLSearchParams({ email: guestEmail });
-    const encodedRef = encodeURIComponent(bookingReference.trim());
-    const res = await fetch(`/api/bookings/${encodedRef}?${params.toString()}`);
     if (!res.ok) {
       throw new Error(
         res.status === 404
@@ -271,15 +66,16 @@ const realApi = {
     return res.json();
   },
   async fetchTripAccessCodes(bookingReference: string, guestEmail: string): Promise<TripAccessResponse> {
-    const params = new URLSearchParams({ email: guestEmail });
     const encodedRef = encodeURIComponent(bookingReference.trim());
-    const res = await fetch(`/api/trip-access/${encodedRef}?${params.toString()}`, { cache: "no-store" });
+    const res = await fetch(`/api/trip-access/${encodedRef}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: guestEmail }),
+      cache: "no-store",
+    });
     if (!res.ok) {
       throw new Error("Failed to load access codes");
     }
     return res.json();
   },
 };
-
-export const api = USE_MOCK_API ? mockApi : realApi;
-export { USE_MOCK_API };

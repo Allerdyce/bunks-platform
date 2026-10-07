@@ -3,13 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { getUnavailableNights } from '@/lib/bookingAvailability';
 import { minimumNightsFor } from '@/lib/stayRules';
 import { syncAirbnbCalendarIfStale } from '@/lib/icalSync';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const WINDOW_DAYS = 550;
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const limited = rateLimitResponse(req, 'blocked-dates', 120, 10 * 60_000);
+  if (limited) return limited;
+
   const { slug } = await params;
 
   try {

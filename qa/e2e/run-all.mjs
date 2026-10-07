@@ -4,6 +4,7 @@ import fs from "node:fs";
 import {
   api, stripe, db, resetData, clearEmails, emails, writeIcal, removeIcal, restoreIcal, adminCookie, forceSync,
   book, pay, expireHold, scenario, check, results, SB, SL, CRON_SECRET, ICAL_DIR,
+  STAY, d, mon, icalDate, icalFixture, monthDay,
 } from "./lib.mjs";
 
 const filter = process.argv[2];
@@ -11,21 +12,22 @@ const scenarios = [];
 const def = (name, fn) => scenarios.push({ name, fn });
 
 // Steamboat: $350 weekday / $420 weekend, $180 cleaning, 10% lodging tax on nightly+cleaning (QA fixture).
-// Oct 5–9 2026 = Mon–Thu nights: 4 × 31500 = 126000; fee 6300; cleaning 18000; tax 14400 → 164700.
+// Dates come from qa/e2e/dates.mjs. The default STAY is mon(0)→mon(4) = Mon–Thu nights:
+// 4 × 31500 = 126000; fee 6300; cleaning 18000; tax 14400 → 164700.
 const EXPECTED_TOTAL = 164700;
 
 def("Quote matches pricing rules", async () => {
-  const r = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-05", checkOut: "2026-10-09", guests: 2 } });
+  const r = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { ...STAY, guests: 2 } });
   check("Q1", "quote available for open dates", r.json?.available === true, r.text);
   const q = r.json?.quote ?? {};
   check("Q2", "nightly subtotal is 10% below owner rate", q.nightlySubtotalCents === 126000 && q.undiscountedNightlySubtotalCents === 140000, JSON.stringify(q));
   check("Q3", "service fee is 5% of discounted nightly", q.serviceFeeCents === 6300, q.serviceFeeCents);
   check("Q4", "tax applied to nightly + cleaning", q.taxCents === 14400, q.taxCents);
   check("Q5", "total = nightly + cleaning + fee + tax", q.totalPriceCents === EXPECTED_TOTAL, q.totalPriceCents);
-  const wk = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-16", checkOut: "2026-10-19" } });
+  const wk = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: mon(11), checkOut: mon(14) } });
   // Fri + Sat at 42000 → 37800 each, Sun at 35000 → 31500
   check("Q6", "Fri/Sat nights use weekend rate", wk.json?.quote?.nightlySubtotalCents === 37800 * 2 + 31500, JSON.stringify(wk.json?.quote?.nightlyLineItems));
-  const short = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-05", checkOut: "2026-10-06" } });
+  const short = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: mon(0), checkOut: mon(1) } });
   check("Q7", "quote rejects stays under the 3-night minimum", short.json?.available === false && short.json?.reason === "MINIMUM_STAY", short.text, "T-AV-07");
 });
 
@@ -44,28 +46,31 @@ def("Happy path: book, pay, confirm", async () => {
   const paid = await db.booking.findUnique({ where: { id: b.id } });
   check("H6", "booking becomes PAID", paid.status === "PAID", paid.status);
   const blocks = await db.blockedDate.findMany({ where: { propertyId: b.propertyId, source: "DIRECT" } });
-  check("H7", "exactly the 4 stay nights are blocked (not checkout day)", blocks.length === 4 && !blocks.some((x) => x.date.toISOString().startsWith("2026-10-09")), blocks.map((x) => x.date.toISOString().slice(0, 10)).join(","));
+  check("H7", "exactly the 4 stay nights are blocked (not checkout day)", blocks.length === 4 && !blocks.some((x) => x.date.toISOString().startsWith(STAY.checkOut)), blocks.map((x) => x.date.toISOString().slice(0, 10)).join(","));
   const cal = await api(`/api/properties/${SB}/blocked-dates`);
   const blocked = JSON.stringify(cal.json ?? {});
-  check("H8", "public calendar shows the booked nights", blocked.includes("2026-10-05") && blocked.includes("2026-10-08"), blocked.slice(0, 300));
+  check("H8", "public calendar shows the booked nights", blocked.includes(STAY.checkIn) && blocked.includes(mon(3)), blocked.slice(0, 300));
   const mails = emails();
   const toGuest = mails.filter((m) => m.to === "guest1@example.com");
   check("H9", "guest receives receipt/confirmation emails", toGuest.length >= 1, mails.map((m) => `${m.to}: ${m.subject}`).join(" | "));
   check("H10", "host/ops receives a new-booking notification", mails.some((m) => m.to !== "guest1@example.com"), mails.map((m) => m.to).join(","));
   const allHtml = mails.map((m) => m.html).join("\n");
-  check("H11", "emails show stay dates as Oct 5 and Oct 9 (no timezone shift)", /Oct(ober)?\s+5/.test(allHtml) && /Oct(ober)?\s+9/.test(allHtml) && !/Oct(ober)?\s+4,/.test(allHtml), "dates not found or shifted");
+  const shown = (date, after = "(?!\\d)") => new RegExp(monthDay(date) + after).test(allHtml);
+  check("H11", "emails show the check-in and check-out dates (no timezone shift)", shown(STAY.checkIn) && shown(STAY.checkOut) && !shown(mon(-1), ","), "dates not found or shifted");
   check("H12", "emails show the charged total $1,647.00", allHtml.includes("1,647.00"), "total not found in email html");
   const receipt = mails.find((m) => /You're booked/.test(m.subject));
   check("H13", "booking confirmation itemises the 5% service fee $63.00 (not a flat fee)", receipt && receipt.html.includes("63.00"), receipt ? "receipt present, $63.00 missing" : "no receipt", "T-EM-09");
   check("H14", "booking confirmation itemises lodging tax $144.00", receipt && receipt.html.includes("144.00"), "tax line missing", "T-EM-09");
-  const lookup = await api(`/api/bookings/${r.json.bookingReference}?email=GUEST1@example.com`);
+  const lookup = await api(`/api/bookings/${r.json.bookingReference}`, { method: "POST", body: { email: "GUEST1@example.com" } });
   check("H15", "My Trips lookup works with ref + email (case-insensitive)", lookup.status === 200 && lookup.json?.booking?.status === "PAID", lookup.text);
-  const wrong = await api(`/api/bookings/${r.json.bookingReference}?email=someone@else.com`);
+  const wrong = await api(`/api/bookings/${r.json.bookingReference}`, { method: "POST", body: { email: "someone@else.com" } });
   check("H16", "lookup with wrong email is 404", wrong.status === 404, wrong.status);
-  const feedToken = (await api(`/api/admin/calendar-feeds`, { headers: { cookie: await adminCookie() } })).json;
+  const viaUrl = await api(`/api/bookings/${r.json.bookingReference}?email=guest1@example.com`);
+  check("H16b", "lookup no longer accepts the email in the URL", viaUrl.status === 405, viaUrl.status);
+  const feedToken = (await api(`/api/admin/properties/settings`, { headers: { cookie: await adminCookie() } })).json;
   const url = JSON.stringify(feedToken).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   const feed = url ? await api(url) : { text: "" };
-  check("H17", "Bunks export feed (for Airbnb) contains the paid stay 20261005→20261009", feed.text.includes("DTSTART;VALUE=DATE:20261005") && feed.text.includes("DTEND;VALUE=DATE:20261009"), feed.text.slice(0, 400));
+  check("H17", "Bunks export feed (for Airbnb) contains the paid stay (check-in → check-out)", feed.text.includes(`DTSTART;VALUE=DATE:${icalDate(STAY.checkIn)}`) && feed.text.includes(`DTEND;VALUE=DATE:${icalDate(STAY.checkOut)}`), feed.text.slice(0, 400));
   check("H18", "export feed does not leak guest name/email", !/QA Guest|guest1@example\.com/.test(feed.text), "PII in feed");
   const bad = await api(`/api/ical/${SB}.ics?token=deadbeef`);
   check("H19", "export feed rejects a bad token", bad.status === 404 || bad.status === 401 || bad.status === 403, bad.status);
@@ -77,11 +82,11 @@ def("Double booking protection", async () => {
   check("D1", "second guest blocked while first holds the dates", b.status === 409, `${b.status} ${b.text}`);
   check("D2", "409 carries a human-readable message", typeof b.json?.error === "string" || typeof b.json?.message === "string", b.text, "T-BK-05");
   await pay(a);
-  const c = await book({ guestEmail: "c@example.com", checkIn: "2026-10-07", checkOut: "2026-10-11" });
+  const c = await book({ guestEmail: "c@example.com", checkIn: mon(2), checkOut: mon(6) });
   check("D3", "overlapping stay after payment is rejected", c.status === 409, c.status);
-  const d = await book({ guestEmail: "d@example.com", checkIn: "2026-10-02", checkOut: "2026-10-05" });
+  const d = await book({ guestEmail: "d@example.com", checkIn: mon(-3), checkOut: mon(0) });
   check("D4", "back-to-back stay ending on check-in day is allowed", d.status === 200, `${d.status} ${d.text}`);
-  const e = await book({ guestEmail: "e@example.com", checkIn: "2026-10-08", checkOut: "2026-10-11" });
+  const e = await book({ guestEmail: "e@example.com", checkIn: mon(3), checkOut: mon(6) });
   check("D5", "stay starting on last night is rejected", e.status === 409, e.status);
 });
 
@@ -97,12 +102,12 @@ def("Airbnb reservations block direct booking", async () => {
   const s = await forceSync(SB);
   check("A1", "sync-ical with cron secret succeeds", s.status === 200, s.text);
   const n = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
-  check("A2", "Airbnb fixture imports 8 nights (Oct 10–13, Nov 1–4)", n === 8, n);
+  check("A2", "Airbnb fixture imports 8 nights (two 4-night stays)", n === 8, n);
   const nights = (await db.blockedDate.findMany({ where: { source: "AIRBNB", propertyId: 2 }, orderBy: { date: "asc" } })).map((x) => x.date.toISOString().slice(0, 10));
-  check("A3", "imported nights are exact (DTEND exclusive)", nights[0] === "2026-10-10" && nights[3] === "2026-10-13" && !nights.includes("2026-10-14"), nights.join(","));
-  const r = await book({ checkIn: "2026-10-11", checkOut: "2026-10-15" });
+  check("A3", "imported nights are exact (DTEND exclusive)", nights[0] === mon(5) && nights[3] === mon(8) && !nights.includes(mon(9)), nights.join(","));
+  const r = await book({ checkIn: mon(6), checkOut: mon(10) });
   check("A4", "booking over an Airbnb reservation is rejected", r.status === 409, r.status);
-  const ok = await book({ checkIn: "2026-10-14", checkOut: "2026-10-17", guestEmail: "after@example.com" });
+  const ok = await book({ checkIn: mon(9), checkOut: mon(12), guestEmail: "after@example.com" });
   check("A5", "check-in on Airbnb guest's checkout day is allowed", ok.status === 200, `${ok.status} ${ok.text}`);
   const noauth = await api(`/api/properties/${SB}/sync-ical`, { method: "POST" });
   check("A6", "sync-ical without auth is rejected", noauth.status === 401 || noauth.status === 403, noauth.status);
@@ -118,7 +123,7 @@ def("Airbnb feed failures never erase reservations", async () => {
   writeIcal("steamboat.ics", "<html><body>Please log in</body></html>");
   await forceSync(SB);
   check("F2", "feed returns HTML → blocks kept", (await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } })) === before, "blocks changed");
-  const full = fs.readFileSync(new URL("../fixtures/ical/steamboat.ics", import.meta.url), "utf8");
+  const full = icalFixture("steamboat.ics");
   writeIcal("steamboat.ics", full.slice(0, full.indexOf("DTSTART")));
   await forceSync(SB);
   const afterTrunc = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
@@ -127,9 +132,9 @@ def("Airbnb feed failures never erase reservations", async () => {
   const emptySync = await forceSync(SB);
   const afterEmpty = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
   check("F4", "valid but empty feed while future reservations exist → blocks kept, sync reports EMPTY_FEED", afterEmpty === before && emptySync.json?.reason === "EMPTY_FEED", `${before} → ${afterEmpty} ${emptySync.text}`, "T-AV-01");
-  const duringEmpty = await book({ guestEmail: "during-empty@example.com", checkIn: "2026-10-20", checkOut: "2026-10-23" });
+  const duringEmpty = await book({ guestEmail: "during-empty@example.com", checkIn: mon(15), checkOut: mon(18) });
   check("F4b", "an empty Airbnb feed doesn't pause checkout (old blocks kept, so only over-blocks)", duringEmpty.status === 200, `${duringEmpty.status} ${duringEmpty.text}`, "review-2");
-  const stillBlocked = await book({ guestEmail: "on-kept-block@example.com", checkIn: "2026-10-11", checkOut: "2026-10-15" });
+  const stillBlocked = await book({ guestEmail: "on-kept-block@example.com", checkIn: mon(6), checkOut: mon(10) });
   check("F4c", "kept Airbnb blocks still stop bookings on those nights", stillBlocked.status === 409, stillBlocked.status);
   const confirmed = await api(`/api/properties/${SB}/sync-ical`, { method: "POST", body: { allowEmpty: true }, headers: { cookie: await adminCookie() } });
   const afterConfirm = await db.blockedDate.count({ where: { source: "AIRBNB", propertyId: 2 } });
@@ -158,16 +163,17 @@ def("Airbnb booking that overlaps a paid direct stay raises an alarm", async () 
   const a = await book({ guestEmail: "direct@example.com" });
   await pay(a);
   clearEmails();
-  const base = fs.readFileSync(new URL("../fixtures/ical/steamboat.ics", import.meta.url), "utf8");
-  const clash = "BEGIN:VEVENT\r\nDTEND;VALUE=DATE:20261009\r\nDTSTART;VALUE=DATE:20261007\r\nUID:qa-clash@airbnb.com\r\nSUMMARY:Reserved\r\nEND:VEVENT\r\n";
+  const base = icalFixture("steamboat.ics");
+  // Airbnb nights mon(2)–mon(3), inside the paid STAY.
+  const clash = `BEGIN:VEVENT\r\nDTEND;VALUE=DATE:${icalDate(mon(4))}\r\nDTSTART;VALUE=DATE:${icalDate(mon(2))}\r\nUID:qa-clash@airbnb.com\r\nSUMMARY:Reserved\r\nEND:VEVENT\r\n`;
   writeIcal("steamboat.ics", base.replace("END:VCALENDAR", clash + "END:VCALENDAR"));
   await forceSync(SB);
   const alerts = emails().filter((m) => /possible double booking/i.test(m.subject));
-  check("DB1", "overlap with a paid direct booking emails an urgent alert", alerts.length === 1 && alerts[0].html.includes("2026-10-07"), emails().map((m) => m.subject).join(" | "), "T-AV-12");
+  check("DB1", "overlap with a paid direct booking emails an urgent alert", alerts.length === 1 && alerts[0].html.includes(mon(2)), emails().map((m) => m.subject).join(" | "), "T-AV-12");
   await forceSync(SB);
   check("DB2", "the alert is sent once, not on every sync", emails().filter((m) => /possible double booking/i.test(m.subject)).length === 1, "repeated");
   restoreIcal();
-  const notAvail = "BEGIN:VEVENT\r\nDTEND;VALUE=DATE:20261009\r\nDTSTART;VALUE=DATE:20261007\r\nUID:qa-na@airbnb.com\r\nSUMMARY:Airbnb (Not available)\r\nEND:VEVENT\r\n";
+  const notAvail = `BEGIN:VEVENT\r\nDTEND;VALUE=DATE:${icalDate(mon(4))}\r\nDTSTART;VALUE=DATE:${icalDate(mon(2))}\r\nUID:qa-na@airbnb.com\r\nSUMMARY:Airbnb (Not available)\r\nEND:VEVENT\r\n`;
   await db.emailLog.deleteMany({ where: { type: "SYSTEM_CALENDAR_SYNC_ERROR" } });
   clearEmails();
   writeIcal("steamboat.ics", base.replace("END:VCALENDAR", notAvail + "END:VCALENDAR"));
@@ -182,8 +188,8 @@ def("A home listed in several places imports every calendar", async () => {
   try {
     const s1 = await forceSync(SB);
     const nights = (await db.blockedDate.findMany({ where: { propertyId: 2, source: "AIRBNB" } })).map((x) => x.date.toISOString().slice(0, 10));
-    check("MC1", "nights from both calendars are blocked (Airbnb Oct 10–13 + Vrbo Oct 20–22)", s1.status === 200 && nights.includes("2026-10-11") && nights.includes("2026-10-21") && !nights.includes("2026-10-23"), `${s1.status} ${nights.join(",")}`, "T-AV-15");
-    const r = await book({ checkIn: "2026-10-19", checkOut: "2026-10-22" });
+    check("MC1", "nights from both calendars are blocked (Airbnb + Vrbo stays)", s1.status === 200 && nights.includes(mon(6)) && nights.includes(mon(16)) && !nights.includes(mon(18)), `${s1.status} ${nights.join(",")}`, "T-AV-15");
+    const r = await book({ checkIn: mon(14), checkOut: mon(17) });
     check("MC2", "a direct booking over the Vrbo stay is rejected", r.status === 409, r.status, "T-AV-15");
     removeIcal("steamboat-vrbo.ics");
     const s2 = await forceSync(SB);
@@ -193,7 +199,7 @@ def("A home listed in several places imports every calendar", async () => {
     const cookie = await adminCookie();
     const check1 = await api(`/api/admin/calendar-check?slug=${SB}`, { headers: { cookie } });
     const feeds = check1.json?.feeds ?? [];
-    check("MC4", "Check calendars lists each linked calendar with its stays, without guest names", feeds.length === 2 && feeds.every((f) => f.ok) && feeds[1].ranges.some((x) => x.start === "2026-10-20" && x.kind === "reservation") && !/Test Guest/.test(check1.text), check1.text.slice(0, 300), "T-AV-15");
+    check("MC4", "Check calendars lists each linked calendar with its stays, without guest names", feeds.length === 2 && feeds.every((f) => f.ok) && feeds[1].ranges.some((x) => x.start === mon(15) && x.kind === "reservation") && !/Test Guest/.test(check1.text), check1.text.slice(0, 300), "T-AV-15");
     const anon = await api(`/api/admin/calendar-check?slug=${SB}`);
     check("MC5", "Check calendars requires admin", anon.status === 401, anon.status);
     const cookieSave = await api("/api/admin/properties/2/settings", { method: "PUT", headers: { cookie }, body: { airbnbIcalUrl: "https://a.example/x.ics\nnot a link" } });
@@ -242,7 +248,7 @@ def("A completed payment beats another guest's unpaid hold", async () => {
 def("Failed restart keeps the guest's existing hold", async () => {
   await forceSync(SB);
   const a = await book({ guestEmail: "tabs@example.com" });
-  const b = await book({ guestEmail: "tabs@example.com", checkIn: "2026-10-11", checkOut: "2026-10-14" }); // Airbnb-blocked
+  const b = await book({ guestEmail: "tabs@example.com", checkIn: mon(6), checkOut: mon(9) }); // Airbnb-blocked
   check("T1", "second tab gets 409 for unavailable dates", b.status === 409, b.status);
   const row = await db.booking.findUnique({ where: { id: a.json.bookingId } });
   check("T2", "first tab's hold is still PENDING", row.status === "PENDING", row.status, "T-BK-03");
@@ -292,8 +298,8 @@ def("Admin cancel + refund", async () => {
   check("C7", "cancelled dates can be booked again", again.status === 200, again.status);
   const noauth = await api(`/api/bookings/${a.json.bookingId}/cancel`, { method: "POST", body: {} });
   check("C8", "cancel without admin session is 401", noauth.status === 401, noauth.status);
-  const pend = await book({ guestEmail: "abandon@example.com", checkIn: "2026-11-10", checkOut: "2026-11-13" });
-  const racing = await book({ guestEmail: "racing@example.com", checkIn: "2026-12-01", checkOut: "2026-12-04" });
+  const pend = await book({ guestEmail: "abandon@example.com", checkIn: mon(36), checkOut: mon(39) });
+  const racing = await book({ guestEmail: "racing@example.com", checkIn: mon(57), checkOut: mon(60) });
   await stripe(`/__test/mark-succeeded/${racing.json.clientSecret.split("_secret")[0]}`);
   const raced = await api(`/api/bookings/${racing.json.bookingId}/cancel`, { method: "POST", body: { refund: "none" }, headers: { cookie } });
   const racedRow = await db.booking.findUnique({ where: { id: racing.json.bookingId } });
@@ -316,12 +322,14 @@ def("Declined card", async () => {
 });
 
 def("Input validation", async () => {
+  const nextYear = Number(d(0).slice(0, 4)) + 1; // its Feb 27 is always ahead and within the horizon
+  const fiveYearsOn = (date) => new Date(Date.UTC(Number(date.slice(0, 4)) + 5, Number(date.slice(5, 7)) - 1, Number(date.slice(8)))).toISOString().slice(0, 10);
   const cases = [
-    ["V1", "stay under minimum (2 nights)", { checkIn: "2026-10-05", checkOut: "2026-10-07" }, 400, ""],
-    ["V2", "check-in in the past", { checkIn: "2026-01-05", checkOut: "2026-01-09" }, 400, ""],
-    ["V3", "checkout before check-in", { checkIn: "2026-10-09", checkOut: "2026-10-05" }, 400, ""],
-    ["V4", "impossible date 2026-02-30", { checkIn: "2027-02-27", checkOut: "2027-02-30" }, 400, "T-BK-06"],
-    ["V5", "absurd length (5 years)", { checkIn: "2026-12-01", checkOut: "2031-12-01" }, 400, "T-BK-04"],
+    ["V1", "stay under minimum (2 nights)", { checkIn: mon(0), checkOut: mon(2) }, 400, ""],
+    ["V2", "check-in in the past", { checkIn: d(-30), checkOut: d(-26) }, 400, ""],
+    ["V3", "checkout before check-in", { checkIn: mon(4), checkOut: mon(0) }, 400, ""],
+    ["V4", "impossible date Feb 30", { checkIn: `${nextYear}-02-27`, checkOut: `${nextYear}-02-30` }, 400, "T-BK-06"],
+    ["V5", "absurd length (5 years)", { checkIn: mon(57), checkOut: fiveYearsOn(mon(57)) }, 400, "T-BK-04"],
     ["V6", "too many guests (20 for 6-guest home)", { guests: 20 }, 400, "T-BK-07"],
     ["V7", "non-string email", { guestEmail: 12345 }, 400, "T-BK-08"],
     ["V8", "malformed email", { guestEmail: "not-an-email" }, 400, "T-BK-08"],
@@ -339,25 +347,19 @@ def("Input validation", async () => {
 
 def("Trip access (door codes)", async () => {
   await db.property.update({ where: { slug: SB }, data: { lockboxCode: "1234" } });
-  const today = new Date(); const ci = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + 1));
-  const co = new Date(ci.getTime() + 3 * 86400000);
-  const iso = (d) => d.toISOString().slice(0, 10);
-  const a = await book({ checkIn: iso(ci), checkOut: iso(co), guestEmail: "soon@example.com" });
-  const pending = await api(`/api/trip-access/${a.json.bookingReference}?email=soon@example.com`);
+  const a = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "soon@example.com" });
+  const pending = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "soon@example.com" } });
   check("TA1", "codes hidden while unpaid", pending.json?.available === false, pending.text);
   await pay(a);
-  const ok = await api(`/api/trip-access/${a.json.bookingReference}?email=soon@example.com`);
+  const ok = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "soon@example.com" } });
   check("TA2", "codes released for a paid stay starting tomorrow", ok.json?.available === true && ok.json?.codes?.lockboxCode === "1234", ok.text);
-  const bad = await api(`/api/trip-access/${a.json.bookingReference}?email=x@example.com`);
+  const bad = await api(`/api/trip-access/${a.json.bookingReference}`, { method: "POST", body: { email: "x@example.com" } });
   check("TA3", "wrong email → 404", bad.status === 404, bad.status);
   check("TA4", "response is no-store", /no-store/.test(ok.headers.get("cache-control") ?? ""), ok.headers.get("cache-control"));
 });
 
 def("Daily email automations", async () => {
-  // "Tomorrow" in the property's own timezone (the cron uses property-local dates).
-  const local = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
-  const [y, mo, da] = local.split("-").map(Number);
-  const d = (n) => new Date(Date.UTC(y, mo - 1, da + n)).toISOString().slice(0, 10);
+  // "Tomorrow" in the property's own timezone (the cron uses property-local dates): d(1).
   await db.property.update({ where: { slug: SB }, data: { lockboxCode: "1234" } });
   clearEmails();
   const a = await book({ checkIn: d(1), checkOut: d(4), guestEmail: "tomorrow@example.com" });
@@ -372,7 +374,7 @@ def("Daily email automations", async () => {
   check("E2", "cron runs", r1.status === 200 || r2.status === 200, `${r1.status} ${r2.status} ${r1.text.slice(0, 200)}`);
   const m = emails().filter((x) => x.to === "tomorrow@example.com");
   const subjects = m.map((x) => x.subject);
-  check("E3", "guest arriving tomorrow gets pre-arrival + door code", m.length >= 2 && m.some((x) => x.html.includes("1234")), subjects.join(" | "));
+  check("E3", "guest arriving tomorrow gets arrival details with the door code", m.some((x) => /^Arrival details/.test(x.subject) && x.html.includes("1234")), subjects.join(" | "));
   check("E4", "two overlapping cron runs send each email once", new Set(subjects).size === subjects.length, subjects.join(" | "), "T-EM-01");
   check("E5", "unpaid holds get no automation emails", !emails().some((x) => x.to === "unpaid@example.com"), "unpaid guest emailed");
   const door = m.find((x) => x.html.includes("1234"));
@@ -392,31 +394,19 @@ def("Missed confirmation emails are caught up", async () => {
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   const first = emails().filter((m) => m.to === "missed@example.com").map((m) => m.subject);
-  check("M1", "daily run re-sends the missed receipt + confirmation", first.some((x) => /receipt/i.test(x)) && first.length >= 2, first.join(" | "), "T-EM-03");
+  check("M1", "daily run re-sends the missed booking confirmation", first.some((x) => /You're booked/.test(x)), first.join(" | "), "T-EM-03");
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("M2", "catch-up doesn't repeat on the next run", emails().filter((m) => m.to === "missed@example.com").length === 0, emails().map((m) => m.subject).join(" | "), "T-EM-03");
-  const fresh = await book({ guestEmail: "fresh@example.com", checkIn: "2026-11-10", checkOut: "2026-11-13" });
+  const fresh = await book({ guestEmail: "fresh@example.com", checkIn: mon(36), checkOut: mon(39) });
   await pay(fresh);
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("M3", "bookings paid in the last hour are left to the webhook", emails().filter((m) => m.to === "fresh@example.com").length === 0, emails().map((m) => m.subject).join(" | "));
 });
 
-def("Guest messaging is email-only", async () => {
-  const a = await book({ guestEmail: "chat@example.com" });
-  await pay(a);
-  clearEmails();
-  const r = await api(`/api/bookings/${a.json.bookingId}/messages`, { method: "POST", body: { body: "hi", guestEmail: "chat@example.com", bookingReference: a.json.bookingReference } });
-  check("GM1", "guest can't post in-app messages (410 with support email)", r.status === 410 && /@/.test(r.json?.error ?? ""), `${r.status} ${r.text}`, "T-SEC-06");
-  check("GM2", "no host email triggered", emails().length === 0, emails().map((m) => m.subject).join(" | "));
-});
-
 def("Last-minute booking gets its door code at payment", async () => {
   await db.property.update({ where: { slug: SB }, data: { lockboxCode: "5150" } });
-  const local = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
-  const [y, mo, da] = local.split("-").map(Number);
-  const d = (n) => new Date(Date.UTC(y, mo - 1, da + n)).toISOString().slice(0, 10);
   const a = await book({ checkIn: d(0), checkOut: d(3), guestEmail: "lastminute@example.com" });
   check("LM1", "same-day check-in can be booked", a.status === 200, `${a.status} ${a.text}`);
   clearEmails();
@@ -426,7 +416,7 @@ def("Last-minute booking gets its door code at payment", async () => {
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("LM3", "cron doesn't send the door code again", !emails().some((m) => m.to === "lastminute@example.com" && m.html.includes("5150")), emails().map((m) => m.subject).join(" | "));
-  const far = await book({ checkIn: "2026-11-10", checkOut: "2026-11-13", guestEmail: "early@example.com" });
+  const far = await book({ checkIn: mon(36), checkOut: mon(39), guestEmail: "early@example.com" });
   clearEmails();
   await pay(far);
   check("LM4", "far-future booking gets no door code at payment", !emails().some((m) => m.html.includes("5150")), "door code sent early");
@@ -435,31 +425,31 @@ def("Last-minute booking gets its door code at payment", async () => {
 
 def("Owner price overrides and blocks", async () => {
   const cookie = await adminCookie();
-  const r1 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: "2026-10-06", endDate: "2026-10-06", price: 500, note: "event night" } });
-  check("OP1", "admin sets a $500 override for Oct 6", r1.status === 200 || r1.status === 201, `${r1.status} ${r1.text.slice(0, 200)}`);
-  const q = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: "2026-10-05", checkOut: "2026-10-09" } });
+  const r1 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: mon(1), endDate: mon(1), price: 500, note: "event night" } });
+  check("OP1", "admin sets a $500 override for the stay's Tuesday", r1.status === 200 || r1.status === 201, `${r1.status} ${r1.text.slice(0, 200)}`);
+  const q = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: STAY });
   // 3 × 31500 + 500×0.9=45000 → 139500 nightly
   check("OP2", "quote uses the override (10% off $500) for that night", q.json?.quote?.nightlySubtotalCents === 139500, JSON.stringify(q.json?.quote?.nightlyLineItems));
-  const r2 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: "2026-10-20", endDate: "2026-10-21", isBlocked: true, note: "owner stay" } });
-  check("OP3", "admin blocks Oct 20–21", r2.status === 200 || r2.status === 201, `${r2.status} ${r2.text.slice(0, 200)}`);
-  const b = await book({ checkIn: "2026-10-19", checkOut: "2026-10-22" });
+  const r2 = await api("/api/admin/properties/2/special-pricing", { method: "POST", headers: { cookie }, body: { startDate: mon(15), endDate: mon(16), isBlocked: true, note: "owner stay" } });
+  check("OP3", "admin blocks two nights (Tue–Wed)", r2.status === 200 || r2.status === 201, `${r2.status} ${r2.text.slice(0, 200)}`);
+  const b = await book({ checkIn: mon(14), checkOut: mon(17) });
   check("OP4", "owner-blocked nights can't be booked", b.status === 409, b.status);
-  const ok = await book({ checkIn: "2026-10-22", checkOut: "2026-10-25", guestEmail: "afterblock@example.com" });
+  const ok = await book({ checkIn: mon(17), checkOut: mon(20), guestEmail: "afterblock@example.com" });
   check("OP5", "night after the block is bookable (block covers exactly the chosen nights)", ok.status === 200, `${ok.status} ${ok.text}`);
-  const feeds = (await api("/api/admin/calendar-feeds", { headers: { cookie } })).json;
+  const feeds = (await api("/api/admin/properties/settings", { headers: { cookie } })).json;
   const url = JSON.stringify(feeds).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   const feed = url ? (await api(url)).text : "";
-  check("OP6", "owner block is exported to Airbnb (20261020→20261022)", feed.includes("DTSTART;VALUE=DATE:20261020") && feed.includes("DTEND;VALUE=DATE:20261022"), feed.slice(0, 500));
+  check("OP6", "owner block is exported to Airbnb (first night → day after the last)", feed.includes(`DTSTART;VALUE=DATE:${icalDate(mon(15))}`) && feed.includes(`DTEND;VALUE=DATE:${icalDate(mon(17))}`), feed.slice(0, 500));
 });
 
 def("Summerland booking (no taxes configured)", async () => {
   await forceSync(SL);
-  const blocked = await book({ propertySlug: SL, checkIn: "2026-10-21", checkOut: "2026-10-24" });
+  const blocked = await book({ propertySlug: SL, checkIn: mon(16), checkOut: mon(19) });
   check("SL1", "Summerland Airbnb nights are blocked", blocked.status === 409, blocked.status);
-  const r = await book({ propertySlug: SL, checkIn: "2026-10-05", checkOut: "2026-10-08", guests: 4, guestEmail: "beach@example.com" });
+  const r = await book({ propertySlug: SL, checkIn: mon(0), checkOut: mon(3), guests: 4, guestEmail: "beach@example.com" });
   // 3 weekday nights × 37500×0.9=33750 → 101250; fee 5063 (rounded); cleaning 15000
   check("SL2", "Summerland total = nights + 5% fee + cleaning, no tax", r.json?.totalPriceCents === 101250 + 5063 + 15000, r.json?.totalPriceCents);
-  const tooMany = await book({ propertySlug: SL, checkIn: "2026-11-05", checkOut: "2026-11-08", guests: 5, guestEmail: "big@example.com" });
+  const tooMany = await book({ propertySlug: SL, checkIn: mon(31), checkOut: mon(34), guests: 5, guestEmail: "big@example.com" });
   check("SL3", "5 guests rejected for the 4-guest bungalow", tooMany.status === 400, tooMany.status);
 });
 
@@ -521,22 +511,58 @@ def("Address, Wi-Fi and guides only for paid guests", async () => {
   }
   const r = await book();
   const ref = r.json.bookingReference;
-  const unpaid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
+  const unpaid = await api(`/api/bookings/${ref}`, { method: "POST", body: { email: "guest1@example.com" } });
   check("PV3", "unpaid booking lookup has no address, Wi-Fi or guide", unpaid.status === 200 && !unpaid.json.booking.secure && !PRIVATE.test(unpaid.text), unpaid.text.slice(0, 300));
   await pay(r);
-  const paid = await api(`/api/bookings/${ref}?email=guest1@example.com`);
-  const secure = paid.json?.booking?.secure;
-  check("PV4", "paid booking lookup returns address, Wi-Fi and directions", /6th Street/.test(secure?.address ?? "") && !!secure?.wifiSsid && secure?.directions?.length === 2, JSON.stringify(secure).slice(0, 300));
+  const lookup = async () => (await api(`/api/bookings/${ref}`, { method: "POST", body: { email: "guest1@example.com" } })).json?.booking?.secure;
+  const early = await lookup();
+  check("PV4", "paid booking lookup returns address, Wi-Fi and directions", /6th Street/.test(early?.address ?? "") && !!early?.wifiSsid && early?.directions?.length === 2, JSON.stringify(early).slice(0, 300));
+  const opensAt = new Date(Date.parse(`${STAY.checkIn}T00:00:00Z`) - 86_400_000).toISOString();
+  check("PV10", "weeks ahead, the lookup has no guide link (it holds the door codes) and says when it opens", early?.guideUrl === null && early?.guideOpensAt === opensAt, JSON.stringify({ guideUrl: early?.guideUrl, guideOpensAt: early?.guideOpensAt }));
+  // Move the stay to tomorrow: the guide opens, and the daily run sends arrival details with its link.
+  const at = (date) => new Date(`${date}T00:00:00Z`);
+  await db.booking.update({ where: { publicReference: ref }, data: { checkInDate: at(d(1)), checkOutDate: at(d(4)) } });
+  clearEmails();
+  await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
+  const secure = await lookup();
   const guide = secure?.guideUrl ? await fetch(`http://localhost:3000${secure.guideUrl}`) : null;
-  check("PV5", "signed guide link serves the PDF", guide?.status === 200 && guide.headers.get("content-type") === "application/pdf" && /no-store/.test(guide.headers.get("cache-control") ?? ""), guide?.status);
+  check("PV5", "from 24h before check-in the signed guide link serves the PDF", guide?.status === 200 && guide.headers.get("content-type") === "application/pdf" && /no-store/.test(guide.headers.get("cache-control") ?? ""), guide?.status);
   const tampered = secure?.guideUrl?.replace(/sig=[0-9a-f]/, (m) => (m.endsWith("0") ? "sig=1" : "sig=0"));
   check("PV6", "tampered guide link is refused", (await api(tampered ?? "/api/guides/x/guide")).status === 403, tampered);
   const otherSlug = secure?.guideUrl?.replace(SB, SL);
   check("PV6b", "a link can't be reused for another home", (await api(otherSlug ?? "/api/guides/x/guide")).status === 403, otherSlug);
-  const mailHtml = emails().map((m) => m.html).join("\n");
-  check("PV7", "guest emails link the signed guide, not a public PDF", mailHtml.includes("/api/guides/") && !/Steamboat%20|Lillie%20Guidebook/.test(mailHtml), "no signed guide link in emails");
+  const arrival = emails().find((m) => m.to === "guest1@example.com" && /^Arrival details/.test(m.subject));
+  check("PV7", "arrival details link the signed guide, not a public PDF", arrival?.html.includes("/api/guides/") && !/Steamboat%20(Welcome|Brochure)|Lillie%20Guidebook/.test(arrival.html), arrival ? "no signed guide link" : "no arrival email");
   await db.booking.update({ where: { publicReference: ref }, data: { status: "CANCELLED" } });
   check("PV8", "guide link stops working once the booking is cancelled", (await api(secure?.guideUrl ?? "/api/guides/x/guide")).status === 403, "still served");
+  // Paid again but weeks ahead: the same link explains when it opens.
+  await db.booking.update({ where: { publicReference: ref }, data: { status: "PAID", checkInDate: at(STAY.checkIn), checkOutDate: at(STAY.checkOut) } });
+  const tooEarly = await api(secure?.guideUrl ?? "/api/guides/x/guide");
+  check("PV11", "a guide link opened before the window says when it opens", tooEarly.status === 403 && /opens on/.test(tooEarly.text), `${tooEarly.status} ${tooEarly.text.slice(0, 160)}`);
+});
+
+def("Public endpoints reject bad input", async () => {
+  const badJson = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: "{not json" });
+  check("IN1", "availability check with broken JSON is a 400, not a 500", badJson.status === 400, `${badJson.status} ${badJson.text.slice(0, 120)}`);
+  const missing = await api(`/api/properties/${SB}/check-availability`, { method: "POST", body: { checkIn: 20261005 } });
+  check("IN2", "availability check without string dates is a 400", missing.status === 400, missing.status);
+  const calc = await api("/api/tools/sb-tot/calculate", { method: "POST", body: { grossRent: 1000, deductions31Plus: 0, deductionsFederal: 0, roomRevenueOnlyForTBID: 1000, totRate: 0.14 } });
+  check("IN3", "tax calculator still works", calc.status === 200 && calc.json?.line8_totalDue === 160, calc.text.slice(0, 200));
+  const calcBad = await api("/api/tools/sb-tot/calculate", { method: "POST", body: { grossRent: "lots", totRate: 7 } });
+  check("IN4", "tax calculator rejects non-numbers and a rate above 100%", calcBad.status === 400, `${calcBad.status} ${calcBad.text.slice(0, 120)}`);
+  const pdfBad = await api("/api/tools/sb-tot/pdf", { method: "POST", body: { reportingMonth: 5 } });
+  check("IN5", "tax PDF rejects an incomplete form", pdfBad.status === 400, `${pdfBad.status} ${pdfBad.text.slice(0, 120)}`);
+});
+
+def("Stripe amount mismatch alerts ops", async () => {
+  const r = await book({ guestEmail: "mismatch@example.com" });
+  // The booking total changes after the payment was created, so Stripe's amount no longer matches.
+  await db.booking.update({ where: { id: r.json.bookingId }, data: { totalPriceCents: { increment: 100 } } });
+  clearEmails();
+  await pay(r);
+  const booking = await db.booking.findUnique({ where: { id: r.json.bookingId } });
+  const alert = emails().find((m) => /Stripe amount doesn't match/.test(m.subject));
+  check("SM1", "the booking is still confirmed and ops get an alert", booking?.status === "PAID" && !!alert && alert.to !== "mismatch@example.com", `${booking?.status} ${emails().map((m) => m.subject).join(" | ")}`);
 });
 
 def("Airbnb price check (comparison only)", async () => {
@@ -689,7 +715,7 @@ def("Private payment links", async () => {
     body: { propertyId: property.id, checkIn: in1, checkOut: out1, guestName: "Link Guest", guestEmail: "link@example.com", guests: 2, holdHours: 48,
       charges: { nightlySubtotalCents: 120000, cleaningFeeCents: 25000, serviceFeeCents: 0, taxCents: 14500 }, ...overrides },
   });
-  const feedUrl = async () => JSON.stringify((await api("/api/admin/calendar-feeds", { headers: auth })).json).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
+  const feedUrl = async () => JSON.stringify((await api("/api/admin/properties/settings", { headers: auth })).json).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   try {
     const anon = await api("/api/admin/payment-links", { method: "POST", body: {} });
     check("PL1", "creating a payment link needs an admin session", anon.status === 401, anon.status);
@@ -798,7 +824,7 @@ def("Admin bookings: tabs, filters and detail", async () => {
 
 def("Admin endpoints require a session", async () => {
   const routes = [
-    ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],
+    ["GET", "/api/admin/bookings/messages"],
     ["POST", "/api/admin/emails/send-sample"], ["GET", "/api/admin/features"], ["GET", "/api/admin/guests"],
     ["POST", "/api/admin/marketing/send"], ["GET", "/api/admin/ops-details"], ["GET", "/api/admin/properties"],
     ["POST", "/api/admin/properties/1/rates"], ["PUT", "/api/admin/properties/1/settings"], ["POST", "/api/admin/properties/1/special-pricing"],

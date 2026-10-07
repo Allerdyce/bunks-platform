@@ -2,13 +2,16 @@ import "server-only";
 
 import crypto from "crypto";
 import { PROPERTY_GUIDE_FILES, isPlaceholderGuideUrl, type GuideKind } from "@/data/guides";
+import { tripAccessWindow } from "@/lib/tripAccessWindow";
 
-// Guide links stay valid until two weeks after checkout; the route also re-checks that the
-// booking is still paid, so a cancellation revokes them.
-const LINK_GRACE_MS = 14 * 24 * 60 * 60 * 1000;
+// The house guide has the door codes in it, so its link works only while the door codes do
+// (lib/tripAccessWindow); the route enforces the start. The brochure link lasts until two weeks
+// after checkout. The route also re-checks that the booking is still paid, so a cancellation
+// revokes both.
+const BROCHURE_GRACE_MS = 14 * 24 * 60 * 60 * 1000;
 
 function linkSecret() {
-  const secret = process.env.GUIDE_LINK_SECRET ?? process.env.ADMIN_SESSION_SECRET;
+  const secret = process.env.GUIDE_LINK_SECRET || process.env.ADMIN_SESSION_SECRET;
   if (!secret && process.env.NODE_ENV === "production") {
     throw new Error("GUIDE_LINK_SECRET (or ADMIN_SESSION_SECRET) must be set");
   }
@@ -23,13 +26,22 @@ function signature(slug: string, kind: string, ref: string, exp: number) {
     .slice(0, 32);
 }
 
-type GuideBooking = { publicReference: string | null; checkOutDate: Date; property: { slug: string } };
+type GuideBooking = {
+  publicReference: string | null;
+  checkInDate: Date;
+  checkOutDate: Date;
+  property: { slug: string };
+};
 
 /** A signed path to the property's guide PDF for this booking, or null if it has none. */
 export function signedGuidePath(booking: GuideBooking, kind: GuideKind = "guide") {
   const slug = booking.property.slug;
   if (!booking.publicReference || !PROPERTY_GUIDE_FILES[slug]?.[kind]) return null;
-  const exp = Math.floor((booking.checkOutDate.getTime() + LINK_GRACE_MS) / 1000);
+  const expiresAt =
+    kind === "guide"
+      ? tripAccessWindow(booking).closesAt.getTime()
+      : booking.checkOutDate.getTime() + BROCHURE_GRACE_MS;
+  const exp = Math.floor(expiresAt / 1000);
   const params = new URLSearchParams({
     ref: booking.publicReference,
     exp: String(exp),

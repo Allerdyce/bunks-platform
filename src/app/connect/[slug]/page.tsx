@@ -126,6 +126,7 @@ export default async function WifiConnectPage({
     >
       {/* Background Image */}
       <div className={`absolute inset-0 z-0 ${t.imageOpacity}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- full-bleed background on a guest-only page */}
         <img
           src={property.image}
           alt={property.name}

@@ -2,6 +2,9 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "node:fs";
 import path from "node:path";
+import { mon, writeIcalFixtures } from "./dates.mjs";
+
+export { d, mon, icalDate, icalFixture, monthDay } from "./dates.mjs";
 
 export const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
 export const STRIPE = process.env.QA_STRIPE_URL || "http://localhost:12111";
@@ -11,6 +14,8 @@ export const CRON_SECRET = process.env.CRON_SECRET || "qa-cron-secret";
 export const ADMIN = { email: "ali@bunks.com", password: process.env.ADMIN_PASSWORD || "qa-admin-password" };
 export const SB = "steamboat-downtown-townhome";
 export const SL = "summerland-ocean-view-beach-bungalow";
+// The default stay: Mon→Fri, four weekday nights (see dates.mjs).
+export const STAY = { checkIn: mon(0), checkOut: mon(4) };
 
 const dbUrl = process.env.DATABASE_URL || "postgresql://bunks:bunks@localhost:5432/bunks_qa";
 if (!/localhost|127\.0\.0\.1/.test(dbUrl)) throw new Error("QA scenarios only run against a local database");
@@ -42,6 +47,19 @@ export async function resetData() {
   await db.booking.deleteMany({});
   // Airbnb pricing off by default; its own scenario switches it on.
   await db.featureToggle.upsert({ where: { key: "airbnbPricing" }, update: { enabled: false }, create: { key: "airbnbPricing", enabled: false } });
+  // Fixtures the scenarios assume (the seed leaves them empty): each home reads its Airbnb calendar
+  // from the local fixture server, Steamboat charges a 10% lodging tax and Summerland none.
+  await db.property.update({
+    where: { slug: SB },
+    data: {
+      airbnbIcalUrl: "http://localhost:8765/steamboat.ics",
+      taxes: { deleteMany: {}, create: { name: "Lodging tax", rate: 0.1, appliesTo: ["nightly", "cleaning"] } },
+    },
+  });
+  await db.property.update({
+    where: { slug: SL },
+    data: { airbnbIcalUrl: "http://localhost:8765/summerland.ics", taxes: { deleteMany: {} } },
+  });
   clearEmails();
   restoreIcal();
 }
@@ -56,11 +74,7 @@ export function emails() {
   return fs.readdirSync(EMAIL_DIR).sort().map((f) => JSON.parse(fs.readFileSync(path.join(EMAIL_DIR, f), "utf8")));
 }
 
-const FIXTURES = new URL("../fixtures/ical/", import.meta.url).pathname;
-export function restoreIcal() {
-  fs.mkdirSync(ICAL_DIR, { recursive: true });
-  for (const f of fs.readdirSync(FIXTURES)) fs.copyFileSync(path.join(FIXTURES, f), path.join(ICAL_DIR, f));
-}
+export function restoreIcal() { writeIcalFixtures(ICAL_DIR); }
 export function writeIcal(name, content) { fs.writeFileSync(path.join(ICAL_DIR, name), content); }
 export function removeIcal(name) { fs.rmSync(path.join(ICAL_DIR, name), { force: true }); }
 
@@ -78,7 +92,7 @@ export async function forceSync(slug) {
 export async function book(overrides = {}) {
   return api("/api/bookings", {
     method: "POST",
-    body: { propertySlug: SB, checkIn: "2026-10-05", checkOut: "2026-10-09", guestName: "QA Guest", guestEmail: "guest1@example.com", guests: 2, ...overrides },
+    body: { propertySlug: SB, ...STAY, guestName: "QA Guest", guestEmail: "guest1@example.com", guests: 2, ...overrides },
   });
 }
 

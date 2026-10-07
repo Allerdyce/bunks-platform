@@ -1,5 +1,5 @@
 import { Booking, Property } from '@prisma/client';
-import { toAbsoluteUrl } from '@/lib/url';
+import { getAppBaseUrl, toAbsoluteUrl } from '@/lib/url';
 import { SUPPORT_EMAIL } from '@/lib/contact';
 import { guideUrlForBooking } from '@/lib/guideLinks';
 
@@ -34,11 +34,6 @@ export function formatCurrencyFromCents(amountCents: number, currency = DEFAULT_
     currency,
     minimumFractionDigits: 2,
   }).format(amountCents / 100);
-}
-
-export function resolveGuestBookUrl(booking: Booking & { property: Property }) {
-  const url = guideUrlForBooking(booking, booking.guestBookUrlOverride, booking.property.guestBookUrl);
-  return toAbsoluteUrl(url ?? undefined);
 }
 
 export function resolveCheckInGuideUrl(booking: Booking & { property: Property }) {
@@ -89,10 +84,10 @@ export function firstNameOf(guestName: string) {
 
 /** The guest's trip page (arrival details, Wi-Fi, guide; door codes from 24h before check-in). */
 export function tripUrlFor(booking: Pick<Booking, 'id' | 'publicReference'>) {
-  return toAbsoluteUrl(`/my-trips/${resolveBookingReference(booking)}/essential`) ?? 'https://www.bunks.com/my-trips';
+  return `${getAppBaseUrl()}/my-trips/${resolveBookingReference(booking)}/essential`;
 }
 
 /** Admin → Bookings, for links in emails to the Bunks team. */
 export function adminBookingsUrl() {
-  return toAbsoluteUrl('/admin/messages') ?? 'https://www.bunks.com/admin/messages';
+  return `${getAppBaseUrl()}/admin/messages`;
 }
