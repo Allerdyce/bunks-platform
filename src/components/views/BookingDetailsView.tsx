@@ -45,22 +45,6 @@ function formatStayDates(checkIn: string, checkOut: string) {
   return `${startLabel} → ${endLabel}`;
 }
 
-const threadTimestampFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-const formatThreadTimestamp = (value?: string | null) => {
-  if (!value) return null;
-  try {
-    return threadTimestampFormatter.format(new Date(value));
-  } catch {
-    return value;
-  }
-};
-
 import { SUPPORT_EMAIL } from "@/lib/contact";
 
 type EssentialMapProps = {
@@ -121,10 +105,6 @@ export function BookingDetailsView({
     initialLookup ?? null,
   );
   const autoLookupKey = useRef<string | null>(null);
-  const [conversationSummary, setConversationSummary] = useState<{
-    snippet: string | null;
-    timestamp: string | null;
-  }>({ snippet: null, timestamp: null });
 
   const handleLookup = useCallback(
     async (lookup: PendingLookupState) => {
@@ -172,12 +152,6 @@ export function BookingDetailsView({
       guestEmail: initialLookup.guestEmail,
     });
   }, [initialLookup, handleLookup]);
-
-  useEffect(() => {
-    if (!booking) {
-      setConversationSummary({ snippet: null, timestamp: null });
-    }
-  }, [booking]);
 
   const submitLookup = async (event?: React.FormEvent) => {
     event?.preventDefault();
@@ -389,12 +363,6 @@ export function BookingDetailsView({
       description:
         "Download the latest house manual, browse itineraries, and see what we love around town.",
     },
-    messages: {
-      eyebrow: "Messages",
-      title: "Chat with your host in real time",
-      description:
-        "Every stay keeps a tidy inbox for confirmations and last-minute questions.",
-    },
   };
 
   const canDismissLookupModal = Boolean(booking || lastLookup);
@@ -407,7 +375,6 @@ export function BookingDetailsView({
   const handleClearLookup = () => {
     setBooking(null);
     setLastLookup(null);
-    setConversationSummary({ snippet: null, timestamp: null });
     setLookupReference("");
     setLookupEmail("");
     setError(null);
@@ -740,8 +707,7 @@ export function BookingDetailsView({
             <div>
               <h2 className="section-heading">A question for your host?</h2>
               <p className="mt-4 text-base leading-relaxed text-gray-600">
-                Use Messages for anything about your stay, or get in touch by
-                email.
+                Email your host with anything about your stay.
               </p>
               <a
                 href={`mailto:${booking.property.hostSupportEmail ?? supportFallback}`}
@@ -768,7 +734,7 @@ export function BookingDetailsView({
       {loadingBanner}
       {booking ? (
         <div className="flex min-h-screen flex-col">
-          {(section === "essential" || section === "messages") && renderEssentialSection()}
+          {section === "essential" && renderEssentialSection()}
           {section === "guide" && renderGuideSection()}
         </div>
       ) : (

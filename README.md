@@ -1,94 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bunks
 
-## Admin Pricing Console
+Direct-booking site for the Bunks homes (Steamboat and Summerland) at [www.bunks.com](https://www.bunks.com), with an admin console at `/admin`.
 
-- Visit `/admin` (or click **Admin Login** in the footer) to reach the internal dashboard.
-- Sign in with an allowed admin email and the password from `ADMIN_PASSWORD`. Configure additional allowed addresses via the comma-separated `ADMIN_EMAILS` (or legacy `ADMIN_EMAIL`) in `.env.local`. In production, `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` (32+ characters) are required; admin login is disabled until both are set.
-- From the console you can:
-	- Set weekday/weekend nightly rates, plus cleaning ($85) and service ($20) fees for every property in the database.
-	- Add date-level overrides for special pricing or block dates entirely when needed.
-	- Flip feature toggles (e.g., disable the Viator add-on marketplace at launch) from the **Feature toggles** panel.
+Next.js (app router) · Prisma on Neon Postgres · Stripe · Postmark with React Email · deployed on Vercel from `main`.
 
-All admin APIs require the session cookie that is issued during login and rely on `ADMIN_SESSION_SECRET` for signing.
-
-> **Tip:** Run `npx prisma migrate dev` followed by `node prisma/seed.mjs` whenever the Prisma schema changes so the database includes the latest pricing fields.
-
-## Email templates & sample sends
-
-The `/admin/emails` gallery now renders every React Email template with fixture data and lets you send Postmark samples without touching production bookings. To add or update a template end-to-end:
-
-1. **Create / update the component** under `src/emails/*` and keep props serializable so previews can render on the server.
-2. **Add fixture props** in `src/lib/email/sampleData.ts` (the admin gallery and sample sends both use these helpers).
-3. **Register the renderer** by mapping the slug to the component + fixture props inside `src/lib/email/templateRenderers.tsx`. This drives the gallery HTML, subject previews, and sample send metadata.
-4. **Whitelist the slug** in `src/lib/email/sampleSenderConfig.ts` so the admin UI, API route, and CLI helper all treat it as sendable.
-5. **Author the subject template** inside `src/lib/email/subjects.ts`. Placeholders like `{{propertyName}}` will render with your sample props, and sample sends automatically prefix the subject with `[Sample]` so they stand out in your inbox.
-6. **Expose the trigger** via `EMAIL_TEMPLATES` (in `src/lib/email/catalog.ts`) so the gallery lists it with the right audience/category/status.
-7. **Test locally**:
-	 - Preview at [/admin/emails](http://localhost:3000/admin/emails) and click **Send sample**.
-	 - Or run the CLI helper:
-
-		 ```bash
-		 npm run tsx scripts/send-email-sample.ts -- --template booking-confirmation --to you@example.com
-		 ```
-
-> **Security heads-up:** `.env` (or `.env.local`) contains live credentials (Postmark, Stripe, Neon, admin password). Keep that file out of version control and rotate any value that might have leaked.
-
-## Prisma migrations with a local shadow DB
-
-Neon rejects destructive operations during migration planning, so Prisma now uses a local PostgreSQL instance purely as the shadow database. To generate new migrations:
-
-1. Install and start PostgreSQL 16 (one-time):
-
-	```bash
-	brew install postgresql@16
-	brew services start postgresql@16
-	/opt/homebrew/opt/postgresql@16/bin/createdb bunks_shadow
-	```
-
-2. Ensure `.env` (or `.env.local`) contains `SHADOW_DATABASE_URL="postgresql://work@localhost:5432/bunks_shadow"`.
-3. Run the diff command described in [`docs/prisma-email-type-migration.md`](docs/prisma-email-type-migration.md) to emit a migration without touching the shared Neon database:
-
-	```bash
-	cd /Users/work/Desktop/bunks
-	PRISMA_SHADOW_DATABASE_URL="postgresql://work@localhost:5432/bunks_shadow" \
-	npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<timestamp>_<name>/migration.sql
-	```
-
-4. Commit the generated SQL and run `npx prisma generate` so TypeScript sees the new enums/tables.
-
-See the detailed checklist in `docs/prisma-email-type-migration.md` for smoke tests and deployment notes.
-
-## Getting Started
-
-First, run the development server:
+## Working on it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The QA stack runs the app against a local Postgres and mock Stripe: see [`qa/harness/README.md`](qa/harness/README.md). Unit tests: `bash qa/unit/run.sh`. Offline production build: `bash qa/harness/build-check.sh`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Changes reach production through pull requests into `main`; Vercel deploys every merge.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Admin
 
-## Learn More
+- Sign in at `/admin` with an allowed admin email (the comma-separated `ADMIN_EMAILS`) and that person's own password.
+- `node scripts/admin-password.mjs <email> [<email> …]` makes a strong password for each person plus the `ADMIN_PASSWORD_HASHES` value to paste into Vercel; only the hashes are stored. Anyone on `ADMIN_EMAILS` without their own entry falls back to the shared `ADMIN_PASSWORD`, if set. To remove someone, take them off `ADMIN_EMAILS`.
+- In production, `ADMIN_SESSION_SECRET` (32+ characters) plus either `ADMIN_PASSWORD_HASHES` or `ADMIN_PASSWORD` are required; admin login is disabled until they are set.
 
-To learn more about Next.js, take a look at the following resources:
+The console covers bookings and private payment links, pricing, the Airbnb calendar sync and the Bunks calendar export (Setup), guest emails, and marketing.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Pricing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Nightly rates** follow Airbnb: a GitHub Action (`.github/workflows/airbnb-price-check.yml`, twice a day) fetches Airbnb's quotes and Bunks saves each night's rate (special rates noted `auto:airbnb`). This needs `AIRBNB_GUEST_FEE_PCT` set and the **Airbnb pricing** switch on in Admin → Pricing. Otherwise, or for a night with no Airbnb rate, the weekday/weekend rates in Admin → Pricing apply. Admin one-off prices override both.
+- **A direct booking** gets 10% off the nightly subtotal, plus the cleaning fee, a 5% Bunks service fee on the discounted nightly subtotal, and the home's taxes (`src/lib/pricing/calculator.ts`).
+- **Private payment links** (Admin → Bookings → New private booking) use whatever nightly, cleaning, service fee and tax the admin enters, and hold the dates until the link expires.
 
-## Deploy on Vercel
+## Emails
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Guests get three emails per stay: the booking confirmation (with the receipt), arrival details the day before check-in, and the checkout reminder. Hosts get a new-booking alert. Cancellations, refunds and payment links send their own emails. The daily job is `src/app/api/cron/automations/route.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Admin → Emails previews every template with sample data and can send a sample. To add a template:
+
+1. Write the component in `src/emails/`.
+2. Add sample props in `src/lib/email/sampleData.ts` (made-up details only: samples can be sent to any address).
+3. Register it in `src/lib/email/templateRenderers.tsx`, `src/lib/email/sampleSenderConfig.ts`, `src/lib/email/subjects.ts` and `src/lib/email/catalog.ts`.
+
+## Database changes
+
+The migrations in `prisma/migrations/` don't fully match production (it was changed with `prisma db push` early on), so don't run `prisma migrate` against Neon. For a schema change, write re-runnable SQL (see `prisma/migrations/20261006120000_private_payment_links/migration.sql`), run it in the Neon SQL Editor before the code that needs it deploys, then merge. `node prisma/seed.mjs` is for local and QA databases only.
+
+## Environment variables
+
+Set in Vercel (Production). Secrets are marked Sensitive.
+
+| Variable | What it's for |
+|---|---|
+| `DATABASE_URL` | Neon Postgres |
+| `NEXT_PUBLIC_APP_URL` | Site address used in emails and links |
+| `ADMIN_EMAILS`, `ADMIN_PASSWORD_HASHES`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | Admin sign-in (see above) |
+| `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Payments; the webhook is `POST /api/stripe` |
+| `POSTMARK_API_KEY`, `POSTMARK_FROM_ADDRESS` | Email (`POSTMARK_MESSAGE_STREAM`, `POSTMARK_BROADCAST_STREAM` optional) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`, `OPS_ALERT_EMAIL` | Guest-facing support address; where ops alerts go |
+| `EMAIL_SENDING_PAUSED` | Marketing email only sends when this is `false` |
+| `EMAIL_PAUSE_ALL` | `true` stops every email, transactional included |
+| `CRON_SECRET` | Vercel Cron calls to `/api/cron/*` |
+| `ICAL_FEED_SECRET`, `GUIDE_LINK_SECRET` | Signing the calendar export and guide links (fall back to `ADMIN_SESSION_SECRET`) |
+| `PRICE_CHECK_SECRET` | The Airbnb price-check runner (also a GitHub Actions secret) |
+| `AIRBNB_GUEST_FEE_PCT` | Turns on Airbnb-driven nightly rates (`0` when the host pays Airbnb's fee) |
+| `PRICE_CHECK_ALERT_EMAIL`, `PRICE_CHECK_DIGEST`, `PRICE_CHECK_MIN_SAVINGS_PCT`, `PRICE_CHECK_COMPARE_WITH_TAX` | Price-check email and comparison settings |
+
+QA-only: `RATE_LIMIT_DISABLED`, `FEATURE_FLAG_CACHE_MS`, `EMAIL_CAPTURE_DIR`, `STRIPE_API_HOST`/`PORT`/`PROTOCOL` (stripe-mock), `SEED_ALLOW_REMOTE`.

@@ -62,7 +62,7 @@ def("Happy path: book, pay, confirm", async () => {
   check("H15", "My Trips lookup works with ref + email (case-insensitive)", lookup.status === 200 && lookup.json?.booking?.status === "PAID", lookup.text);
   const wrong = await api(`/api/bookings/${r.json.bookingReference}?email=someone@else.com`);
   check("H16", "lookup with wrong email is 404", wrong.status === 404, wrong.status);
-  const feedToken = (await api(`/api/admin/calendar-feeds`, { headers: { cookie: await adminCookie() } })).json;
+  const feedToken = (await api(`/api/admin/properties/settings`, { headers: { cookie: await adminCookie() } })).json;
   const url = JSON.stringify(feedToken).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   const feed = url ? await api(url) : { text: "" };
   check("H17", "Bunks export feed (for Airbnb) contains the paid stay 20261005→20261009", feed.text.includes("DTSTART;VALUE=DATE:20261005") && feed.text.includes("DTEND;VALUE=DATE:20261009"), feed.text.slice(0, 400));
@@ -372,7 +372,7 @@ def("Daily email automations", async () => {
   check("E2", "cron runs", r1.status === 200 || r2.status === 200, `${r1.status} ${r2.status} ${r1.text.slice(0, 200)}`);
   const m = emails().filter((x) => x.to === "tomorrow@example.com");
   const subjects = m.map((x) => x.subject);
-  check("E3", "guest arriving tomorrow gets pre-arrival + door code", m.length >= 2 && m.some((x) => x.html.includes("1234")), subjects.join(" | "));
+  check("E3", "guest arriving tomorrow gets arrival details with the door code", m.some((x) => /^Arrival details/.test(x.subject) && x.html.includes("1234")), subjects.join(" | "));
   check("E4", "two overlapping cron runs send each email once", new Set(subjects).size === subjects.length, subjects.join(" | "), "T-EM-01");
   check("E5", "unpaid holds get no automation emails", !emails().some((x) => x.to === "unpaid@example.com"), "unpaid guest emailed");
   const door = m.find((x) => x.html.includes("1234"));
@@ -392,7 +392,7 @@ def("Missed confirmation emails are caught up", async () => {
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   const first = emails().filter((m) => m.to === "missed@example.com").map((m) => m.subject);
-  check("M1", "daily run re-sends the missed receipt + confirmation", first.some((x) => /receipt/i.test(x)) && first.length >= 2, first.join(" | "), "T-EM-03");
+  check("M1", "daily run re-sends the missed booking confirmation", first.some((x) => /You're booked/.test(x)), first.join(" | "), "T-EM-03");
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("M2", "catch-up doesn't repeat on the next run", emails().filter((m) => m.to === "missed@example.com").length === 0, emails().map((m) => m.subject).join(" | "), "T-EM-03");
@@ -401,15 +401,6 @@ def("Missed confirmation emails are caught up", async () => {
   clearEmails();
   await api("/api/cron/automations", { headers: { authorization: `Bearer ${CRON_SECRET}` } });
   check("M3", "bookings paid in the last hour are left to the webhook", emails().filter((m) => m.to === "fresh@example.com").length === 0, emails().map((m) => m.subject).join(" | "));
-});
-
-def("Guest messaging is email-only", async () => {
-  const a = await book({ guestEmail: "chat@example.com" });
-  await pay(a);
-  clearEmails();
-  const r = await api(`/api/bookings/${a.json.bookingId}/messages`, { method: "POST", body: { body: "hi", guestEmail: "chat@example.com", bookingReference: a.json.bookingReference } });
-  check("GM1", "guest can't post in-app messages (410 with support email)", r.status === 410 && /@/.test(r.json?.error ?? ""), `${r.status} ${r.text}`, "T-SEC-06");
-  check("GM2", "no host email triggered", emails().length === 0, emails().map((m) => m.subject).join(" | "));
 });
 
 def("Last-minute booking gets its door code at payment", async () => {
@@ -446,7 +437,7 @@ def("Owner price overrides and blocks", async () => {
   check("OP4", "owner-blocked nights can't be booked", b.status === 409, b.status);
   const ok = await book({ checkIn: "2026-10-22", checkOut: "2026-10-25", guestEmail: "afterblock@example.com" });
   check("OP5", "night after the block is bookable (block covers exactly the chosen nights)", ok.status === 200, `${ok.status} ${ok.text}`);
-  const feeds = (await api("/api/admin/calendar-feeds", { headers: { cookie } })).json;
+  const feeds = (await api("/api/admin/properties/settings", { headers: { cookie } })).json;
   const url = JSON.stringify(feeds).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   const feed = url ? (await api(url)).text : "";
   check("OP6", "owner block is exported to Airbnb (20261020→20261022)", feed.includes("DTSTART;VALUE=DATE:20261020") && feed.includes("DTEND;VALUE=DATE:20261022"), feed.slice(0, 500));
@@ -689,7 +680,7 @@ def("Private payment links", async () => {
     body: { propertyId: property.id, checkIn: in1, checkOut: out1, guestName: "Link Guest", guestEmail: "link@example.com", guests: 2, holdHours: 48,
       charges: { nightlySubtotalCents: 120000, cleaningFeeCents: 25000, serviceFeeCents: 0, taxCents: 14500 }, ...overrides },
   });
-  const feedUrl = async () => JSON.stringify((await api("/api/admin/calendar-feeds", { headers: auth })).json).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
+  const feedUrl = async () => JSON.stringify((await api("/api/admin/properties/settings", { headers: auth })).json).match(new RegExp(`/api/ical/${SB}[^"?]*\\?token=[a-f0-9]+`))?.[0];
   try {
     const anon = await api("/api/admin/payment-links", { method: "POST", body: {} });
     check("PL1", "creating a payment link needs an admin session", anon.status === 401, anon.status);
@@ -798,7 +789,7 @@ def("Admin bookings: tabs, filters and detail", async () => {
 
 def("Admin endpoints require a session", async () => {
   const routes = [
-    ["POST", "/api/admin/bookings/lookup"], ["GET", "/api/admin/bookings/messages"], ["GET", "/api/admin/calendar-feeds"],
+    ["GET", "/api/admin/bookings/messages"],
     ["POST", "/api/admin/emails/send-sample"], ["GET", "/api/admin/features"], ["GET", "/api/admin/guests"],
     ["POST", "/api/admin/marketing/send"], ["GET", "/api/admin/ops-details"], ["GET", "/api/admin/properties"],
     ["POST", "/api/admin/properties/1/rates"], ["PUT", "/api/admin/properties/1/settings"], ["POST", "/api/admin/properties/1/special-pricing"],

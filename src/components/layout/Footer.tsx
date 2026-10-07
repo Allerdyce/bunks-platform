@@ -76,7 +76,7 @@ export function Footer({ onNavigate }: FooterProps) {
                 onClick={() => onNavigate("booking-details")}
                 className="transition hover:text-[var(--color-text-primary)]"
               >
-                Trips & messages
+                My trips
               </Link>
             </li>
             <li>

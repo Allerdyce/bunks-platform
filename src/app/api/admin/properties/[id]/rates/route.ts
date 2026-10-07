@@ -41,17 +41,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       weekendRate: toCents(weekendRate),
       cleaningFee: toCents(cleaningFee),
       serviceFee: toCents(serviceFee),
-    } as any,
+    },
   });
 
   return NextResponse.json({
     ok: true,
     property: {
       id: updated.id,
-      weekdayRate: (updated as any).weekdayRate,
-      weekendRate: (updated as any).weekendRate,
-      cleaningFee: (updated as any).cleaningFee,
-      serviceFee: (updated as any).serviceFee,
+      weekdayRate: updated.weekdayRate,
+      weekendRate: updated.weekendRate,
+      cleaningFee: updated.cleaningFee,
+      serviceFee: updated.serviceFee,
     },
   });
 }

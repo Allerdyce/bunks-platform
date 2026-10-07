@@ -1,4 +1,3 @@
-import * as React from 'react';
 import {
     Button,
     Heading,
@@ -6,21 +5,18 @@ import {
     Link,
     Section,
     Text,
-    Hr
 } from '@react-email/components';
 import { EmailLayout } from './components/EmailLayout';
 
 interface BookDirectCampaignEmailProps {
     guestName?: string;
     ctaUrl?: string;
-    baseUrl?: string;
 }
 
 export const BookDirectCampaignEmail = ({
     guestName = 'Guest',
     ctaUrl = 'https://bunks.com',
-    baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bunks.com',
-}: BookDirectCampaignEmailProps & { baseUrl?: string }) => {
+}: BookDirectCampaignEmailProps) => {
     const previewText = 'Save 10% on your next stay when you book direct.';
 
     return (

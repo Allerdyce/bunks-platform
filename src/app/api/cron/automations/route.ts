@@ -6,21 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { ensureFeatureEnabled } from '@/lib/featureFlags';
 import { isAuthorizedCronRequest } from '@/lib/cronAuth';
 import { ensureGuestLeadTable } from '@/lib/guestLeads';
-import {
-  sendCheckoutReminder,
-  sendHostPrepSameDay,
-  sendHostPrepThreeDay,
-  sendPreStay24hReminder,
-  sendPreStayReminder,
-  sendReviewRequest,
-  sendMidStayCheckIn,
-  sendDoorCodeEmail,
-  sendBookingConfirmation,
-  sendHostNotification,
-} from '@/lib/email';
-import { getOpsDetails } from '@/lib/opsDetails';
-import { buildHostPrepSameDayOptions, buildHostPrepThreeDayOptions } from '@/lib/email/hostPrepBuilders';
-import { PAUSED_EMAIL_TYPES } from '@/lib/email/deliverySettings';
+import { sendCheckoutReminder, sendDoorCodeEmail, sendBookingConfirmation, sendHostNotification } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -33,7 +19,6 @@ export const runtime = 'nodejs';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-type OpsDetailsResult = Awaited<ReturnType<typeof getOpsDetails>>;
 type BookingWithProperty = Booking & { property: Property };
 
 type BatchSummary = {
@@ -54,39 +39,12 @@ type DailyJob = {
   // Last day the job may still send (inclusive), relative to the given anchor.
   lastDay: { anchor: Anchor; offset: number };
   eligible?: (booking: BookingWithProperty) => boolean;
-  send: (booking: BookingWithProperty, opsDetails: OpsDetailsResult) => Promise<unknown>;
+  send: (booking: BookingWithProperty) => Promise<unknown>;
 };
 
+// Guests get three emails per stay; the booking confirmation is sent by the Stripe webhook
+// (caught up below), and these two are scheduled.
 const DAILY_JOBS: DailyJob[] = [
-  {
-    // Host heads-up three days before arrival (catch up until check-in day).
-    key: 'hostPrepThreeDay',
-    type: 'HOST_PREP_THREE_DAY',
-    anchor: 'checkIn',
-    firstDayOffset: -3,
-    lastDay: { anchor: 'checkIn', offset: 0 },
-    send: (booking, opsDetails) =>
-      sendHostPrepThreeDay({ ...buildHostPrepThreeDayOptions(booking, opsDetails), bookingId: booking.id }),
-  },
-  {
-    // Guest pre-stay reminder two days before check-in. Only on that day (or earlier if missed),
-    // never on the day before, so it doesn't land alongside the 24h reminder.
-    key: 'preStay48h',
-    type: 'PRE_STAY_REMINDER',
-    anchor: 'checkIn',
-    firstDayOffset: -2,
-    lastDay: { anchor: 'checkIn', offset: -2 },
-    send: (booking) => sendPreStayReminder(booking.id),
-  },
-  {
-    // Guest "see you tomorrow" reminder the day before check-in (catch up on check-in day).
-    key: 'preStay24h',
-    type: 'PRE_STAY_REMINDER_24H',
-    anchor: 'checkIn',
-    firstDayOffset: -1,
-    lastDay: { anchor: 'checkIn', offset: 0 },
-    send: (booking) => sendPreStay24hReminder(booking.id),
-  },
   {
     // Door code the day before check-in (catch up while the stay is in progress).
     key: 'doorCodeDelivery',
@@ -98,25 +56,6 @@ const DAILY_JOBS: DailyJob[] = [
     send: (booking) => sendDoorCodeEmail(booking.id),
   },
   {
-    // Host same-day prep on the morning of check-in.
-    key: 'hostPrepSameDay',
-    type: 'HOST_PREP_SAME_DAY',
-    anchor: 'checkIn',
-    firstDayOffset: 0,
-    lastDay: { anchor: 'checkIn', offset: 0 },
-    send: (booking, opsDetails) =>
-      sendHostPrepSameDay({ ...buildHostPrepSameDayOptions(booking, opsDetails), bookingId: booking.id }),
-  },
-  {
-    // Mid-stay check-in the morning after arrival; skipped for 1-night stays (that day is checkout).
-    key: 'midStayCheckIn',
-    type: 'MID_STAY_CONCIERGE',
-    anchor: 'checkIn',
-    firstDayOffset: 1,
-    lastDay: { anchor: 'checkOut', offset: -1 },
-    send: (booking) => sendMidStayCheckIn(booking.id),
-  },
-  {
     // Checkout reminder the day before checkout (catch up on checkout morning).
     key: 'checkout',
     type: 'CHECKOUT_REMINDER',
@@ -124,15 +63,6 @@ const DAILY_JOBS: DailyJob[] = [
     firstDayOffset: -1,
     lastDay: { anchor: 'checkOut', offset: 0 },
     send: (booking) => sendCheckoutReminder(booking.id),
-  },
-  {
-    // Review request the day after checkout (catch up for a few days).
-    key: 'reviewRequests',
-    type: 'REVIEW_REQUEST',
-    anchor: 'checkOut',
-    firstDayOffset: 1,
-    lastDay: { anchor: 'checkOut', offset: 4 },
-    send: (booking) => sendReviewRequest(booking.id),
   },
 ];
 
@@ -156,23 +86,22 @@ async function runAutomations(request: Request) {
   }
 
   const now = new Date();
-  const opsDetails = await getOpsDetails();
 
-  // Load every PAID booking that any job could still act on: arriving within the next few days,
-  // currently staying, or checked out within the review window.
+  // Load every PAID booking that any job could still act on: arriving within the next few days
+  // or currently staying.
   const bookings = await prisma.booking.findMany({
     where: {
       status: 'PAID',
       checkInDate: { lte: new Date(now.getTime() + 5 * DAY_IN_MS) },
-      checkOutDate: { gte: new Date(now.getTime() - 6 * DAY_IN_MS) },
+      checkOutDate: { gte: new Date(now.getTime() - 2 * DAY_IN_MS) },
     },
     include: { property: true },
     orderBy: { checkInDate: 'asc' },
   });
 
   const summary: Record<string, BatchSummary> = {};
-  for (const job of DAILY_JOBS.filter((entry) => !PAUSED_EMAIL_TYPES.has(entry.type))) {
-    summary[job.key] = await runDailyJob(job, bookings, now, opsDetails);
+  for (const job of DAILY_JOBS) {
+    summary[job.key] = await runDailyJob(job, bookings, now);
   }
   summary.confirmationCatchUp = await catchUpConfirmationEmails(now);
   summary.wifiBookDirect = await handleWiFiBookDirect(now);
@@ -180,12 +109,7 @@ async function runAutomations(request: Request) {
   return NextResponse.json({ ok: true, ranAt: now.toISOString(), summary });
 }
 
-async function runDailyJob(
-  job: DailyJob,
-  bookings: BookingWithProperty[],
-  now: Date,
-  opsDetails: OpsDetailsResult,
-): Promise<BatchSummary> {
+async function runDailyJob(job: DailyJob, bookings: BookingWithProperty[], now: Date): Promise<BatchSummary> {
   const due = bookings.filter((booking) => {
     if (job.eligible && !job.eligible(booking)) {
       return false;
@@ -218,7 +142,7 @@ async function runDailyJob(
     }
 
     try {
-      const result = await job.send(booking, opsDetails);
+      const result = await job.send(booking);
       if (result === null || result === undefined) {
         // Nothing sent (e.g. no door code yet): release so a later run can send it.
         await releaseClaim(claimId);

@@ -1,5 +1,4 @@
 import { notAClaim } from '@/lib/email/claims';
-import * as React from 'react';
 import type { Property } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {

@@ -119,9 +119,6 @@ export function PropertyDetailView({
   const [isMobile, setIsMobile] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const propertyReviews = PROPERTY_REVIEWS[property.slug] ?? [];
-  const comparableNightlyRate = Math.ceil((property.price * 1.1) / 10) * 10;
-  const nightlyRateLabel = formatCurrency(property.price);
-  const comparableRateLabel = formatCurrency(comparableNightlyRate);
   // Ratings are derived from real guest reviews only; with none, all rating UI is hidden.
   const reviewCount = propertyReviews.length;
   const averageRating = reviewCount
@@ -135,8 +132,8 @@ export function PropertyDetailView({
     "Save 10% compared to the same listing on other platforms";
   const modalActive = calendarOpen || reviewsOpen;
   const [quote, setQuote] = useState<PricingQuote | null>(null);
-  const [pendingQuote, setPendingQuote] = useState<PricingQuote | null>(null);
-  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  // A quote is kept with the dates it priced, so it's only shown while those dates are selected.
+  const [pendingQuoteFor, setPendingQuoteFor] = useState<{ key: string; quote: PricingQuote | null } | null>(null);
   // Set when the chosen dates can't be priced (e.g. no current Airbnb rate yet).
   const [priceMessage, setPriceMessage] = useState<string | null>(null);
 
@@ -151,7 +148,6 @@ export function PropertyDetailView({
         }
         return;
       }
-      setIsLoadingQuote(true);
       try {
         const res = await fetch(
           `/api/properties/${property.slug}/check-availability`,
@@ -174,8 +170,6 @@ export function PropertyDetailView({
         }
       } catch (e) {
         console.error("Failed to fetch quote", e);
-      } finally {
-        if (isMounted) setIsLoadingQuote(false);
       }
     };
     fetchQuote();
@@ -211,49 +205,40 @@ export function PropertyDetailView({
   }, [property.slug]);
 
   // Fetch quote for pending dates (Calendar Overlay)
+  const quoteKey = (range: DateRange) =>
+    range.start && range.end ? `${formatStayDate(range.start)}_${formatStayDate(range.end)}_${guestCount}` : null;
+  const pendingCheckIn = pendingRange.start ? formatStayDate(pendingRange.start) : null;
+  const pendingCheckOut = pendingRange.end ? formatStayDate(pendingRange.end) : null;
+  const pendingKey = quoteKey(pendingRange);
+  const pendingQuote = pendingKey && pendingQuoteFor?.key === pendingKey ? pendingQuoteFor.quote : null;
   useEffect(() => {
+    if (!pendingKey) return;
     let isMounted = true;
     const fetchPendingQuote = async () => {
-      if (!pendingRange.start || !pendingRange.end) {
-        if (isMounted) setPendingQuote(null);
-        return;
-      }
-      // Simple debounce could be added here if needed, but for now direct fetch is okay
       try {
         const res = await fetch(
           `/api/properties/${property.slug}/check-availability`,
           {
             method: "POST",
             body: JSON.stringify({
-              checkIn: formatStayDate(pendingRange.start),
-              checkOut: formatStayDate(pendingRange.end),
+              checkIn: pendingCheckIn,
+              checkOut: pendingCheckOut,
               guests: guestCount,
             }),
           },
         );
         const data = await res.json();
-        if (isMounted && data.quote) {
-          setPendingQuote(data.quote);
-        } else if (isMounted) {
-          setPendingQuote(null);
-        }
-      } catch (e) {
-        // Silently fail or just clear quote
-        if (isMounted) setPendingQuote(null);
+        if (isMounted) setPendingQuoteFor({ key: pendingKey, quote: data.quote ?? null });
+      } catch {
+        if (isMounted) setPendingQuoteFor({ key: pendingKey, quote: null });
       }
     };
-
-    // reset pending quote when dates become invalid/incomplete
-    if (!pendingRange.start || !pendingRange.end) {
-      setPendingQuote(null);
-    } else {
-      const timer = setTimeout(fetchPendingQuote, 200); // 200ms debounce
-      return () => {
-        isMounted = false;
-        clearTimeout(timer);
-      };
-    }
-  }, [pendingRange, property.slug, guestCount]);
+    const timer = setTimeout(fetchPendingQuote, 200); // 200ms debounce
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [pendingKey, pendingCheckIn, pendingCheckOut, property.slug, guestCount]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -324,7 +309,9 @@ export function PropertyDetailView({
 
   const openCalendarOverlay = () => {
     setPendingRange({ start: bookingDates.start, end: bookingDates.end });
-    setPendingQuote(quote); // Initialize with existing quote if matches
+    // Start from the sidebar's quote for the confirmed dates, if there is one.
+    const key = quoteKey(bookingDates);
+    setPendingQuoteFor(key ? { key, quote } : null);
     setCalendarOpen(true);
   };
 
@@ -332,7 +319,6 @@ export function PropertyDetailView({
 
   const clearPendingRange = () => {
     setPendingRange({ start: null, end: null });
-    setPendingQuote(null);
   };
 
   const handleSavePendingRange = () => {

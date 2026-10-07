@@ -89,14 +89,6 @@ async function main() {
 
   console.log('✅ Seeded ops contact profile');
 
-  await prisma.featureToggle.upsert({
-    where: { key: 'addons' },
-    update: {},
-    create: {
-      key: 'addons',
-      enabled: true,
-    },
-  });
 
   console.log('✅ Ensured feature toggles');
 

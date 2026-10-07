@@ -8,7 +8,6 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
-// trigger reload
 const nextConfig: NextConfig = {
   // Guide PDFs are private (see src/data/guides.ts); bundle them with the route that serves them.
   outputFileTracingIncludes: {
@@ -18,10 +17,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
       {
@@ -29,6 +24,13 @@ const nextConfig: NextConfig = {
         hostname: "static1.cafe-encore.com",
       },
     ],
+  },
+  // Guest chat is gone; links to the old inbox in past emails open the trip page instead.
+  async redirects() {
+    return [
+      { source: "/my-trips/inbox", destination: "/my-trips/essential", permanent: true },
+      { source: "/my-trips/:ref/inbox", destination: "/my-trips/:ref/essential", permanent: true },
+    ];
   },
   async headers() {
     return [

@@ -58,6 +58,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
                 {property.image && (
                     <img
                         src={property.image}
+                        alt=""
                         style={{
                             position: 'absolute',
                             top: 0,

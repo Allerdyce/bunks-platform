@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { EmailLayout } from './components/EmailLayout';
 import { DetailRows, Divider, EmailTitle, Paragraph, PrimaryButton, SupportLine, type DetailRow } from './components/parts';
 

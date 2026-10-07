@@ -12,8 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "index.tsx",
   ]),
+  {
+    // A leading underscore marks a parameter that's kept on purpose but not used yet.
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    },
+  },
   {
     files: ["src/app/api/**/*.{ts,tsx}"],
     rules: {
