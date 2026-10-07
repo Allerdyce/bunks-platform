@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertCircle, CheckCircle2, Copy, Loader2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, Loader2 } from "lucide-react";
 import type { DateRange } from "@/types";
 import { formatStayDate } from "@/lib/availability";
 
@@ -210,9 +210,6 @@ export function PrivateBookingForm({ onClose, onCreated }: { onClose: () => void
             Set the price for one guest. Bunks holds the dates, here and on Airbnb, and the guest pays by card from a private link.
           </p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-2 text-gray-500 hover:bg-gray-100">
-          <X className="h-5 w-5" />
-        </button>
       </header>
 
       {created ? (

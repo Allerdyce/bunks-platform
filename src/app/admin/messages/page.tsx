@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
@@ -9,8 +9,10 @@ import { AdminCheckingShell } from "@/components/admin/AdminCheckingShell";
 import { Button } from "@/components/shared/Button";
 import { PROPERTIES } from "@/data/properties";
 import { PrivateBookingForm } from "@/components/admin/PrivateBookingForm";
-import { BookingList } from "@/components/admin/bookings/BookingList";
+import { BookingSidebar } from "@/components/admin/bookings/BookingSidebar";
+import { BookingTable } from "@/components/admin/bookings/BookingTable";
 import { BookingDetail } from "@/components/admin/bookings/BookingDetail";
+import { BookingDrawer } from "@/components/admin/bookings/BookingDrawer";
 import type { AdminBooking, BookingView } from "@/components/admin/bookings/bookingDisplay";
 
 type AuthState = "checking" | "unauthenticated" | "authenticated";
@@ -30,7 +32,9 @@ export default function AdminBookingsPage() {
   const [view, setView] = useState<BookingView>("upcoming");
   const [home, setHome] = useState("");
   const [search, setSearch] = useState("");
-  const [activeId, setActiveId] = useState<number | null>(null);
+  // The booking open in the side panel. Kept after a refresh even if it leaves the current tab
+  // (e.g. just cancelled), so the panel can show what happened.
+  const [selected, setSelected] = useState<AdminBooking | null>(null);
   const [creatingLink, setCreatingLink] = useState(false);
 
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function AdminBookingsPage() {
     await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
     setAuthState("unauthenticated");
     setBookings([]);
-    setActiveId(null);
+    setSelected(null);
   };
 
   const fetchBookings = useCallback(async () => {
@@ -93,7 +97,7 @@ export default function AdminBookingsPage() {
       const results = data?.threads ?? [];
       setBookings(results);
       setCounts(data?.counts ?? {});
-      setActiveId((current) => (current !== null && results.some((b) => b.id === current) ? current : (results[0]?.id ?? null)));
+      setSelected((current) => (current ? (results.find((b) => b.id === current.id) ?? current) : null));
     } catch (err) {
       console.error("Failed to load bookings", err);
       setLoadError((err as Error).message ?? "Failed to load bookings");
@@ -106,11 +110,6 @@ export default function AdminBookingsPage() {
   useEffect(() => {
     if (authState === "authenticated") void fetchBookings();
   }, [authState, fetchBookings]);
-
-  const activeBooking = useMemo(
-    () => bookings.find((booking) => booking.id === activeId) ?? null,
-    [bookings, activeId],
-  );
 
   if (authState === "checking") {
     return <AdminCheckingShell active="messages" />;
@@ -185,7 +184,7 @@ export default function AdminBookingsPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-white">
+    <div className="min-h-screen bg-gray-50 pb-16">
       <AdminTopNav
         active="messages"
         actions={
@@ -195,12 +194,12 @@ export default function AdminBookingsPage() {
         }
       />
 
-      <main className="flex min-h-0 flex-1 flex-col">
-        <div className="z-10 flex w-full flex-wrap items-end justify-between gap-4 border-b border-gray-100 bg-white px-6 py-6 lg:px-12">
+      <main className="mt-8 w-full space-y-8 px-6 lg:px-12">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Bunks Ops</p>
             <h1 className="page-title   text-gray-900 mt-1">Bookings & guests</h1>
-            <p className="text-sm text-gray-500">Stays, payment links and cancellations, with each guest&apos;s details and emails.</p>
+            <p className="text-sm text-gray-500">Stays, payment links and cancellations.</p>
           </div>
           <Button type="button" onClick={() => setCreatingLink(true)} className="gap-2 whitespace-nowrap">
             <Plus className="h-4 w-4" /> New private booking
@@ -208,56 +207,57 @@ export default function AdminBookingsPage() {
         </div>
 
         {loadError && (
-          <div className="m-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="mr-2 inline h-4 w-4" /> {loadError}
           </div>
         )}
-        <div className="flex min-h-0 flex-1 flex-col bg-white lg:flex-row lg:divide-x lg:divide-gray-200">
-          <aside className="flex min-h-[50vh] flex-col lg:min-h-0 lg:w-[420px] lg:flex-shrink-0">
-            <BookingList
+
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <BookingSidebar
               view={view}
               counts={counts}
+              searchActive={Boolean(search)}
               homes={HOMES}
               home={home}
-              searchActive={search}
-              loading={loading}
-              bookings={bookings}
-              activeId={activeBooking?.id ?? null}
               onViewChange={(next) => {
                 setSearch("");
-                setCreatingLink(false);
                 setView(next);
               }}
               onHomeChange={setHome}
+            />
+          </div>
+          <div className="lg:col-span-8">
+            <BookingTable
+              key={`${view}-${search}`}
+              view={view}
+              searchActive={search}
+              loading={loading}
+              bookings={bookings}
               onSearch={setSearch}
               onRefresh={() => void fetchBookings()}
-              onSelect={(id) => {
-                setCreatingLink(false);
-                setActiveId(id);
-              }}
+              onSelect={(id) => setSelected(bookings.find((booking) => booking.id === id) ?? null)}
               onChanged={() => void fetchBookings()}
             />
-          </aside>
-          <section className="min-w-0 flex-1 lg:overflow-y-auto">
-            {creatingLink ? (
-              <PrivateBookingForm
-                onClose={() => setCreatingLink(false)}
-                onCreated={(bookingId) => {
-                  setView("links");
-                  setSearch("");
-                  setActiveId(bookingId);
-                }}
-              />
-            ) : activeBooking ? (
-              <BookingDetail key={activeBooking.id} booking={activeBooking} onChanged={() => void fetchBookings()} />
-            ) : (
-              <div className="flex h-full items-center justify-center p-10 text-sm text-gray-500">
-                {loading ? "Loading…" : "Choose a booking to see its details."}
-              </div>
-            )}
-          </section>
+          </div>
         </div>
       </main>
+
+      {creatingLink ? (
+        <BookingDrawer label="New private booking" onClose={() => setCreatingLink(false)}>
+          <PrivateBookingForm
+            onClose={() => setCreatingLink(false)}
+            onCreated={() => {
+              setSearch("");
+              setView("links");
+            }}
+          />
+        </BookingDrawer>
+      ) : selected ? (
+        <BookingDrawer label={`Booking for ${selected.guestName}`} onClose={() => setSelected(null)}>
+          <BookingDetail key={selected.id} booking={selected} onChanged={() => void fetchBookings()} />
+        </BookingDrawer>
+      ) : null}
     </div>
   );
 }
