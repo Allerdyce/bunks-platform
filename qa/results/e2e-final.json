@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-03T03:27:11.752Z",
-  "pass": 182,
-  "total": 182,
+  "at": "2026-10-09T18:15:32.847Z",
+  "pass": 215,
+  "total": 215,
   "results": [
     {
       "scenario": "Quote matches pricing rules",
@@ -150,7 +150,7 @@
     {
       "scenario": "Happy path: book, pay, confirm",
       "id": "H11",
-      "description": "emails show stay dates as Oct 5 and Oct 9 (no timezone shift)",
+      "description": "emails show the stay's check-in and check-out dates (no timezone shift)",
       "pass": true,
       "detail": "",
       "ticket": ""
@@ -166,7 +166,7 @@
     {
       "scenario": "Happy path: book, pay, confirm",
       "id": "H13",
-      "description": "receipt shows 5% service fee $63.00 (not a flat fee)",
+      "description": "booking confirmation itemises the 5% service fee $63.00 (not a flat fee)",
       "pass": true,
       "detail": "",
       "ticket": "T-EM-09"
@@ -174,7 +174,7 @@
     {
       "scenario": "Happy path: book, pay, confirm",
       "id": "H14",
-      "description": "receipt shows lodging tax $144.00",
+      "description": "booking confirmation itemises lodging tax $144.00",
       "pass": true,
       "detail": "",
       "ticket": "T-EM-09"
@@ -902,7 +902,7 @@
     {
       "scenario": "Missed confirmation emails are caught up",
       "id": "M1",
-      "description": "daily run re-sends the missed receipt + confirmation",
+      "description": "daily run re-sends the missed booking confirmation (receipt included)",
       "pass": true,
       "detail": "",
       "ticket": "T-EM-03"
@@ -1146,6 +1146,54 @@
       "pass": true,
       "detail": "",
       "ticket": "T-SEC-03"
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW1",
+      "description": "first Wi-Fi unlock sends the welcome: subject, photo, Wi-Fi details",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW2",
+      "description": "Summerland (no lock codes in its guide) links the guidebook PDF directly, and it opens",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW3",
+      "description": "a Wi-Fi guide link can't be reused for Steamboat's guide (which has door codes)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW4",
+      "description": "scanning again at the same home doesn't resend",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW5",
+      "description": "Steamboat sends the trip page instead of its guide, and no door codes",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Wi-Fi welcome email (draft, unpaused in QA)",
+      "id": "WW6",
+      "description": "no home on the page → no welcome email (Wi-Fi still unlocks)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
     },
     {
       "scenario": "Address, Wi-Fi and guides only for paid guests",
@@ -1421,6 +1469,62 @@
     },
     {
       "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR12",
+      "description": "per-night breakdown that adds up → each night saved at its own Airbnb rate, email lists each night",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR13",
+      "description": "a breakdown that doesn't add up falls back to the 3-night average",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR14",
+      "description": "a malformed breakdown doesn't reject the quote",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR15",
+      "description": "7 nights: Airbnb's 10% weekly discount, then Bunks' 10% ($400 → $360 Airbnb-equivalent → $324)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR16",
+      "description": "6 nights: no weekly discount ($400 → $360)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR17",
+      "description": "home not linked to its Airbnb listing stays on base rates instead of becoming unbookable",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
+      "id": "AR18",
+      "description": "Admin → Pricing says Airbnb pricing is active and names the unlinked home",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Airbnb pricing: nightly rates copied from Airbnb",
       "id": "AR10",
       "description": "Airbnb rates older than 7 days are not used",
       "pass": true,
@@ -1436,9 +1540,169 @@
       "ticket": ""
     },
     {
+      "scenario": "Private payment links",
+      "id": "PL1",
+      "description": "creating a payment link needs an admin session",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL2",
+      "description": "form pre-fills the standard price (same as a guest quote) plus the home's taxes",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL3",
+      "description": "admin-priced link: dates held 48h, every fee stored as entered, Stripe payment for the exact total",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL4",
+      "description": "held nights show as taken to guests and can't be booked at checkout",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL5",
+      "description": "the hold goes to Airbnb in the Bunks calendar until paid",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL6",
+      "description": "the same guest starting a normal checkout never releases their payment link",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL7",
+      "description": "guest page shows the home, every fee, the total and the hold",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL8",
+      "description": "an unknown link is not found",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL9",
+      "description": "admin can email the link: right guest, link, total, hold deadline",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL10",
+      "description": "paying makes it a normal paid booking; the confirmation itemises the admin's fees",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL11",
+      "description": "once paid: Airbnb sees a reservation, and the link page says it's booked",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL12",
+      "description": "rejects booked dates (409), past check-in, negative fees, bad email and too many guests (400)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL13",
+      "description": "an unpaid link past its hold frees the dates, says expired, and shows as expired in admin",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Private payment links",
+      "id": "PL14",
+      "description": "zero tax is allowed; cancelling a link cancels its Stripe payment and frees the dates",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK1",
+      "description": "Upcoming lists paid future stays only (not the link, abandoned checkout or past stay)",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK2",
+      "description": "Payment links tab lists links with state, expiry and source",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK3",
+      "description": "Past and Unpaid tabs hold the past stay and the abandoned checkout",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK4",
+      "description": "tab counts match the lists",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK5",
+      "description": "home filter narrows the list; search finds a booking from any tab",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
+      "scenario": "Admin bookings: tabs, filters and detail",
+      "id": "BK6",
+      "description": "detail has the fee breakdown, the emails sent and a Stripe link",
+      "pass": true,
+      "detail": "",
+      "ticket": ""
+    },
+    {
       "scenario": "Admin endpoints require a session",
       "id": "AD1",
-      "description": "all 14 admin API routes reject anonymous calls",
+      "description": "all 18 admin API routes reject anonymous calls",
       "pass": true,
       "detail": "",
       "ticket": ""

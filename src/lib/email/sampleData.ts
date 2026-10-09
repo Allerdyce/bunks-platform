@@ -1,4 +1,6 @@
 
+import type { WifiWelcomeEmailProps } from '@/emails/WifiWelcomeEmail';
+import { toAbsoluteUrl } from '@/lib/url';
 import { BookingConfirmationEmailProps } from '@/emails/BookingConfirmationEmail';
 import { BookingWelcomeEmailProps } from '@/emails/BookingWelcomeEmail';
 import { DoorCodeEmailProps } from '@/emails/DoorCodeEmail';
@@ -467,5 +469,18 @@ export function samplePaymentLinkProps(): PaymentLinkEmailProps {
     payUrl: 'https://www.bunks.com/pay/example',
     holdUntil: 'Thu, Oct 8, 3:54 PM PDT',
     supportEmail: SUPPORT_EMAIL,
+  };
+}
+
+export function sampleWifiWelcomeProps(): WifiWelcomeEmailProps {
+  return {
+    guestName: 'Jordan Lee',
+    propertyName: 'Summerland Ocean-View Beach Bungalow',
+    imageUrl: toAbsoluteUrl('/summerland/hero.jpg') ?? null,
+    wifi: { network: 'Lillie Ave Guest', password: 'Welcome!' },
+    guideUrl: toAbsoluteUrl('/api/guides/summerland-ocean-view-beach-bungalow/guide') ?? 'https://bunks.com',
+    guideIsTripPage: false,
+    bookDirectUrl: toAbsoluteUrl('/property/summerland-ocean-view-beach-bungalow') ?? 'https://bunks.com',
+    supportEmail: 'alissa@bunks.com',
   };
 }

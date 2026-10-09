@@ -84,6 +84,19 @@ export const EMAIL_TEMPLATES: EmailTemplateSpec[] = [
     serviceFunction: 'sendDoorCodeEmail',
   },
 
+  // Guest — Wi-Fi (in-home QR page)
+  {
+    slug: 'wifi-welcome',
+    name: 'Wi-Fi Welcome',
+    audience: 'guest',
+    category: 'During Stay',
+    trigger: 'Immediately, the first time a guest unlocks the Wi-Fi on the in-home QR page at a home',
+    description: 'Welcome with the home photo, Wi-Fi network and password, and the house guide (or trip page where the guide has lock codes). Draft: paused.',
+    status: 'in-progress',
+    templatePath: 'src/emails/WifiWelcomeEmail.tsx',
+    serviceFunction: 'sendWifiWelcomeEmail',
+  },
+
   // Guest — During Stay
   {
     slug: 'mid-stay-check-in',

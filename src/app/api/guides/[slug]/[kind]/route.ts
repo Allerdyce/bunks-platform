@@ -1,9 +1,9 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
-import { PROPERTY_GUIDE_FILES, type GuideKind } from "@/data/guides";
+import { PROPERTY_GUIDE_FILES, WIFI_SAFE_GUIDE_SLUGS, type GuideKind } from "@/data/guides";
 import { readSessionFromRequest } from "@/lib/adminAuth";
-import { verifyGuideLink } from "@/lib/guideLinks";
+import { isWifiGuideRef, verifyGuideLink } from "@/lib/guideLinks";
 import { prisma } from "@/lib/prisma";
 import { rateLimitResponse } from "@/lib/rateLimit";
 
@@ -18,7 +18,7 @@ const expired = () =>
     { status: 403, headers: { ...NO_STORE, "Content-Type": "text/plain; charset=utf-8" } },
   );
 
-/** A property's guide PDF: for admins, or a paid booking holding a valid signed link (lib/guideLinks). */
+/** A property's guide PDF: for admins, a paid booking, or a Wi-Fi guest (code-free guides only), via a signed link (lib/guideLinks). */
 export async function GET(req: NextRequest, context: { params: Promise<{ slug: string; kind: string }> }) {
   const limited = rateLimitResponse(req, "guide-download", 60, 10 * 60_000);
   if (limited) return limited;
@@ -33,12 +33,17 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
     if (!verifyGuideLink(slug, kind, ref, q.get("exp") ?? "", q.get("sig") ?? "")) {
       return expired();
     }
-    const booking = await prisma.booking.findUnique({
-      where: { publicReference: ref },
-      select: { status: true, property: { select: { slug: true } } },
-    });
-    if (!booking || booking.status !== "PAID" || booking.property.slug !== slug) {
-      return expired();
+    if (isWifiGuideRef(ref)) {
+      // Wi-Fi welcome email link: only the guide, and only for homes whose guide has no lock codes.
+      if (kind !== "guide" || !WIFI_SAFE_GUIDE_SLUGS.has(slug)) return expired();
+    } else {
+      const booking = await prisma.booking.findUnique({
+        where: { publicReference: ref },
+        select: { status: true, property: { select: { slug: true } } },
+      });
+      if (!booking || booking.status !== "PAID" || booking.property.slug !== slug) {
+        return expired();
+      }
     }
   }
 

@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-03T03:29:12.223Z",
+  "at": "2026-10-09T18:12:44.015Z",
   "pass": 56,
   "total": 56,
   "results": [
@@ -254,7 +254,7 @@
     {
       "scenario": "Guest books through the UI",
       "id": "UB8",
-      "description": "trip page shows Oct 5 check-in and Oct 9 checkout",
+      "description": "trip page shows the booked check-in and checkout dates",
       "pass": true,
       "detail": "",
       "ticket": ""

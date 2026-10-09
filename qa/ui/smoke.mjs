@@ -1,7 +1,7 @@
 // Browser smoke test of the guest journey and admin, against the local QA stack.
 // Usage: PLAYWRIGHT_MODULE=/path/to/node_modules/playwright/index.mjs SHOTS=/tmp/shots node qa/ui/smoke.mjs
 import fs from "node:fs";
-import { BASE, SB, SL, db, resetData, forceSync, stripe, check, results, scenario, ADMIN, book, pay } from "../e2e/lib.mjs";
+import { BASE, SB, SL, db, resetData, forceSync, stripe, check, results, scenario, ADMIN, book, pay, D } from "../e2e/lib.mjs";
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
 const SHOTS = process.env.SHOTS || "/tmp/bunks-qa/shots";
@@ -49,12 +49,12 @@ scenario("Guest books through the UI");
   await page.getByRole("button", { name: /check availability/i }).first().click();
   await page.waitForTimeout(800);
   const picker = page.locator("div.fixed.inset-0.z-50");
-  const airbnbNight = picker.getByRole("button", { name: `${dayLabel("2026-10-11")}, unavailable` }).first();
+  const airbnbNight = picker.getByRole("button", { name: `${dayLabel(D("2026-10-11"))}, unavailable` }).first();
   check("UB1", "Airbnb-booked night (Oct 11) is shown as unavailable", await airbnbNight.count() > 0 && await airbnbNight.isDisabled(), "Oct 11 not marked unavailable");
-  await picker.getByRole("button", { name: dayLabel("2026-10-05"), exact: true }).first().click();
-  const tooShort = picker.getByRole("button", { name: new RegExp(`^${dayLabel("2026-10-07")}, below`) }).first();
+  await picker.getByRole("button", { name: dayLabel(D("2026-10-05")), exact: true }).first().click();
+  const tooShort = picker.getByRole("button", { name: new RegExp(`^${dayLabel(D("2026-10-07"))}, below`) }).first();
   check("UB2", "calendar blocks a 2-night checkout (3-night minimum)", await tooShort.count() > 0 && await tooShort.isDisabled(), "Oct 7 selectable as checkout");
-  await picker.getByRole("button", { name: dayLabel("2026-10-09"), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel(D("2026-10-09")), exact: true }).first().click();
   await page.waitForTimeout(800);
   await shot(page, "flow-1-dates-selected");
   const overlayText = await page.locator("body").innerText();
@@ -74,7 +74,7 @@ scenario("Guest books through the UI");
   await page.waitForTimeout(3000);
   await shot(page, "flow-4-payment-step");
   const booking = await db.booking.findFirst({ where: { guestEmail: "ui-tester@example.com" } });
-  check("UB5", "checkout created a PENDING hold for Oct 5–9 at $1,647", booking?.status === "PENDING" && booking.checkInDate.toISOString().startsWith("2026-10-05") && booking.checkOutDate.toISOString().startsWith("2026-10-09") && booking.totalPriceCents === 164700, JSON.stringify(booking));
+  check("UB5", "checkout created a PENDING hold for Oct 5–9 at $1,647", booking?.status === "PENDING" && booking.checkInDate.toISOString().startsWith(D("2026-10-05")) && booking.checkOutDate.toISOString().startsWith(D("2026-10-09")) && booking.totalPriceCents === 164700, JSON.stringify(booking));
   check("UB6", "no errors during the booking flow", page.problems.length === 0, page.problems.join(" | "));
 
   // Second guest tries the same dates in the UI → friendly message.
@@ -83,8 +83,8 @@ scenario("Guest books through the UI");
   await other.getByRole("button", { name: /check availability/i }).first().click();
   await other.waitForTimeout(600);
   const otherPicker = other.locator("div.fixed.inset-0.z-50");
-  await otherPicker.getByRole("button", { name: dayLabel("2026-10-05"), exact: true }).first().click();
-  await otherPicker.getByRole("button", { name: dayLabel("2026-10-09"), exact: true }).first().click();
+  await otherPicker.getByRole("button", { name: dayLabel(D("2026-10-05")), exact: true }).first().click();
+  await otherPicker.getByRole("button", { name: dayLabel(D("2026-10-09")), exact: true }).first().click();
   await other.getByRole("button", { name: /^save$/i }).click();
   await other.waitForTimeout(800);
   await other.getByRole("button", { name: /^reserve$/i }).first().click();
@@ -112,7 +112,9 @@ scenario("Guest books through the UI");
   }
   const trip = await page.locator("body").innerText();
   await shot(page, "flow-6-trip-page");
-  check("UB8", "trip page shows Oct 5 check-in and Oct 9 checkout", /Oct(ober)?\s+5/.test(trip) && /Oct(ober)?\s+9/.test(trip), trip.slice(0, 400));
+  const md = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).split(" ");
+  const dayRe = ([mon, day]) => new RegExp(`${mon}[a-z]*\\s+${day}\\b`);
+  check("UB8", "trip page shows the booked check-in and checkout dates", dayRe(md(D("2026-10-05"))).test(trip) && dayRe(md(D("2026-10-09"))).test(trip), trip.slice(0, 400));
   check("UB9", "trip page has no errors", page.problems.length === 0, page.problems.join(" | "));
   const wifiLine = trip.match(/Wi-Fi\s*\n\s*([^\n]+)/)?.[1] ?? "";
   check("UB10", "paid trip page shows the address and Wi-Fi (kept off public pages)", /6th Street/.test(trip) && wifiLine.includes(" / "), `wifi: ${wifiLine}`, "T-SEC-10");
@@ -129,10 +131,10 @@ scenario("Phone booking flow (Summerland)");
   await page.getByRole("button", { name: /check availability/i }).last().click();
   await page.waitForTimeout(600);
   const picker = page.locator("div.fixed.inset-0.z-50");
-  const airbnb = picker.getByRole("button", { name: `${dayLabel("2026-10-21")}, unavailable` }).first();
+  const airbnb = picker.getByRole("button", { name: `${dayLabel(D("2026-10-21"))}, unavailable` }).first();
   check("PH1", "phone: Summerland's Airbnb night Oct 21 shows unavailable", await airbnb.count() > 0, "not marked");
-  await picker.getByRole("button", { name: dayLabel("2026-10-12"), exact: true }).first().click();
-  await picker.getByRole("button", { name: dayLabel("2026-10-15"), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel(D("2026-10-12")), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel(D("2026-10-15")), exact: true }).first().click();
   await shot(page, "phone-1-dates");
   await page.getByRole("button", { name: /^save$/i }).click();
   await page.waitForTimeout(800);
@@ -147,7 +149,7 @@ scenario("Phone booking flow (Summerland)");
   await page.waitForTimeout(2500);
   await shot(page, "phone-4-payment");
   const b = await db.booking.findFirst({ where: { guestEmail: "phone@example.com" } });
-  check("PH2", "phone checkout creates the Oct 12–15 hold", b?.checkInDate.toISOString().startsWith("2026-10-12") && b?.checkOutDate.toISOString().startsWith("2026-10-15"), JSON.stringify(b));
+  check("PH2", "phone checkout creates the Oct 12–15 hold", b?.checkInDate.toISOString().startsWith(D("2026-10-12")) && b?.checkOutDate.toISOString().startsWith(D("2026-10-15")), JSON.stringify(b));
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check("PH3", "phone checkout has no horizontal scroll", overflow <= 1, `${overflow}px`);
   check("PH4", "no errors in the phone flow", page.problems.length === 0, page.problems.join(" | "));
@@ -163,8 +165,8 @@ for (const tz of ["Asia/Tokyo", "Pacific/Honolulu", "Europe/London"]) {
   await page.getByRole("button", { name: /check availability/i }).first().click();
   await page.waitForTimeout(600);
   const picker = page.locator("div.fixed.inset-0.z-50");
-  await picker.getByRole("button", { name: dayLabel("2026-11-09"), exact: true }).first().click();
-  await picker.getByRole("button", { name: dayLabel("2026-11-12"), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel(D("2026-11-09")), exact: true }).first().click();
+  await picker.getByRole("button", { name: dayLabel(D("2026-11-12")), exact: true }).first().click();
   await page.getByRole("button", { name: /^save$/i }).click();
   await page.waitForTimeout(800);
   await page.getByRole("button", { name: /^reserve$/i }).first().click();
@@ -175,7 +177,7 @@ for (const tz of ["Asia/Tokyo", "Pacific/Honolulu", "Europe/London"]) {
   await page.getByRole("button", { name: /continue to payment/i }).first().click();
   await page.waitForTimeout(2500);
   const b = await db.booking.findFirst({ where: { guestEmail: `tz-${tz.replace(/\W/g, "")}@example.com`.toLowerCase() } });
-  check(`TZ-${tz}`, `guest browsing from ${tz} books Nov 9–12 exactly`, b && b.checkInDate.toISOString().startsWith("2026-11-09") && b.checkOutDate.toISOString().startsWith("2026-11-12"), JSON.stringify(b && [b.checkInDate, b.checkOutDate]));
+  check(`TZ-${tz}`, `guest browsing from ${tz} books Nov 9–12 exactly`, b && b.checkInDate.toISOString().startsWith(D("2026-11-09")) && b.checkOutDate.toISOString().startsWith(D("2026-11-12")), JSON.stringify(b && [b.checkInDate, b.checkOutDate]));
   await page.context().close();
 }
 
@@ -242,11 +244,12 @@ scenario("Admin pages");
   }
 
   // Cancel a paid booking from Admin → Bookings with the policy-suggested refund.
-  const paid = await book({ guestEmail: "cancel-ui@example.com", checkIn: "2026-12-07", checkOut: "2026-12-10" });
+  const paid = await book({ guestEmail: "cancel-ui@example.com", checkIn: D("2026-12-07"), checkOut: D("2026-12-10") });
   await pay(paid);
   page.problems = [];
   await page.goto(`${BASE}/admin/messages`, { waitUntil: "networkidle" });
-  await page.getByText("cancel-ui@example.com").first().click().catch(() => {});
+  // The bookings table lists guest name and reference (redesigned in PR #28); open the row by reference.
+  await page.getByText(paid.json.bookingReference).first().click();
   await page.getByRole("button", { name: /cancel booking/i }).first().click();
   await page.waitForTimeout(300);
   const suggested = await page.locator("label", { hasText: "(your policy)" }).innerText();

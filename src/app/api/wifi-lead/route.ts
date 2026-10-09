@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 import { recordGuestLead } from "@/lib/guestLeads";
+import { sendWifiWelcomeEmail } from "@/lib/email/sendWifiWelcome";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NAME_LENGTH = 80;
@@ -44,12 +45,20 @@ export async function POST(req: NextRequest) {
         });
 
         // Record where and when we captured them for the admin guest list.
-        await recordGuestLead({
+        const lead = await recordGuestLead({
             email,
             name: name || null,
             source: "wifi",
             propertySlug,
         });
+
+        // Welcome email with the Wi-Fi details, once per guest per home (repeat scans don't resend).
+        // Paused by default (see lib/email/deliverySettings); a failure never blocks the Wi-Fi.
+        if (propertySlug && lead.captureCount === 1) {
+            await sendWifiWelcomeEmail({ email, name: name || null, propertySlug }).catch((error) =>
+                console.error("[wifi-lead] welcome email failed", error),
+            );
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -18,6 +18,8 @@ export NEXT_PUBLIC_SITE_URL=http://localhost:3000
 export RATE_LIMIT_DISABLED=true
 # Airbnb pricing is configured but switched off per scenario (see qa/e2e/lib.mjs resetData).
 export AIRBNB_GUEST_FEE_PCT=14.1 FEATURE_FLAG_CACHE_MS=0
+# The draft Wi-Fi welcome email is paused in production; QA turns it on to test it.
+export EMAIL_UNPAUSED_TEMPLATES=wifi-welcome
 (cd "$WORK/ical" && nohup python3 -m http.server 8765 > "$WORK/ical.log" 2>&1 < /dev/null &)
 nohup node "$ROOT/qa/harness/stripe-mock.mjs" > "$WORK/stripe-mock.log" 2>&1 < /dev/null &
 cd "$ROOT" && nohup npx next dev -p 3000 > "$WORK/next.log" 2>&1 < /dev/null &

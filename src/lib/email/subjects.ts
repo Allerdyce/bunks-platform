@@ -8,6 +8,7 @@ export const EMAIL_SUBJECTS: Record<string, string> = {
   'pre-stay-48h': '48-hour reminder · {{propertyName}}',
   'pre-stay-24h': '24-hour reminder · Final prep for {{propertyName}}',
   'door-code-delivery': 'Your door code for {{propertyName}}',
+  'wifi-welcome': 'Welcome to {{propertyName}} · your Wi-Fi details',
 
   // Guest — During Stay
   'mid-stay-check-in': 'Quick check-in · How is {{propertyName}}?',
