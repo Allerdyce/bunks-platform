@@ -12,6 +12,16 @@ export const ADMIN = { email: "ali@bunks.com", password: process.env.ADMIN_PASSW
 export const SB = "steamboat-downtown-townhome";
 export const SL = "summerland-ocean-view-beach-bungalow";
 
+// Fixture dates are written as if "now" were late Sep 2026. They are shifted forward in whole
+// weeks (so weekdays and weekend rates still line up) to start about three weeks from today.
+// D("2026-10-05") → the shifted ISO date; ICS("20261005") → the shifted iCal date.
+const FIXTURE_FIRST_STAY = Date.parse("2026-10-02T00:00:00Z");
+const WEEK_MS = 7 * 86_400_000;
+export const SHIFT_DAYS = 7 * Math.max(0, Math.ceil((Date.now() + 21 * 86_400_000 - FIXTURE_FIRST_STAY) / WEEK_MS));
+export const D = (iso) => new Date(Date.parse(`${iso}T00:00:00Z`) + SHIFT_DAYS * 86_400_000).toISOString().slice(0, 10);
+export const ICS = (ymd) => D(`${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`).replace(/-/g, "");
+const shiftIcs = (text) => text.replace(/\b2026(\d{4})\b/g, (m) => ICS(m));
+
 const dbUrl = process.env.DATABASE_URL || "postgresql://bunks:bunks@localhost:5432/bunks_qa";
 if (!/localhost|127\.0\.0\.1/.test(dbUrl)) throw new Error("QA scenarios only run against a local database");
 export const db = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -40,6 +50,7 @@ export async function resetData() {
   await db.blockedDate.deleteMany({});
   await db.specialRate.deleteMany({});
   await db.booking.deleteMany({});
+  await db.guestLead.deleteMany({});
   // Airbnb pricing off by default; its own scenario switches it on.
   await db.featureToggle.upsert({ where: { key: "airbnbPricing" }, update: { enabled: false }, create: { key: "airbnbPricing", enabled: false } });
   clearEmails();
@@ -59,9 +70,11 @@ export function emails() {
 const FIXTURES = new URL("../fixtures/ical/", import.meta.url).pathname;
 export function restoreIcal() {
   fs.mkdirSync(ICAL_DIR, { recursive: true });
-  for (const f of fs.readdirSync(FIXTURES)) fs.copyFileSync(path.join(FIXTURES, f), path.join(ICAL_DIR, f));
+  for (const f of fs.readdirSync(FIXTURES)) {
+    fs.writeFileSync(path.join(ICAL_DIR, f), shiftIcs(fs.readFileSync(path.join(FIXTURES, f), "utf8")));
+  }
 }
-export function writeIcal(name, content) { fs.writeFileSync(path.join(ICAL_DIR, name), content); }
+export function writeIcal(name, content) { fs.writeFileSync(path.join(ICAL_DIR, name), shiftIcs(content)); }
 export function removeIcal(name) { fs.rmSync(path.join(ICAL_DIR, name), { force: true }); }
 
 export async function adminCookie() {
@@ -78,7 +91,7 @@ export async function forceSync(slug) {
 export async function book(overrides = {}) {
   return api("/api/bookings", {
     method: "POST",
-    body: { propertySlug: SB, checkIn: "2026-10-05", checkOut: "2026-10-09", guestName: "QA Guest", guestEmail: "guest1@example.com", guests: 2, ...overrides },
+    body: { propertySlug: SB, checkIn: D("2026-10-05"), checkOut: D("2026-10-09"), guestName: "QA Guest", guestEmail: "guest1@example.com", guests: 2, ...overrides },
   });
 }
 

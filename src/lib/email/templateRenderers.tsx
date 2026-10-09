@@ -17,6 +17,7 @@ import { HostPrepThreeDayEmail } from '@/emails/HostPrepThreeDayEmail';
 import { HostPrepSameDayEmail } from '@/emails/HostPrepSameDayEmail';
 import { HostGuestCancelledEmail } from '@/emails/HostGuestCancelledEmail';
 import { HostRefundAdjustmentEmail } from '@/emails/HostRefundAdjustmentEmail';
+import { WifiWelcomeEmail } from '@/emails/WifiWelcomeEmail';
 
 import {
 	sampleBookingConfirmationProps,
@@ -36,6 +37,7 @@ import {
 	sampleHostPrepSameDayProps,
 	sampleHostGuestCancelledProps,
 	sampleHostRefundAdjustmentProps,
+	sampleWifiWelcomeProps,
 } from '@/lib/email/sampleData';
 
 export interface TemplateRendererEntry {
@@ -107,6 +109,10 @@ export const TEMPLATE_RENDERERS: Record<string, TemplateRendererEntry> = {
 	'host-guest-cancelled': {
 		render: () => renderEmail(<HostGuestCancelledEmail {...sampleHostGuestCancelledProps()} />),
 		getSampleProps: sampleHostGuestCancelledProps,
+	},
+	'wifi-welcome': {
+		render: () => renderEmail(<WifiWelcomeEmail {...sampleWifiWelcomeProps()} />),
+		getSampleProps: sampleWifiWelcomeProps,
 	},
 	'host-refund-adjustment': {
 		render: () => renderEmail(<HostRefundAdjustmentEmail {...sampleHostRefundAdjustmentProps()} />),

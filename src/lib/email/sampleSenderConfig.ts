@@ -5,6 +5,7 @@ export const SUPPORTED_SAMPLE_TEMPLATE_SLUGS = [
   'pre-stay-48h',
   'pre-stay-24h',
   'door-code-delivery',
+  'wifi-welcome',
   'mid-stay-check-in',
   'checkout-reminder',
   'review-request',

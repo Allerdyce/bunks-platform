@@ -13,6 +13,11 @@ export const PROPERTY_GUIDE_FILES: Record<string, Partial<Record<GuideKind, stri
   },
 };
 
+// Guides with no lock codes inside, which the Wi-Fi welcome email may link to directly (the
+// in-home Wi-Fi page is public, so its guests aren't verified bookers). Steamboat's guides print
+// the door codes, so its Wi-Fi guests are sent to their trip page instead.
+export const WIFI_SAFE_GUIDE_SLUGS = new Set<string>(["summerland-ocean-view-beach-bungalow"]);
+
 // Early seed data pointed at a guides.bunks.com site that was never built.
 const PLACEHOLDER_GUIDE_HOSTS = ["guides.bunks.com", "guestbook.bunks.com"];
 

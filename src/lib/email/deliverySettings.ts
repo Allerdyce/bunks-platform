@@ -24,11 +24,18 @@ export const PAUSED_TEMPLATE_SLUGS = new Set<string>([
   'booking-details-welcome',
   'review-request',
   'payment-failure',
+  // Draft: Wi-Fi welcome, sent when a guest unlocks the Wi-Fi on the in-home QR page.
+  'wifi-welcome',
 ]);
+
+// Turn a paused template on without a code change: EMAIL_UNPAUSED_TEMPLATES=wifi-welcome
+// (comma-separated catalog slugs) in Vercel, then redeploy.
+const unpausedSlugs = () =>
+  new Set((process.env.EMAIL_UNPAUSED_TEMPLATES ?? '').split(',').map((slug) => slug.trim()).filter(Boolean));
 
 export type EmailDeliveryState = 'sending' | 'paused';
 
 export function templateDeliveryState(slug: string): EmailDeliveryState {
   if (process.env.EMAIL_PAUSE_ALL === 'true') return 'paused';
-  return PAUSED_TEMPLATE_SLUGS.has(slug) ? 'paused' : 'sending';
+  return PAUSED_TEMPLATE_SLUGS.has(slug) && !unpausedSlugs().has(slug) ? 'paused' : 'sending';
 }

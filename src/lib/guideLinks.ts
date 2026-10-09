@@ -1,7 +1,7 @@
 import "server-only";
 
 import crypto from "crypto";
-import { PROPERTY_GUIDE_FILES, isPlaceholderGuideUrl, type GuideKind } from "@/data/guides";
+import { PROPERTY_GUIDE_FILES, WIFI_SAFE_GUIDE_SLUGS, isPlaceholderGuideUrl, type GuideKind } from "@/data/guides";
 
 // Guide links stay valid until two weeks after checkout; the route also re-checks that the
 // booking is still paid, so a cancellation revokes them.
@@ -36,6 +36,19 @@ export function signedGuidePath(booking: GuideBooking, kind: GuideKind = "guide"
     sig: signature(slug, kind, booking.publicReference, exp),
   });
   return `/api/guides/${slug}/${kind}?${params.toString()}`;
+}
+
+// Wi-Fi guests have no booking: their links carry a "wifi-…" ref instead, valid for 14 days.
+const WIFI_LINK_MS = 14 * 24 * 60 * 60 * 1000;
+export const isWifiGuideRef = (ref: string) => /^wifi-[0-9a-f]{12}$/.test(ref);
+
+/** A signed guide link for a Wi-Fi guest, only for homes whose guide has no lock codes. */
+export function signedWifiGuidePath(slug: string, email: string, now = Date.now()) {
+  if (!WIFI_SAFE_GUIDE_SLUGS.has(slug) || !PROPERTY_GUIDE_FILES[slug]?.guide) return null;
+  const ref = `wifi-${crypto.createHash("sha256").update(email.toLowerCase()).digest("hex").slice(0, 12)}`;
+  const exp = Math.floor((now + WIFI_LINK_MS) / 1000);
+  const params = new URLSearchParams({ ref, exp: String(exp), sig: signature(slug, "guide", ref, exp) });
+  return `/api/guides/${slug}/guide?${params.toString()}`;
 }
 
 /** The guide for a booking: its signed PDF link, else a stored URL that isn't a placeholder. */

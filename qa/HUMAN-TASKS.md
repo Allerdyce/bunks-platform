@@ -151,6 +151,12 @@ Airbnb blocks those dates until it next reads the Bunks calendar (a few hours), 
 
 ---
 
+## 7b. Wi-Fi welcome email (draft, paused)
+
+Sent the first time a guest unlocks the Wi-Fi on a home's in-home QR page: photo, Wi-Fi details, house guide (Summerland: the guidebook PDF; Steamboat: the trip page, because its guides print the door codes), book-direct link.
+- [ ] Review it in Admin → Emails → **Wi-Fi Welcome** (preview / send yourself a sample).
+- [ ] To turn it on: Vercel → add `EMAIL_UNPAUSED_TEMPLATES` = `wifi-welcome` → Redeploy. Remove it to pause again.
+
 ## 8. Later
 
 - [ ] Re-export the Steamboat brochure PDF: page 1 says "10am Check-in", but check-in is 3 pm. Send Claude the new file when it's ready.
